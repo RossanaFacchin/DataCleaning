@@ -1,4 +1,5 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # Carica il file CSV in un DataFrame
 df = pd.read_csv("ADNIMERGE_05Mar2026.csv")
@@ -86,5 +87,62 @@ for col in df.columns:
     if percentuale > 40:
         print(f"{col}: {percentuale:.2f}% nulli")
         count += 1
-        
+
 print(f"\nNumero di colonne con più del 40% di valori nulli: {count}")
+
+#ottenere statistiche di tutte le colonne in una volta
+print(df.describe(include='all'))
+
+#eseguire describe() per ogni colonna separatamente
+for col in df.columns:
+    print(f"\n{'='*50}")
+    print(f"Colonna: {col}")
+    print(df[col].describe())
+
+#analisi outliers + visualizzazione con la tabella
+import pandas as pd
+import matplotlib.pyplot as plt
+
+for col in df.select_dtypes(include=['number']).columns:
+
+    Q1 = df[col].quantile(0.25)
+    Q3 = df[col].quantile(0.75)
+    IQR = Q3 - Q1
+
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+
+    outliers = df[(df[col] < lower_bound) | (df[col] > upper_bound)]
+
+    print(f"\n{'='*50}")
+    print(f"Colonna: {col}")
+    print(f"Numero outlier: {len(outliers)}")
+
+    plt.figure(figsize=(8, 2))
+    plt.boxplot(df[col].dropna(), vert=False)
+    plt.title(f"Boxplot - {col}")
+    plt.show()
+
+#sommario
+outlier_summary = []
+
+for col in df.select_dtypes(include=['number']).columns:
+
+    Q1 = df[col].quantile(0.25)
+    Q3 = df[col].quantile(0.75)
+    IQR = Q3 - Q1
+
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+
+    n_outliers = ((df[col] < lower_bound) |
+                  (df[col] > upper_bound)).sum()
+
+    outlier_summary.append({
+        'Colonna': col,
+        'Outlier': n_outliers,
+        'Percentuale': n_outliers / len(df) * 100
+    })
+
+outlier_df = pd.DataFrame(outlier_summary)
+print(outlier_df.sort_values('Percentuale', ascending=False))
