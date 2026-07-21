@@ -38,7 +38,53 @@ summary = pd.DataFrame({
 
 print(summary.sort_values('valori_unici'))
 
+#trovare i valori Nan o nulli per ogni colonna con un ciclo for
+for col in df.columns:
+    num_null = df[col].isna().sum()
+    perc_null = (num_null / len(df)) * 100
 
+    print(f"\nColonna: {col}")
+    print(f"Valori nulli: {num_null}")
+    print(f"Percentuale nulli: {perc_null:.2f}%")
 
+#in ordine dal più pulito al più sporco
+null_summary = pd.DataFrame({
+    'colonna': df.columns,
+    'null_count': [df[col].isna().sum() for col in df.columns],
+    'null_percent': [(df[col].isna().sum() / len(df)) * 100 for col in df.columns]
+})
 
+print(null_summary.sort_values('null_count', ascending=False))
 
+# stampare valori nulli, valori totali e percentuale di nulli per ogni colonna
+for col in df.columns:
+    nulli = df[col].isna().sum()
+    totali = len(df)
+    percentuale = (nulli / totali) * 100
+
+    print(f"{col}: {nulli}/{totali} nulli ({percentuale:.2f}%)")
+
+#riepilogo più ordinato in un DataFrame
+summary = pd.DataFrame({
+    "Colonna": df.columns,
+    "Valori_totali": len(df),
+    "Valori_nulli": [df[col].isna().sum() for col in df.columns]
+})
+
+summary["Percentuale_nulli"] = (
+    summary["Valori_nulli"] / summary["Valori_totali"] * 100
+)
+
+print(summary.sort_values("Valori_nulli", ascending=False))
+
+#solo le colonne che superano il 40% di valori nulli
+count = 0
+
+for col in df.columns:
+    percentuale = df[col].isna().mean() * 100
+
+    if percentuale > 40:
+        print(f"{col}: {percentuale:.2f}% nulli")
+        count += 1
+        
+print(f"\nNumero di colonne con più del 40% di valori nulli: {count}")
