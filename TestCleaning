@@ -17,3 +17,28 @@ for col in df.columns:
 print(f"Numero di colonne: {len(df.columns)}")
 print(df.columns.tolist())
 
+#elementi unici nelle righe
+df["PTGENDER"].unique()
+
+#numero valori unici
+print(df["PTGENDER"].unique())
+
+#ciclo for per trovare i valori unici e il loro numero per ogni colonna
+#vedere sia il numero che i valori unici e frequenza
+for col in df.columns:
+    print(f"\n=== {col} ===")
+    print(f"Numero valori unici: {df[col].nunique(dropna=False)}")
+    print(df[col].value_counts(dropna=False))
+
+# riepilogo ordinato in un DataFrame
+summary = pd.DataFrame({
+    'colonna': df.columns,
+    'valori_unici': [df[col].nunique(dropna=False) for col in df.columns]
+})
+
+print(summary.sort_values('valori_unici'))
+
+
+
+
+
