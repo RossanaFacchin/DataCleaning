@@ -1,0 +1,8 @@
+import pandas as pd
+
+# Carica il file CSV in un DataFrame
+df = pd.read_csv("ADNIMERGE_05Mar2026.csv")
+
+# Visualizza le prime righe del file
+print(df.head())
+
