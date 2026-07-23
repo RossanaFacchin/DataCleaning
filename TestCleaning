@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
+print ('pandas', pd.__version__)
 # Carica il file CSV in un DataFrame
 df = pd.read_csv("ADNIMERGE_05Mar2026.csv")
 
