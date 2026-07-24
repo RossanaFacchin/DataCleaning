@@ -40,10 +40,12 @@ def load(cfg):
     return pd.read_csv(cfg.source, low_memory=False)
 
 
+#sostituisce i valori "sentinella" — cioè codici usati per rappresentare dati mancanti in modo mascherato (non un vero NaN, ma un valore convenzionale come -4, "Unknown", "N/A", 999, ecc.) — con veri valori mancanti (NaN), che pandas può gestire correttamente.
 def replace_unknown(df):
     return df.replace(config.UNKNOWN_SENTINELS, np.nan)
 
 
+#"ripulire" colonne numeriche che contengono simboli di censura
 def decensor(df, cols):
     df = df.copy()
     for c in cols:
@@ -53,11 +55,13 @@ def decensor(df, cols):
     return df
 
 
+#elimina le righe dove tutte le colonne indicate sono vuote contemporaneamente
 def drop_if_all_none(df, cols):
     present = [c for c in cols if c in df.columns]
     return df.dropna(subset=present, how="all") if present else df
 
 
+#converte una o più colonne in formato data vera e propria (datetime), invece di lasciarle come semplice testo.
 def parse_dates(df, cols):
     df = df.copy()
     for c in cols:
@@ -66,6 +70,7 @@ def parse_dates(df, cols):
     return df
 
 
+#elimina le visite duplicate (stesso paziente, stessa data) tenendo però la riga più completa tra i duplicati, invece di sceglierla a caso.
 def dedup_visits(df, id_col, date_col, essential):
     present = [c for c in essential if c in df.columns]
     df = df.copy()
@@ -75,6 +80,7 @@ def dedup_visits(df, id_col, date_col, essential):
               .drop(columns="_completeness"))
 
 
+#calcola, per ogni visita, a quanti mesi di distanza è avvenuta rispetto alla prima visita di quel paziente (il cosiddetto "baseline").
 def add_visit_month(df, id_col, date_col):
     df = df.copy().sort_values([id_col, date_col])
     baseline = df.groupby(id_col)[date_col].transform("min")
@@ -82,6 +88,7 @@ def add_visit_month(df, id_col, date_col):
     return df
 
 
+#ricalcola l'età del paziente visita per visita, partendo dall'età al basale (prima visita) e sommando il tempo trascorso — invece di usare un'unica età fissa (quella al baseline) ripetuta erroneamente su tutte le visite successive.
 def recompute_age(df, date_col="EXAMDATE", bl_date_col="EXAMDATE_bl", age_col="AGE"):
     if age_col not in df.columns or bl_date_col not in df.columns:
         return df
@@ -92,6 +99,7 @@ def recompute_age(df, date_col="EXAMDATE", bl_date_col="EXAMDATE_bl", age_col="A
     return df
 
 
+#sostituisce i valori di determinate colonne con nuovi valori equivalenti, seguendo una mappatura predefinita salvata altrove (in un file/modulo config).
 def recode(df, cols):
     df = df.copy()
     for c in cols:
@@ -100,6 +108,7 @@ def recode(df, cols):
     return df
 
 
+#ripulisce due colonne specifiche legate ai dati di risonanza magnetica processati con FreeSurfer (software comune in neuroimaging per l'analisi di risonanze cerebrali): FLDSTRENG (intensità del campo magnetico dello scanner MRI) e FSVERSION (versione del software FreeSurfer usata).
 def clean_fs_fields(df):
     df = df.copy()
     if "FLDSTRENG" in df.columns:
@@ -109,10 +118,12 @@ def clean_fs_fields(df):
     return df
 
 
+#rinomina le colonne del DataFrame usando una mappa di corrispondenze (vecchio nome → nuovo nome) definita centralmente in config.py.
 def rename_variables(df):
     return df.rename(columns=config.rename_map())
 
 
+#crea nuove colonne calcolando dei rapporti (ratio) tra biomarcatori del liquido cerebrospinale (CSF, Cerebrospinal Fluid) — misure molto usate negli studi sull'Alzheimer come ADNI.
 def add_ratios(df):
     df = df.copy()
     for name, (num, den) in {"TTAU_AB42_CSF": ("TTAU_CSF", "AB42_CSF"),
@@ -122,6 +133,7 @@ def add_ratios(df):
     return df
 
 
+#calcola il profilo ATN del paziente — un framework clinico standard usato negli studi sull'Alzheimer per classificare i pazienti in base alla presenza di tre tipi di biomarcatori: Amiloide, Tau, Neurodegenerazione.
 def add_atn_profile(df, method):
     df = df.copy()
     axes = {"A": ("AB42_CSF", "below"), "T": ("PT181_CSF", "above"), "N": ("TTAU_CSF", "above")}
@@ -144,6 +156,7 @@ def add_atn_profile(df, method):
 
 
 # --- orchestratore: l'ex "adni_cleaning1" per un file, leggibile in un colpo --
+#è l'orchestratore principale della pipeline di data cleaning: chiama in sequenza tutte le funzioni che abbiamo analizzato finora, componendole in un unico flusso completo e configurabile.
 def run_cleaning1(cfg: DatasetConfig = ADNIMERGE) -> pd.DataFrame:
     df = load(cfg)                                                # download -> CSV
     df = replace_unknown(df)                                      # replace_unknown_values
@@ -167,6 +180,7 @@ def run_cleaning1(cfg: DatasetConfig = ADNIMERGE) -> pd.DataFrame:
 
 
 # --- report: rigenera cio' che prima era l'Excel _statistics (output, non input)
+#genera un report riepilogativo (profilazione) di tutte le colonne del dataset, riga per colonna, includendo anche un'analisi per coorte di studio — molto utile come passaggio finale dopo la pipeline di cleaning, per avere una visione d'insieme della qualità dei dati.
 def profile(df, cohort_col="COLPROT") -> pd.DataFrame:
     rows, n = [], len(df)
     cohorts = df[cohort_col].dropna().unique().tolist() if cohort_col in df else []
@@ -187,6 +201,7 @@ def profile(df, cohort_col="COLPROT") -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+#il blocco di esecuzione principale dello script: il codice che viene effettivamente eseguito quando lanci il file .py direttamente (non quando viene importato come modulo in un altro script).
 if __name__ == "__main__":
     df = run_cleaning1()
     print(f"cleaning1 ADNIMERGE: {df.shape[0]} righe x {df.shape[1]} colonne")
