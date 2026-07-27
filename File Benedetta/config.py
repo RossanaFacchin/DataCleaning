@@ -159,3 +159,6 @@ def rename_map() -> dict[str, str]:
 
 def columns_in(parameter: str) -> list[str]:
     return [name for name, v in CATALOG.items() if v.parameter == parameter]
+
+#Aggiunta di dato Rossana
+MULTIVISIT_MIN_SUBJECTS = 10   # sotto questo numero di soggetti con >1 visita -> file trattato come 'single visit'
