@@ -34,8 +34,9 @@ import pandas as pd
 import config
 from config import DatasetConfig, ADNIMERGE
 
-# ADNIMERGE.source = "ADNIMERGE_cleaned_01.csv"
-# OUTPUT_FILE = "ADNIMERGE_cleaned_02.csv"
+# Aggiunta Rossana
+ADNIMERGE.source = "ADNIMERGE_cleaned_01.csv"
+OUTPUT_FILE = "ADNIMERGE_cleaned_02.csv"
 
 # --- funzioni atomiche: ognuna prende un DataFrame e ne restituisce uno nuovo -
 def load(cfg):
@@ -211,108 +212,109 @@ if __name__ == "__main__":
     profile(df).to_csv("ADNIMERGE_report.csv", index=False)      # ex support file statistics
     print("scritti: ADNIMERGE_cleaned_01.csv, ADNIMERGE_report.csv")
 
+#ROSSANA
 ### Funzione da richiamare per salvare le modifiche su ADNIMERGE_cleaned_02.csv
-# def save_dataset(df, path):
-#    df.to_csv(path, index=False)
-#    print(f"Salvato: {path}  (shape: {df.shape})")
+def save_dataset(df, path):
+   df.to_csv(path, index=False)
+   print(f"Salvato: {path}  (shape: {df.shape})")
 
 ### Rimozione colonne con troppi valori non validi per l'analizi
 # Funzione di pulizia colonne. Calcola, per ogni colonna, la percentuale di valori validi e scarta quelle sotto la soglia definita in config.MISSING_KEEP_THRESHOLD.
-# def remove_param_few_subjects(df, threshold=config.MISSING_KEEP_THRESHOLD):
-#     df = df.copy()
-#     valid_ratio = df.notna().mean()
-#     dropped = valid_ratio[valid_ratio < threshold].index.tolist()
-#     df = df.drop(columns=dropped)
-#     return df, dropped
+def remove_param_few_subjects(df, threshold=config.MISSING_KEEP_THRESHOLD):
+    df = df.copy()
+    valid_ratio = df.notna().mean()
+    dropped = valid_ratio[valid_ratio < threshold].index.tolist()
+    df = df.drop(columns=dropped)
+    return df, dropped
 
 ##Esecuzione dello step. Legge il file originale, applica la pulizia, stampa quali colonne sono state scartate e la variazione di shape, poi salva il risultato con save_dataset().
-# df_raw = pd.read_csv(ADNIMERGE.source)
+df_raw = pd.read_csv(ADNIMERGE.source)
 
-# df_cleaned, dropped_columns = remove_param_few_subjects(df_raw)
+df_cleaned, dropped_columns = remove_param_few_subjects(df_raw)
  
-# print(f"[STEP 1] Colonne scartate ({len(dropped_columns)}): {dropped_columns}")
-# print(f"[STEP 1] Shape: {df_raw.shape} -> {df_cleaned.shape}")
+print(f"[STEP 1] Colonne scartate ({len(dropped_columns)}): {dropped_columns}")
+print(f"[STEP 1] Shape: {df_raw.shape} -> {df_cleaned.shape}")
  
-# save_dataset(df_cleaned, OUTPUT_FILE)  
+save_dataset(df_cleaned, OUTPUT_FILE)  
 
 ###Conversione in dummy delle colonne 'GENDER', 'MARRY', 'ETHNICITY', 'RACE', 'DX'
 ## Configurazione dello step. Definisce input/output (il file appena prodotto dallo STEP 1) e l'elenco delle variabili categoriche da convertire.
-# DUMMY_INPUT = OUTPUT_FILE             # <-- usa direttamente l'output dello step 1
-# DUMMY_OUTPUT = "ADNIMERGE_cleaned_02.csv"
+DUMMY_INPUT = OUTPUT_FILE             # <-- usa direttamente l'output dello step 1
+DUMMY_OUTPUT = "ADNIMERGE_cleaned_02.csv"
 
-# REF_LIST = ['GENDER', 'MARRY', 'ETHNICITY', 'RACE', 'DX']
+REF_LIST = ['GENDER', 'MARRY', 'ETHNICITY', 'RACE', 'DX']
 
 ##Funzione di conversione in dummy. Individua tra ref_list le colonne presenti nel dataframe e le trasforma in variabili binarie con pd.get_dummies.
-# def classes_to_dummies(df, ref_list):
-#     df = df.copy()
-#     to_dummy_list = [c for c in ref_list if c in df.columns]
-#     if to_dummy_list:
-#         df = pd.get_dummies(df, columns=to_dummy_list, dtype=int)
-#     return df, to_dummy_list
+def classes_to_dummies(df, ref_list):
+    df = df.copy()
+    to_dummy_list = [c for c in ref_list if c in df.columns]
+    if to_dummy_list:
+        df = pd.get_dummies(df, columns=to_dummy_list, dtype=int)
+    return df, to_dummy_list
 
 ##Funzione di conteggio dummy. Conta quante colonne dummy sono state create in totale e quante per ciascuna variabile originale.
-# def count_dummy_columns(original_df, final_df, converted_columns):
-#     new_dummy_columns = [c for c in final_df.columns if c not in original_df.columns]
-#     per_column_count = {
-#         col: len([c for c in new_dummy_columns if c.startswith(col + "_")])
-#         for col in converted_columns
-#     }
-#     return len(new_dummy_columns), per_column_count
+def count_dummy_columns(original_df, final_df, converted_columns):
+    new_dummy_columns = [c for c in final_df.columns if c not in original_df.columns]
+    per_column_count = {
+        col: len([c for c in new_dummy_columns if c.startswith(col + "_")])
+        for col in converted_columns
+    }
+    return len(new_dummy_columns), per_column_count
 
 ##Esecuzione e salvataggio. Applica la conversione in dummy e salva il risultato con save_dataset().
-# final_df, converted_columns = classes_to_dummies(df_step2, ref_list=REF_LIST)
+final_df, converted_columns = classes_to_dummies(df_step2, ref_list=REF_LIST)
 
-# save_dataset(final_df, DUMMY_OUTPUT)
+save_dataset(final_df, DUMMY_OUTPUT)
 
 ###Rimozione righe in cui tutte le colonne chiave sono vuote
-# KEY_COLUMNS = ['Ventricles', 'Hippocampus', 'WholeBrain', 'ICV']
+KEY_COLUMNS = ['Ventricles', 'Hippocampus', 'WholeBrain', 'ICV']
 
 ##Funzione di filtro sulle righe
-# def drop_if_all_none(df, key_columns):
-#     df = df.copy()
-#     cols_present = [c for c in key_columns if c in df.columns]
-#     mask_all_none = df[cols_present].isna().all(axis=1)
-#     dropped_rows = int(mask_all_none.sum())
-#     df = df[~mask_all_none]
-#     return df, dropped_rows
+def drop_if_all_none(df, key_columns):
+    df = df.copy()
+    cols_present = [c for c in key_columns if c in df.columns]
+    mask_all_none = df[cols_present].isna().all(axis=1)
+    dropped_rows = int(mask_all_none.sum())
+    df = df[~mask_all_none]
+    return df, dropped_rows
 
 ##Caricamento e applicazione del filtro
-#df_step3 = pd.read_csv(OUTPUT_FILE)
-#df_final, dropped_rows = drop_if_all_none(df_step3, KEY_COLUMNS)
+df_step3 = pd.read_csv(OUTPUT_FILE)
+df_final, dropped_rows = drop_if_all_none(df_step3, KEY_COLUMNS)
 
-#save_dataset(df_final, OUTPUT_FILE)
+save_dataset(df_final, OUTPUT_FILE)
 
 ###Riallineamento types delle colonne
 ##Funzione di riallineamento che controllo ogni colonna
-# def realign_column_types(df):
-#     """Ispeziona ogni colonna e la riallinea al tipo corretto (int, float o testo)."""
-#     df = df.copy()
-#     type_report = {}
+def realign_column_types(df):
+    """Ispeziona ogni colonna e la riallinea al tipo corretto (int, float o testo)."""
+    df = df.copy()
+    type_report = {}
 
-#     for col in df.columns:
-#         original_dtype = str(df[col].dtype)
+    for col in df.columns:
+        original_dtype = str(df[col].dtype)
 
-#         # Prova la conversione numerica; se fallisce, la colonna resta testo
-#         converted = pd.to_numeric(df[col], errors='coerce')
-#         is_fully_numeric = converted.notna().sum() == df[col].notna().sum()
+        # Prova la conversione numerica; se fallisce, la colonna resta testo
+        converted = pd.to_numeric(df[col], errors='coerce')
+        is_fully_numeric = converted.notna().sum() == df[col].notna().sum()
 
-#         if is_fully_numeric:
-#             if (converted.dropna() % 1 == 0).all():
-#                 df[col] = converted.astype('Int64')   # int nullable, gestisce i NaN
-#                 new_dtype = 'Int64'
-#             else:
-#                 df[col] = converted.astype('float64')
-#                 new_dtype = 'float64'
-#         else:
-#             df[col] = df[col].astype(str).where(df[col].notna(), np.nan)
-#             new_dtype = 'str'
+        if is_fully_numeric:
+            if (converted.dropna() % 1 == 0).all():
+                df[col] = converted.astype('Int64')   # int nullable, gestisce i NaN
+                new_dtype = 'Int64'
+            else:
+                df[col] = converted.astype('float64')
+                new_dtype = 'float64'
+        else:
+            df[col] = df[col].astype(str).where(df[col].notna(), np.nan)
+            new_dtype = 'str'
 
-#         if original_dtype != new_dtype:
-#             type_report[col] = (original_dtype, new_dtype)
+        if original_dtype != new_dtype:
+            type_report[col] = (original_dtype, new_dtype)
 
-#     return df, type_report
+    return df, type_report
 
-# final_df = pd.read_csv(OUTPUT_FILE)
-# final_df, type_report = realign_column_types(final_df)
+final_df = pd.read_csv(OUTPUT_FILE)
+final_df, type_report = realign_column_types(final_df)
 
-# save_dataset(final_df, OUTPUT_FILE)
+save_dataset(final_df, OUTPUT_FILE)
