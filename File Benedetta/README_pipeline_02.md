@@ -67,3 +67,18 @@ Restituisce anche `type_report`, un log delle sole colonne il cui tipo è cambia
 - Variabili di comodo come `INPUT_FILE = OUTPUT_FILE` vanno definite subito prima del loro utilizzo, non in testa al file.
 - Ogni funzione di trasformazione lavora su una copia (`df.copy()`) e restituisce sia il DataFrame sia un'informazione di log (colonne scartate, righe eliminate, colonne convertite, ecc.).
 - Ogni step che modifica i dati termina con `save_dataset(...)` e, dove previsto, una verifica di coerenza (rilettura del file e confronto della shape).
+
+### STEP 5 — Visualizzazione outlier (boxplot) e conteggio IQR
+```python
+select_measurement_columns(df, exclude_keywords, exclude_exact)
+count_outliers_iqr(series)
+plot_outliers_boxplot(df, columns, title, output_path, n_cols=5)
+```
+Individua le sole colonne di **misurazione** (punteggi clinico-cognitivi e volumetriche), scartando automaticamente id, protocollo, date, età e variabili demografiche (incluse le dummy `GENDER_`, `MARRY_`, `ETHNICITY_`, `RACE_`, `DX_`) tramite `select_measurement_columns`. Per ogni colonna mantenuta, `count_outliers_iqr` conta gli outlier con il metodo IQR (1.5×IQR oltre Q1/Q3); `plot_outliers_boxplot` genera una griglia di boxplot (uno per colonna, per gestire le diverse scale) con il conteggio di outlier riportato in ogni titolo, e salva l'immagine su file.
+
+- **Input:** `OUTPUT_FILE` (`ADNIMERGE_cleaned_02.csv`, sola lettura)
+- **Output:** immagine PNG con la griglia di boxplot; nessuna modifica al dataset
+
+**Variante senza grafico:** `count_outliers_for_columns(df, columns)` applica lo stesso conteggio IQR a un elenco di colonne fornito esplicitamente (utile per includere anche colonne extra come `APOE4`, `FSVERSION`, `IMAGEUID` e le variabili `_bl`), stampando solo i risultati testuali senza generare il boxplot; segnala a parte le colonne non numeriche o assenti.
+
+> **Nota:** il numero di outlier dipende dallo stato corrente del file (righe/valori), quindi può variare da un'esecuzione all'altra se nel frattempo sono stati applicati altri step della pipeline (es. `drop_if_all_none`, `realign_column_types`).
