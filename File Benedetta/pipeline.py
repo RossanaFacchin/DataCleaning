@@ -261,6 +261,14 @@ def count_dummy_columns(original_df, final_df, converted_columns):
     }
     return len(new_dummy_columns), per_column_count
 
+#Controllo di sicurezza pre-esecuzione. Legge il file d'ingresso e verifica che abbia già il numero di colonne atteso dallo STEP 1 (72), bloccando l'esecuzione con un messaggio chiaro se non è così.
+df_step2 = pd.read_csv(DUMMY_INPUT)
+
+assert df_step2.shape[1] == df_cleaned.shape[1], (
+    f"[STEP 2] Attenzione: '{DUMMY_INPUT}' ha {df_step2.shape[1]} colonne, "
+    f"attese {df_cleaned.shape[1]}. Rieseguire lo STEP 1 prima di procedere."
+)
+
 ##Esecuzione e salvataggio. Applica la conversione in dummy e salva il risultato con save_dataset().
 final_df, converted_columns = classes_to_dummies(df_step2, ref_list=REF_LIST)
 
