@@ -326,3 +326,50 @@ final_df = pd.read_csv(OUTPUT_FILE)
 final_df, type_report = realign_column_types(final_df)
 
 save_dataset(final_df, OUTPUT_FILE)
+
+### Visualizzaszione degli Outliers + conteggio per ogni colonna analizzata
+COLUMNS = [
+    'APOE4', 'CDRSB', 'ADAS11', 'ADAS13', 'ADASQ4', 'MMSE', 'RAVLT_immediate',
+    'RAVLT_learning', 'RAVLT_forgetting', 'RAVLT_perc_forgetting', 'LDELTOTAL',
+    'TRABSCOR', 'FAQ', 'FSVERSION', 'IMAGEUID', 'Ventricles', 'Hippocampus',
+    'WholeBrain', 'Entorhinal', 'Fusiform', 'MidTemp', 'ICV', 'mPACCdigit',
+    'mPACCtrailsB', 'EXAMDATE_bl', 'CDRSB_bl', 'ADAS11_bl', 'ADAS13_bl',
+    'ADASQ4_bl', 'MMSE_bl', 'RAVLT_immediate_bl', 'RAVLT_learning_bl',
+    'RAVLT_forgetting_bl', 'RAVLT_perc_forgetting_bl', 'LDELTOTAL_BL',
+    'TRABSCOR_bl', 'FAQ_bl', 'mPACCdigit_bl', 'mPACCtrailsB_bl', 'FLDSTRENG_bl',
+    'FSVERSION_bl', 'IMAGEUID_bl', 'Ventricles_bl', 'Hippocampus_bl',
+    'WholeBrain_bl', 'Entorhinal_bl', 'Fusiform_bl', 'MidTemp_bl', 'ICV_bl',
+    'FDG_bl'
+]
+
+#Conta gli outlier di una colonna numerica con il metodo IQR (1.5 * IQR oltre Q1/Q3).
+def count_outliers_iqr(series):
+    data = series.dropna()
+    q1, q3 = data.quantile(0.25), data.quantile(0.75)
+    iqr = q3 - q1
+    lower_bound = q1 - 1.5 * iqr
+    upper_bound = q3 + 1.5 * iqr
+    n_outliers = int(((data < lower_bound) | (data > upper_bound)).sum())
+    return n_outliers
+
+#Calcola gli outlier IQR per l'elenco di colonne fornito, senza generare grafici.
+#Le colonne non numeriche o assenti vengono segnalate a parte.
+def count_outliers_for_columns(df, columns):
+    df = df.copy()
+    outlier_counts = {}
+    skipped_columns = {}
+
+    for col in columns:
+        if col not in df.columns:
+            skipped_columns[col] = "assente nel dataset"
+            continue
+        if not pd.api.types.is_numeric_dtype(df[col]):
+            skipped_columns[col] = "non numerica"
+            continue
+        outlier_counts[col] = count_outliers_iqr(df[col])
+
+    return outlier_counts, skipped_columns
+
+df = pd.read_csv(OUTPUT_FILE, low_memory=False)
+outlier_counts, skipped_columns = count_outliers_for_columns(df, COLUMNS)
+
