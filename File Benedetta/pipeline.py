@@ -373,3 +373,44 @@ def count_outliers_for_columns(df, columns):
 df = pd.read_csv(OUTPUT_FILE, low_memory=False)
 outlier_counts, skipped_columns = count_outliers_for_columns(df, COLUMNS)
 
+###Mantiene le colonne presenti in COLONNE_CHIARA(excludendo quelle generate dal codice precedentemente)
+#Elenco di riferimento fornito da confrontare con le colonne effettive del dataset
+COLONNE_CHIARA = [
+    'RID', 'COLPROT', 'VISCODE', 'EXAMDATE', 'AGE', 'PTGENDER', 'PTEDUCAT',
+    'PTETHCAT', 'PTRACCAT', 'PTMARRY', 'APOE4', 'CDRSB', 'ADAS11', 'ADAS13',
+    'MMSE', 'RAVLT_immediate', 'FAQ', 'MOCA', 'FLDSTRENG', 'FSVERSION',
+    'IMAGEUID', 'Ventricles', 'Hippocampus', 'Entorhinal', 'Fusiform',
+    'MidTemp', 'ICV', 'DX', 'update_stamp'
+]
+
+#Colonne aggiuntive da mantenere comunque (dummy + variabile di visita), anche se non presenti in COLONNE_CHIARA
+COLONNE_EXTRA_DA_MANTENERE = [
+    'VISIT_MONTH', 'AGE', 'GENDER_0', 'GENDER_1',
+    'MARRY_0.0', 'MARRY_1.0', 'MARRY_2.0', 'MARRY_3.0',
+    'ETHNICITY_0.0', 'ETHNICITY_1.0',
+    'RACE_0.0', 'RACE_1.0', 'RACE_2.0', 'RACE_3.0', 'RACE_4.0', 'RACE_5.0',
+    'DX_0', 'DX_1', 'DX_2'
+]
+
+#Mantiene solo le colonne presenti in reference_columns (più eventuali colonne extra da conservare comunque), scartando tutte le altre
+def keep_only_reference_columns(df, reference_columns, extra_columns=None):
+    df = df.copy()
+    extra_columns = extra_columns or []
+
+    # Unisce l'elenco di riferimento con le colonne extra, senza duplicati
+    columns_to_keep_full = list(dict.fromkeys(reference_columns + extra_columns))
+
+    cols_to_keep = [c for c in columns_to_keep_full if c in df.columns]
+    missing_in_dataset = [c for c in columns_to_keep_full if c not in df.columns]
+    dropped_columns = [c for c in df.columns if c not in columns_to_keep_full]
+
+    df = df[cols_to_keep]
+    return df, dropped_columns, missing_in_dataset
+
+df_step_chiara = pd.read_csv(OUTPUT_FILE, low_memory=False)
+df_chiara, dropped_columns, missing_in_dataset = keep_only_reference_columns(
+    df_step_chiara, COLONNE_CHIARA, COLONNE_EXTRA_DA_MANTENERE
+)
+
+save_dataset(df_chiara, OUTPUT_FILE)
+
