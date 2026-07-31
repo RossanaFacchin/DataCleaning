@@ -1,0 +1,19 @@
+variable,type,range,valid_values,missing_values,missing_pop,del
+RID,int64,"31, 5263",130,0,,keep
+VISCODE,str,,130,0,,keep
+VISCODE2,str,,130,0,,keep
+EXAMDATE,datetime64[us],,130,0,,keep
+GUSPECID,str,,130,0,,keep
+VID,int64,"0, 14",130,0,,keep
+DER,str,,130,0,,keep
+DRAWTIME,str,,119,11,,keep
+RUN,int64,"1, 1",130,0,,keep
+SEQ,int64,"1, 130",130,0,,keep
+NFL_plasma,float64,"10.4, 114.3",130,0,,keep
+AB42_plasma,float64,"4.1, 12.2",130,0,,keep
+AB40_plasma,float64,"87.6, 333.1",130,0,,keep
+GFAP_plasma,float64,"41.5, 548.5",130,0,,keep
+update_stamp,str,,130,0,,keep
+VISIT_MONTH,Int64,"0, 18",130,0,,keep
+METHOD_PLASMA,str,,130,0,,keep
+AB42_40_plasma,float64,"0.02620760534429599, 0.08221225710014947",130,0,,keep

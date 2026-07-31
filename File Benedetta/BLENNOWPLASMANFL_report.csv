@@ -1,0 +1,14 @@
+variable,type,range,valid_values,missing_values,missing_pop,del
+RID,int64,"2, 5296",3709,0,,keep
+VISCODE,str,,3709,0,,keep
+VISCODE2,str,,3709,0,,keep
+USERDATE,str,,3709,0,,keep
+EXAMDATE,datetime64[us],,3709,0,,keep
+RECNO,int64,"1, 2",3709,0,,keep
+DRAW_DATE,str,,3709,0,,keep
+DRAW_TIME,str,,3691,18,,keep
+NFL_plasma,float64,"6.4, 408.0",3709,0,,keep
+COMMENT,str,,0,3709,,drop
+update_stamp,str,,3709,0,,keep
+VISIT_MONTH,Int64,"0, 96",3709,0,,keep
+METHOD_PLASMA,str,,3709,0,,keep
