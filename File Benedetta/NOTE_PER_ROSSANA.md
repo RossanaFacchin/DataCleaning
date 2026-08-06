@@ -258,3 +258,92 @@ I tre file separati di prima (normalization_settings.json, volume_values_setting
 Valuta di capire come integrare nuovi dati da source diversa (OASIS era su Kaggle, a saperlo...)
 
 https://www.kaggle.com/code/hyunseokc/detecting-early-alzheimer-s/input
+
+### Appunti Chiara
+#### 1. def drop_if_all_none(df, cols): 
+(riga 79 di pipeline) nelle note sopra indica che sostituisce la chiamata di 1 funzione chiamata sia per essential che per richieste. --> [essential + also_required]
+Da capire bene se unisce due liste o le tratta diversamente. Infatti io potrei dire che se manca tipo l'ID mi deve cancellare la riga, e se non c'è nessun valore tra 5 colonne allora eliminare. se vengono unite ID e lista delle 5 variabili non si ha lo stesso effetto... Se vengono chiamati in momenti separati si ottiene il risultato corretto.
+
+#### 2. def recompute_age(df, date_col="EXAMDATE", bl_date_col="EXAMDATE_bl", age_col="AGE"):
+riga 122 --> viene rinominata AGE in AGE_bl ma se rinominiamo/standardizziamo prima i dati allora possiamo mettere dirrettamente come label AGE_bl. Non so se ha già senso inserire anche le altre cose che sappiamo possono esseci o lasciamo così per ora e aggiornimo metodi per il calcolo dell'età man mano che troviamo i file.
+
+#### 3. def recode(df, cols):
+riga 130 --> valutare di mappare non numericamente ma con stringhe standard poi utili per dummies per non ritrasformarle in numeri.
+
+#### 4. CATALOG r def rename
+sia in config che in pipeline
+Problema attuale
+
+CATALOG è indicizzato per nome grezzo (PTGENDER, NF_LIGHT...), non per concetto. Se la stessa variabile concettuale (es. "genere") appare con nomi diversi tra file (PTGENDER, SEX, Gender...), oggi l'unico modo per gestirlo è:
+
+aggiungere ogni sinonimo come voce separata in CATALOG (duplica parameter/unit/role più volte), oppure
+aggiungerlo nel self.rename del singolo DatasetConfig (ma allora quel sinonimo non eredita gli attributi di CATALOG — solo il nome standard).
+In entrambi i casi il nome standard ("GENDER") resta una stringa scritta a mano in più punti → rischio di typo silenziosi.
+
+Strategia proposta: invertire la chiave di CATALOG
+
+Indicizzare CATALOG per nome standard invece che per nome grezzo, e aggiungere alla Var una lista di sinonimi noti:
+
+
+CATALOG = {
+    "GENDER": Var(parameter="Demographic", aliases=["PTGENDER", "SEX", "Gender"]),
+    "AGE":    Var(parameter="Demographic", unit="years", aliases=["AGE"]),
+    ...
+}
+Da qui si genera automaticamente la mappa inversa (grezzo → standard) usata per il rename:
+
+
+def rename_map():
+    return {alias: std for std, v in CATALOG.items() for alias in v.aliases}
+Vantaggi:
+
+Un solo punto dove aggiungere un nuovo sinonimo quando lo si scopre in un nuovo file (basta appendere alla lista aliases), senza toccare parameter/unit/role.
+Il nome standard è scritto una sola volta (come chiave del dizionario) → niente più rischio di typo sparsi tra file diversi.
+Si può validare a "import time" che nessun alias sia condiviso per errore da due variabili standard diverse (basta un controllo che segnali duplicati in fase di costruzione della reverse map).
+Cosa resta invariato: self.rename per-file continua a esistere per i casi eccezionali già visti (stesso nome grezzo che significa cose diverse a seconda del file, o override intenzionali) — resta il meccanismo di "ultima parola" che vince sui conflitti, ma sarebbe usato solo per le vere eccezioni, non per i sinonimi comuni ormai gestiti da aliases.
+
+Trade-off da considerare: richiede di riscrivere CATALOG esistente (migrazione una tantum) e serve decidere cosa succede se due file usano lo stesso alias con significati diversi — da gestire con un controllo esplicito invece che lasciarlo implicito come oggi.
+
+Sarebbe da sopostare prima di tutto il renamen e quindi fare le funzioni che hanno bisogno di info da CATALOG dopo il rename.
+
+#### 5. def profile(df, cohort_col="COLPROT") -> pd.DataFrame:
+riga 440 --> valutare e discutere quali altre info possono essere utili, tipo numero di visite per sogg con quel valore vero, ...
+Aggiungere il calcolo di profile anche dopo clenaing2
+
+#### 6. verbose - parametro ORCHESTRATORE
+cosa significa? cos ainidca (riga 470)
+
+#### 7. def merge_category(datasets: dict, category: str, mcfg=None):
+riga 398 --> capire meglio la logica quindi integrare con regole altre categorie
+
+Dubbio sul fatto che visite combacianti con metodi differenti vengano unite in una sola riga modificando il nome della variabile con il metodo. Da valutre e capire meglio perchè non tenere le cose separate.
+
+#### 8. cleaned_by_category
+riga 495 --> capire come funziona
+
+#### 9. if cfg.volume_row_keys: --->  drop_if_all_none
+if da riga 336 a 339 --> non sono sicura sia utile rimuovere la riga se ci sono i volumi nella tabella ma mancano in quella riga. perche potremmo cancallare altri valori utili. dopo il merge concellavamo una riga se non aveva nessun valore tra volumi PET e CSF
+
+Anche keep columns da capire se necessaria... da investigare meglio --> in pipeline, da spostare in gonfig? o mettere lista default e dire ok si ci sono colonne in questa lista tenere solo quelle
+
+Da studiare meglio il meccanismo di accoppiamento delle stesse visite. Attenzione se è necessario prima di agire nel match by bufferdate di fare ordine per ID e DATA in entrambi i df. potrebbe non essere necessario ma non so...il rischio potrebbe essere che una riga ha la setssa data di un altra (match esatto) ma è anche dentro il tempo buffer di 80gg della visita precedente. cosa succede se non trova metches? cancella tutto? non impila? Considerare anche VISCODE? trattamento visite equindistanti da una della base, ordine non cronologico dei dataset, ... mettere in log le distanza tra i match direi di dividere tra esatti e con buffer (buffer medio)
+
+Problema le righe che indicano altre visite o soggetti vengono perse, e non attaccate in fondo. e no rientrano nei log-. --> usare outer join al posto che allign
+
+Problema suffisso nel merge, se una variabile è solo in un metodo e non viene specificato nel nome della variabile in quanto non presente nell'altro file si perde il metodo di questa variabile ed ad un secondo merge per categoria non si saprebbe come operare. aggiungendo il 3 file non viene aggiunto il suffisso perchè non esiste più il nome base, in quanto già suffissato --> trovare rimedio
+Altro problema, disassociazione dai nomi presenti in cutoff e CATALOG, da studiare come migliorare
+
+
+--> consiglio rivedere con sotto anche il codice vechio, troppo complicato ma che ha considerato tanti aspetti. Consiglio di filtrare i df solo per le variabili di una categoria, oltre a RID exam date e VISCODE se usato, o altre var utili per la gerarchia di unione. Quindi magari rinominare con suffisso tutte le variabili prima di vedere se ci sono o meno nell'altro df così da non perdere collegamenti o altro.
+
+
+
+#### 10. integrare con funzioni non considerate
+Anche se nei file di test non ci sono delle caratteristiche dei file usati possiamo inziare ad aggiungere tali funzioni e testare poi su dati ADNI
+
+#### 11. normazlizzazione volumi
+viene mantenuto il nome originale e in CATALOG resta il riferimento dell'unità di misura in mm3. Da valutare se modificare il nome delle colonne post normalizzazione, o creare nuove colonne e cancellare quelle non normalizzate. Nel caso ci sono valutazioni da fare rispetto a Keep_columns_only ion quanto va aggiornato il config con i nomi post normalizzazione.
+
+
+#### 12. affrontare i metadati 
+ora in CATALOG ma con modifiche dummies e volumi o altro si perde il link... come fare?
