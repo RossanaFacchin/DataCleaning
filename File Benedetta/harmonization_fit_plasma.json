@@ -1,0 +1,69 @@
+{
+  "NFL_PL": {
+    "status": "harmonized",
+    "reference": "simoa",
+    "converters": {
+      "adx_vumc": {
+        "intercept": -11.64378916260226,
+        "slope": 1.8599798563048726,
+        "n": 31,
+        "r": 0.785,
+        "slope_ci95": [
+          1.0346965255006613,
+          2.263483817250959
+        ],
+        "status": "weak_bridge"
+      }
+    }
+  },
+  "AB42_PL": {
+    "status": "harmonized",
+    "reference": "massospectrometry",
+    "converters": {
+      "adx_vumc": {
+        "status": "no_bridge",
+        "n": 0
+      }
+    }
+  },
+  "AB40_PL": {
+    "status": "harmonized",
+    "reference": "massospectrometry",
+    "converters": {
+      "adx_vumc": {
+        "status": "no_bridge",
+        "n": 0
+      }
+    }
+  },
+  "GFAP": {
+    "status": "single_method",
+    "method": "adx_vumc"
+  },
+  "AB4240_PL": {
+    "status": "harmonized",
+    "reference": "massospectrometry",
+    "converters": {
+      "adx_vumc": {
+        "status": "no_bridge",
+        "n": 0
+      }
+    }
+  },
+  "PT217_PL": {
+    "status": "single_method",
+    "method": "massospectrometry"
+  },
+  "nPT217_PL": {
+    "status": "single_method",
+    "method": "massospectrometry"
+  },
+  "PT217_nPT217_PL": {
+    "status": "single_method",
+    "method": "massospectrometry"
+  },
+  "APS2": {
+    "status": "single_method",
+    "method": "massospectrometry"
+  }
+}

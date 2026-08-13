@@ -126,56 +126,67 @@ def column_ranges(columns, name: str, method: str = None) -> dict:
 #    Le classi sono lette da ADNIMERGE; i codici seguono la convenzione del
 #    notebook (README 5.1), non una nuova.
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# 3. RECODE  —  categorie -> ETICHETTE STANDARD (stringhe), non numeri.
+#    [nota Chiara #3] mappare a stringhe standard rende le dummy leggibili
+#    (DX_CN, GENDER_male) e non costringe a ri-convertire in numeri dopo.
+#    Chiavi = NOMI STANDARD (il recode gira DOPO il rename, vedi nota #4).
+# ---------------------------------------------------------------------------
 RECODE = {
-    "PTGENDER": {"Male": 1, "Female": 0},
-    "PTMARRY":  {"Married": 1, "Divorced": 2, "Widowed": 3,
-                 "Never married": 0, "Unknown": np.nan},
-    "PTETHCAT": {"Hisp/Latino": 1, "Not Hisp/Latino": 0, "Unknown": np.nan},
-    "PTRACCAT": {"White": 5, "Black": 4, "Asian": 2, "Am Indian/Alaskan": 1,
-                 "Hawaiian/Other PI": 3, "More than one": 0, "Unknown": np.nan},
-    "DX":       {"CN": 0, "MCI": 1, "Dementia": 2},
+    "GENDER":    {"Male": "male", "Female": "female"},
+    "MARRY":     {"Married": "married", "Divorced": "divorced", "Widowed": "widowed",
+                  "Never married": "never_married", "Unknown": np.nan},
+    "ETHNICITY": {"Hisp/Latino": "hisp", "Not Hisp/Latino": "not_hisp", "Unknown": np.nan},
+    "RACE":      {"White": "white", "Black": "black", "Asian": "asian",
+                  "Am Indian/Alaskan": "amind", "Hawaiian/Other PI": "hawaiian",
+                  "More than one": "mixed", "Unknown": np.nan},
+    "DX":        {"CN": "CN", "MCI": "MCI", "Dementia": "Dementia"},
 }
 
 
 # ---------------------------------------------------------------------------
-# 4. CATALOG  —  le variabili di interesse (ex tabella del support file Excel).
-#    Per ogni variabile: gruppo, nome standard, unita', ruolo.
+# 4. CATALOG  —  le variabili di interesse, INDICIZZATE PER NOME STANDARD.
+#    [nota Chiara #4] la chiave e' il nome standard (scritto una volta sola);
+#    'aliases' elenca i nomi grezzi noti nei vari file. La mappa grezzo->standard
+#    per il rename si GENERA da qui (rename_map), con controllo anti-collisione
+#    a import-time. Aggiungere un sinonimo nuovo = appendere a 'aliases', in un
+#    solo posto, senza duplicare parameter/unit/role e senza typo del nome standard.
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True)
 class Var:
     parameter: str
-    rename: Optional[str] = None
     unit: Optional[str] = None
     role: Optional[str] = None          # 'predittore' | 'normalizzazione' | None
+    aliases: tuple = ()                  # nomi grezzi noti (grezzo -> questa chiave standard)
 
 
 CATALOG: dict[str, Var] = {
-    "RID":      Var("ID"),
-    "PTID":     Var("ID"),
-    "COLPROT":  Var("Cohort"),
-    "VISCODE":  Var("Visit"),
-    "EXAMDATE": Var("Visit"),
-    "AGE":      Var("Demographic", unit="years"),
-    "PTGENDER": Var("Demographic", rename="GENDER"),
-    "PTEDUCAT": Var("Demographic", rename="EDUCATION", unit="years"),
-    "PTMARRY":  Var("Demographic", rename="MARRY"),
-    "PTETHCAT": Var("Demographic", rename="ETHNICITY"),
-    "PTRACCAT": Var("Demographic", rename="RACE"),
-    "APOE4":    Var("Genetic", role="predittore"),
-    "DX":       Var("Diagnosis"),
-    "MMSE":     Var("Cognitive", role="predittore"),
-    "CDRSB":    Var("Cognitive", role="predittore"),
-    "ADAS13":   Var("Cognitive", role="predittore"),
-    "Ventricles":  Var("Imaging", unit="mm3"),
-    "Hippocampus": Var("Imaging", unit="mm3", role="predittore"),
-    "WholeBrain":  Var("Imaging", unit="mm3"),
-    "ICV":         Var("Imaging", unit="mm3", role="normalizzazione"),
-    "FLDSTRENG":   Var("Imaging"),
-    "FSVERSION":   Var("Imaging"),
-    # biomarcatori CSF: rename = chiavi di cutoffs.json (usati solo dai file CSF)
-    "ABETA":    Var("Biomarker", rename="AB42_CSF",  unit="pg/mL", role="predittore"),
-    "TAU":      Var("Biomarker", rename="TTAU_CSF",  unit="pg/mL", role="predittore"),
-    "PTAU":     Var("Biomarker", rename="PT181_CSF", unit="pg/mL", role="predittore"),
+    "RID":         Var("ID", aliases=("RID",)),
+    "PTID":        Var("ID", aliases=("PTID",)),
+    "COLPROT":     Var("Cohort", aliases=("COLPROT",)),
+    "VISCODE":     Var("Visit", aliases=("VISCODE",)),
+    "EXAMDATE":    Var("Visit", aliases=("EXAMDATE",)),
+    "AGE":         Var("Demographic", unit="years", aliases=("AGE",)),
+    "GENDER":      Var("Demographic", aliases=("PTGENDER", "SEX", "Gender")),
+    "EDUCATION":   Var("Demographic", unit="years", aliases=("PTEDUCAT",)),
+    "MARRY":       Var("Demographic", aliases=("PTMARRY",)),
+    "ETHNICITY":   Var("Demographic", aliases=("PTETHCAT",)),
+    "RACE":        Var("Demographic", aliases=("PTRACCAT",)),
+    "APOE4":       Var("Genetic", role="predittore", aliases=("APOE4",)),
+    "DX":          Var("Diagnosis", aliases=("DX",)),
+    "MMSE":        Var("Cognitive", role="predittore", aliases=("MMSE",)),
+    "CDRSB":       Var("Cognitive", role="predittore", aliases=("CDRSB",)),
+    "ADAS13":      Var("Cognitive", role="predittore", aliases=("ADAS13",)),
+    "Ventricles":  Var("Imaging", unit="mm3", aliases=("Ventricles",)),
+    "Hippocampus": Var("Imaging", unit="mm3", role="predittore", aliases=("Hippocampus",)),
+    "WholeBrain":  Var("Imaging", unit="mm3", aliases=("WholeBrain",)),
+    "ICV":         Var("Imaging", unit="mm3", role="normalizzazione", aliases=("ICV",)),
+    "FLDSTRENG":   Var("Imaging", aliases=("FLDSTRENG",)),
+    "FSVERSION":   Var("Imaging", aliases=("FSVERSION",)),
+    # biomarcatori CSF: la chiave standard = chiave di cutoffs.json
+    "AB42_CSF":    Var("Biomarker", unit="pg/mL", role="predittore", aliases=("ABETA",)),
+    "TTAU_CSF":    Var("Biomarker", unit="pg/mL", role="predittore", aliases=("TAU",)),
+    "PT181_CSF":   Var("Biomarker", unit="pg/mL", role="predittore", aliases=("PTAU",)),
 }
 
 
@@ -196,12 +207,15 @@ class DatasetConfig:
     category: Optional[str] = None      # 'plasma'|'csf'|'pet'|'volumes'|'scale'|'cofactor'
 
     # --- cleaning 1 ---
-    essential_columns: list[str] = field(default_factory=list)   # tieni riga se >=1 valorizzata
-    also_required: list[str] = field(default_factory=list)       # 2° filtro (AND): richiedi questa
-    recode_columns: list[str] = field(default_factory=list)      # quali colonne passare a RECODE
+    # [nota Chiara #1] scarta la riga se MANCA anche UNA sola di queste (any-none),
+    # es. ID o data: e' diverso da essential_columns (che scarta se TUTTE mancano).
+    required_all_present: list[str] = field(default_factory=list)
+    essential_columns: list[str] = field(default_factory=list)   # tieni riga se >=1 valorizzata (NOMI STANDARD)
+    also_required: list[str] = field(default_factory=list)       # 2° filtro (AND): richiedi questa (NOMI STANDARD)
+    recode_columns: list[str] = field(default_factory=list)      # colonne da passare a RECODE (NOMI STANDARD)
     # rinomina PER-FILE: sovrascrive/estende il CATALOG globale, senza toccarlo.
-    # e' cio' che permette a NF_LIGHT e PLASMA_NFL (file diversi) di finire
-    # entrambi in NFL_plasma senza inquinare il catalogo condiviso.
+    # e' cio' che permette a piu' grezzi (NF_LIGHT, PLASMA_NFL) di finire sullo
+    # stesso nome standard (NFL_PL) senza inquinare il catalogo condiviso.
     rename: dict[str, str] = field(default_factory=dict)
     # colonne-costante da stampare (ARMONIZZAZIONE): il metodo/assay e' il file,
     # non una colonna -> lo si assegna qui.  es. {"METHOD_PLASMA": "simoa"}
@@ -209,7 +223,7 @@ class DatasetConfig:
     # rapporti derivati generici: {nome_nuovo: (numeratore, denominatore)} in nomi standard
     derived_ratios: dict[str, tuple] = field(default_factory=dict)
     decensor_biomarkers: bool = False   # ">1700"/"<200" -> numerico (file CSF/plasma)
-    decensor_columns: list[str] = field(default_factory=list)     # nomi GREZZI (decensor gira pre-rename)
+    decensor_columns: list[str] = field(default_factory=list)     # NOMI STANDARD (decensor gira post-rename)
     recompute_age: bool = False         # AGE_bl + Δtempo -> AGE per visita
     clean_fs_fields: bool = False       # FLDSTRENG/FSVERSION: estrai parte numerica
     compute_atn: bool = False           # rapporti + profilo ATN (solo file CSF)
@@ -242,8 +256,9 @@ class DatasetConfig:
             self.report_file = f"{self.file_code}_report.csv"
 
     def effective_rename(self) -> dict[str, str]:
-        """CATALOG globale + override per-file. Il per-file vince sui conflitti."""
-        return {**rename_map(), **self.rename}
+        """CATALOG globale < rename di CATEGORIA < override per-file (il piu' specifico vince)."""
+        cat_map = CATEGORY_RENAME.get(self.category, {}) if self.category else {}
+        return {**rename_map(), **cat_map, **self.rename}
 
 
 ADNIMERGE = DatasetConfig(
@@ -252,9 +267,10 @@ ADNIMERGE = DatasetConfig(
     viscode_reference="VISCODE",
 
     # cleaning 1 -----------------------------------------------------------
+    required_all_present=["RID"],              # [#1] scarta la riga se manca l'ID
     essential_columns=["APOE4", "MMSE", "Ventricles", "Hippocampus", "AGE"],
     also_required=["DX"],
-    recode_columns=["PTGENDER", "PTMARRY", "PTETHCAT", "PTRACCAT", "DX"],
+    recode_columns=["GENDER", "MARRY", "ETHNICITY", "RACE", "DX"],   # NOMI STANDARD (rename-first)
     recompute_age=True,
     clean_fs_fields=True,
     # compute_atn resta False: nel notebook l'ATN e' solo per i file CSF, non ADNIMERGE
@@ -263,7 +279,9 @@ ADNIMERGE = DatasetConfig(
     drop_sparse_columns=True,                  # come faceva Rossana (remove_param_few_subjects)
     make_dummies=True,
     dummy_columns=["GENDER", "MARRY", "ETHNICITY", "RACE", "DX"],   # nomi STANDARD, post-rename
-    volume_row_keys=["Ventricles", "Hippocampus", "WholeBrain", "ICV"],  # scarta riga se tutte NaN
+    # [nota Chiara #9] niente drop-righe-per-volumi qui: rischia di buttare righe con
+    # altri dati utili. Va fatto DOPO il merge (scarta se manca ogni valore vol/PET/CSF).
+    # volume_row_keys=[...]  -> rimosso dal cleaning per singolo file.
 
     # --- DUE decisioni lasciate a te (vedi documento per Rossana, §"manca qualcosa"):
     #     stanno nella "base" documentata (cleaning2/cleaning3) ma cambiano i numeri,
@@ -289,43 +307,508 @@ ADNIMERGE = DatasetConfig(
 #     Nessuna funzione nuova, nessuna modifica al CATALOG globale.
 # ---------------------------------------------------------------------------
 
-# File 1 — pannello plasma (NfL + Abeta42/40 + GFAP).
-PLASMA_PANEL = DatasetConfig(
-    file_code="PLASMA_ABETA_PROJECT_ADX_VUMC",                 
-    source="PLASMA_ABETA_PROJECT_ADX_VUMC_11Aug2025.csv",           # <-- il tuo CSV
+# --- Plasma: TUTTE le misure usano i nomi canonici _PL (= chiavi di ranges/cutoffs),
+#     e OGNI file ha un METODO distinto: sono le due condizioni perche' armonizzazione
+#     e range funzionino. Stessa misura -> stesso nome; assay diverso -> etichetta diversa.
+
+# ADx/VUMC — pannello NfL + Abeta42/40 + GFAP.
+PLASMA_ADX_VUMC = DatasetConfig(
+    file_code="PLASMA_ABETA_PROJECT_ADX_VUMC",
+    source="PLASMA_ABETA_PROJECT_ADX_VUMC_11Aug2025.csv",
     category="plasma",
     date_column="EXAMDATE",
-    essential_columns=["NF_LIGHT", "ABETA42", "GFAP"],   # nomi GREZZI (pre-rename)
-    rename={                                  # override per-file, non tocca il CATALOG
-        "NF_LIGHT": "NFL_plasma",
-        "ABETA42":  "AB42_plasma",
-        "ABETA40":  "AB40_plasma",
-        "GFAP":     "GFAP_plasma",
+    essential_columns=["NFL_PL", "AB42_PL", "GFAP"],       # NOMI STANDARD (rename-first)
+    rename={                                                # -> nomi canonici _PL
+        "NF_LIGHT": "NFL_PL",
+        "ABETA42":  "AB42_PL",
+        "ABETA40":  "AB40_PL",
+        "GFAP":     "GFAP",
     },
-    constant_columns={"METHOD_PLASMA": "panelA"},        # <-- l'assay reale del file 1
-    derived_ratios={"AB42_40_plasma": ("AB42_plasma", "AB40_plasma")},
+    # METODO: distinto da C2N. CONFERMA l'assay reale: se questo pannello e' il Simoa
+    # 4-plex usa "simoa"/"quanterix" (ma allora e' lo STESSO metodo NfL di Blennow ->
+    # non si armonizza, si concatena); "adx_vumc" e' un placeholder sicuro e distinto.
+    constant_columns={"METHOD_PLASMA": "adx_vumc"},
+    derived_ratios={"AB4240_PL": ("AB42_PL", "AB40_PL")},
     decensor_biomarkers=True,
-    decensor_columns=["NF_LIGHT", "ABETA42", "ABETA40", "GFAP"],
-    keep_columns=[                            # nomi STANDARD (post-rename): l'assay-metadata si scarta da sola
-        "RID", "VISCODE", "EXAMDATE",
-        "NFL_plasma", "AB42_plasma", "AB40_plasma", "GFAP_plasma", "AB42_40_plasma",
-        "METHOD_PLASMA", "update_stamp",
-    ],
+    decensor_columns=["NFL_PL", "AB42_PL", "AB40_PL", "GFAP"],
+    keep_columns=["RID", "VISCODE", "EXAMDATE",
+                  "NFL_PL", "AB42_PL", "AB40_PL", "GFAP", "AB4240_PL",
+                  "METHOD_PLASMA", "update_stamp"],
 )
 
-# File 2 — solo plasma NfL (altro assay: stessa variabile standard, metodo diverso).
+# Blennow — plasma NfL longitudinale (Simoa).
 PLASMA_NFL = DatasetConfig(
-    file_code="BLENNOWPLASMANFL",                   # <-- codice ADNI reale
+    file_code="BLENNOWPLASMANFL",
     source="ADNI_BLENNOWPLASMANFLLONG_10_03_18_11Aug2025.csv",
     category="plasma",
     date_column="EXAMDATE",
-    essential_columns=["PLASMA_NFL"],
-    rename={"PLASMA_NFL": "NFL_plasma"},      # STESSO nome standard del file 1 -> armonizzazione
-    constant_columns={"METHOD_PLASMA": "panelB"},        # <-- assay diverso
-    keep_columns=["RID", "VISCODE", "EXAMDATE", "NFL_plasma", "METHOD_PLASMA", "update_stamp"],
+    essential_columns=["NFL_PL"],                          # NOME STANDARD (rename-first)
+    rename={"PLASMA_NFL": "NFL_PL"},                        # STESSO nome di ADX -> armonizzabile
+    constant_columns={"METHOD_PLASMA": "simoa"},
+    keep_columns=["RID", "VISCODE", "EXAMDATE", "NFL_PL", "METHOD_PLASMA", "update_stamp"],
 )
 
-DATASETS = {d.file_code: d for d in (ADNIMERGE, PLASMA_PANEL, PLASMA_NFL)}
+# C2N PrecivityAD2 — spettrometria di massa: p-tau217, Abeta42/40, APS2.
+PLASMA_C2N = DatasetConfig(
+    file_code="C2N_PRECIVITYAD2_PLASMA",
+    source="C2N_PRECIVITYAD2_PLASMA_11Aug2025.csv",
+    category="plasma",
+    date_column="EXAMDATE",
+    essential_columns=["PT217_PL", "AB42_PL"],             # NOMI STANDARD (rename-first)
+    rename={
+        "pT217_C2N":        "PT217_PL",
+        "npT217_C2N":       "nPT217_PL",
+        "AB42_C2N":         "AB42_PL",          # STESSO nome di ADX -> Abeta armonizzabile fra i due
+        "AB40_C2N":         "AB40_PL",
+        "AB42_AB40_C2N":    "AB4240_PL",        # rapporto gia' nel file: si rinomina, non si ricalcola
+        "pT217_npT217_C2N": "PT217_nPT217_PL",
+        "APS2_C2N":         "APS2",
+        "APOE_C2N":         "APOE",
+    },
+    constant_columns={"METHOD_PLASMA": "massospectrometry"},   # C2N = spettrometria di massa
+    keep_columns=["RID", "VISCODE", "EXAMDATE",
+                  "PT217_PL", "nPT217_PL", "AB42_PL", "AB40_PL",
+                  "AB4240_PL", "PT217_nPT217_PL", "APS2", "APOE",
+                  "METHOD_PLASMA", "update_stamp"],
+)
+
+
+
+# ---------------------------------------------------------------------------
+# 5f. Dataset estratti da ADNI_variables_statistics.xlsx (keep/rename/metodo
+#     dall'Excel di supporto). VERIFICA i rename biomarcatori e metti i source reali.
+# ---------------------------------------------------------------------------
+
+# ======================================================================
+# ADAS   [categoria: scale]
+#   dall'Excel: 7 keep, 0 drop
+# ----------------------------------------------------------------------
+ADAS = DatasetConfig(
+    file_code="ADAS",
+    source="ADAS_28Oct2025.csv",                 # <-- METTI il nome file reale
+    category='scale',
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'PHASE': 'COLPROT',
+    },
+    keep_columns=['COLPROT', 'RID', 'VISCODE2', 'VISDATE', 'TOTSCORE', 'TOTAL13', 'update_stamp'],
+)
+
+# ======================================================================
+# ADNI_DIAN_COMPARISON   [categoria: volumes]
+#   dall'Excel: 15 keep, 12 drop
+#   collisioni risolte tenendo il grezzo (VERIFICA): [('CDRGLOB', 'CDRSB')]
+# ----------------------------------------------------------------------
+ADNI_DIAN_COMPARISON = DatasetConfig(
+    file_code="ADNI_DIAN_COMPARISON",
+    source="ADNI-DIAN_Comparison_Study_Data_Subset_05_23_22_23Oct2025.csv",                 # <-- METTI il nome file reale
+    category='volumes',
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'VISITAGE': 'AGE',
+        'HISPANIC': 'ETHNICITY',
+        'MARISTAT': 'MARRY',
+        'DIAN_APOE': 'APOE4',
+        'CDRSUM': 'CDRSB',
+        'DIAN_MMSE': 'MMSE',
+    },
+    keep_columns=['RID', 'COLPROT', 'VISCODE2', 'EXAMDATE', 'AGE', 'GENDER', 'ETHNICITY', 'RACE', 'MARRY', 'APOE4', 'DIAN_GROUP', 'CDRSB', 'CDRGLOB', 'MMSE', 'update_stamp'],
+)
+
+# ======================================================================
+# ADSP_PHC_BIOMARKER   [categoria: csf]
+#   dall'Excel: 19 keep, 0 drop
+#   collisioni risolte tenendo il grezzo (VERIFICA): [('PHC_Race', 'ETHNICITY'), ('PHC_AB42', 'AB42_CSF'), ('PHC_Tau', 'TTAU_CSF'), ('PHC_pTau', 'PT181_CSF')]
+# ----------------------------------------------------------------------
+ADSP_PHC_BIOMARKER = DatasetConfig(
+    file_code="ADSP_PHC_BIOMARKER",
+    source="ADSP_PHC_BIOMARKER_25Jul2025.csv",                 # <-- METTI il nome file reale
+    category='csf',
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'PHASE': 'COLPROT',
+        'PHC_Education': 'EDUCATION',
+        'PHC_Ethnicity': 'ETHNICITY',
+        'PHC_Sex': 'GENDER',
+        'PHC_Diagnosis': 'DX',
+        'PHC_Age_Biomarker': 'AGE',
+        'AB42_RAW': 'AB42_CSF',
+        'Tau_RAW': 'TTAU_CSF',
+        'pTau_RAW': 'PT181_CSF',
+    },
+    keep_columns=['RID', 'COLPROT', 'VISCODE2', 'DRAWDATE', 'EDUCATION', 'ETHNICITY', 'PHC_Race', 'GENDER', 'DX', 'AGE', 'AB42_CSF', 'PHC_AB42', 'TTAU_CSF', 'PHC_Tau', 'PT181_CSF', 'PHC_pTau', 'AT_class', 'Platform', 'update_stamp'],
+)
+
+# ======================================================================
+# APOERES   [categoria: cofactor]
+#   dall'Excel: 3 keep, 1 drop
+# ----------------------------------------------------------------------
+APOERES = DatasetConfig(
+    file_code="APOERES",
+    source="APOERES_11Aug2025.csv",                 # <-- METTI il nome file reale
+    category='cofactor',
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'PHASE': 'COLPROT',
+        'GENOTYPE': 'APOE4',
+    },
+    keep_columns=['COLPROT', 'RID', 'APOE4'],
+)
+
+# ======================================================================
+# CDR   [categoria: scale]
+#   dall'Excel: 7 keep, 0 drop
+# ----------------------------------------------------------------------
+CDR = DatasetConfig(
+    file_code="CDR",
+    source="CDR_28Oct2025.csv",                 # <-- METTI il nome file reale
+    category='scale',
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'PHASE': 'COLPROT',
+        'CDGLOBAL': 'CDRSB',
+    },
+    keep_columns=['COLPROT', 'RID', 'VISCODE2', 'VISDATE', 'CDRSB', 'update_stamp'],
+)
+
+# ======================================================================
+# DXSUM   [categoria: cofactor]
+#   dall'Excel: 4 keep, 0 drop
+# ----------------------------------------------------------------------
+DXSUM = DatasetConfig(
+    file_code="DXSUM",
+    source="DXSUM_25Jul2025.csv",                 # <-- METTI il nome file reale
+    category='cofactor',
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'PHASE': 'COLPROT',
+        'DIAGNOSIS': 'DX',
+    },
+    keep_columns=['COLPROT', 'RID', 'EXAMDATE', 'DX'],
+)
+
+# ======================================================================
+# EUROIMMUN   [categoria: csf]
+#   dall'Excel: 6 keep, 0 drop
+# ----------------------------------------------------------------------
+EUROIMMUN = DatasetConfig(
+    file_code="EUROIMMUN",
+    source="EUROIMMUN_25Jul2025.csv",                 # <-- METTI il nome file reale
+    category='csf',
+    constant_columns={"METHOD_CSF": "elisa"},   # da Unit
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'BETA_AMYLOID_1_40': 'AB40_CSF',
+        'BETA_AMYLOID_1_42': 'AB42_CSF',
+        'BETA_AMYLOID_42_40': 'AB4240_CSF',
+    },
+    keep_columns=['RID', 'VISCODE2', 'EXAMDATE', 'AB40_CSF', 'AB42_CSF', 'AB4240_CSF'],
+)
+
+# ======================================================================
+# FAQ   [categoria: scale]
+#   dall'Excel: 6 keep, 0 drop
+# ----------------------------------------------------------------------
+FAQ = DatasetConfig(
+    file_code="FAQ",
+    source="FAQ_28Oct2025.csv",                 # <-- METTI il nome file reale
+    category='scale',
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'PHASE': 'COLPROT',
+        'FAQTOTAL': 'FAQ',
+    },
+    keep_columns=['COLPROT', 'RID', 'VISCODE2', 'VISDATE', 'FAQ', 'update_stamp'],
+)
+
+# ======================================================================
+# FUJIREBIOABETA   [categoria: csf]
+#   dall'Excel: 6 keep, 0 drop
+# ----------------------------------------------------------------------
+FUJIREBIOABETA = DatasetConfig(
+    file_code="FUJIREBIOABETA",
+    source="FUJIREBIOABETA_11Aug2025.csv",                 # <-- METTI il nome file reale
+    category='csf',
+    constant_columns={"METHOD_CSF": "lumipulse"},   # da Unit
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'ABETA42': 'AB42_CSF',
+        'ABETA40': 'AB40_CSF',
+        'ABETA42_40': 'AB4240_CSF',
+    },
+    keep_columns=['RID', 'VISCODE2', 'EXAMDATE', 'AB42_CSF', 'AB40_CSF', 'AB4240_CSF'],
+)
+
+# ======================================================================
+# MESOSCALE   [categoria: csf]
+#   dall'Excel: 6 keep, 0 drop
+# ----------------------------------------------------------------------
+MESOSCALE = DatasetConfig(
+    file_code="MESOSCALE",
+    source="MESOSCALE_25Jul2025.csv",                 # <-- METTI il nome file reale
+    category='csf',
+    constant_columns={"METHOD_CSF": "MSD, Rockville MD"},   # da Unit
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'ABETA40': 'AB40_CSF',
+        'ABETA42': 'AB42_CSF',
+        'TAU': 'TTAU_CSF',
+    },
+    keep_columns=['RID', 'DRAWDTE', 'VISCODE2', 'AB40_CSF', 'AB42_CSF', 'TTAU_CSF'],
+)
+
+# ======================================================================
+# MMSE   [categoria: scale]
+#   dall'Excel: 6 keep, 0 drop
+# ----------------------------------------------------------------------
+MMSE = DatasetConfig(
+    file_code="MMSE",
+    source="MMSE_25Jul2025.csv",                 # <-- METTI il nome file reale
+    category='scale',
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'PHASE': 'COLPROT',
+        'MMSCORE': 'MMSE',
+    },
+    keep_columns=['COLPROT', 'RID', 'VISDATE', 'MMSE', 'VISCODE2', 'update_stamp'],
+)
+
+# ======================================================================
+# MOCA   [categoria: scale]
+#   dall'Excel: 5 keep, 1 drop
+# ----------------------------------------------------------------------
+MOCA = DatasetConfig(
+    file_code="MOCA",
+    source="MOCA_28Oct2025.csv",                 # <-- METTI il nome file reale
+    category='scale',
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'PHASE': 'COLPROT',
+    },
+    keep_columns=['COLPROT', 'RID', 'VISCODE2', 'VISDATE', 'update_stamp'],
+)
+
+# ======================================================================
+# PTDEMOG   [categoria: cofactor]
+#   dall'Excel: 9 keep, 0 drop
+#   collisioni risolte tenendo il grezzo (VERIFICA): [('PTRACCAT', 'ETHNICITY')]
+# ----------------------------------------------------------------------
+PTDEMOG = DatasetConfig(
+    file_code="PTDEMOG",
+    source="PTDEMOG_25Jul2025.csv",                 # <-- METTI il nome file reale
+    category='cofactor',
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'PHASE': 'COLPROT',
+        'PTGENDER': 'GENDER',
+        'PTMARRY': 'MARRY',
+        'PTEDUCAT': 'EDUCATION',
+        'PTETHCAT': 'ETHNICITY',
+    },
+    keep_columns=['COLPROT', 'RID', 'VISDATE', 'GENDER', 'MARRY', 'EDUCATION', 'ETHNICITY', 'PTRACCAT', 'VISCODE2'],
+)
+
+# ======================================================================
+# SALADAX_BIOMEDICAL   [categoria: csf]
+#   dall'Excel: 5 keep, 0 drop
+# ----------------------------------------------------------------------
+SALADAX_BIOMEDICAL = DatasetConfig(
+    file_code="SALADAX_BIOMEDICAL",
+    source="SALADAX_BIOMEDICAL_11Aug2025.csv",                 # <-- METTI il nome file reale
+    category='csf',
+    constant_columns={"METHOD_CSF": "saladax_immun_sandwich"},   # da Unit
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'ABETA42': 'AB42_CSF',
+        'TOTALTAU': 'TTAU_CSF',
+    },
+    keep_columns=['RID', 'EXAMDATE', 'VISCODE2', 'AB42_CSF', 'TTAU_CSF'],
+)
+
+# ======================================================================
+# UCSDVOL   [categoria: volumes]
+#   dall'Excel: 9 keep, 0 drop
+# ----------------------------------------------------------------------
+UCSDVOL = DatasetConfig(
+    file_code="UCSDVOL",
+    source="UCSDVOL_28Oct2025.csv",                 # <-- METTI il nome file reale
+    category='volumes',
+    keep_columns=['RID', 'VISCODE', 'EXAMDATE', 'QCPASS', 'BRAIN', 'EICV', 'VENTRICLES', 'LHIPPOC', 'RHIPPOC'],
+)
+
+# ======================================================================
+# UCSFFSL   [categoria: volumes]
+#   dall'Excel: 20 keep, 0 drop
+# ----------------------------------------------------------------------
+UCSFFSL = DatasetConfig(
+    file_code="UCSFFSL",
+    source="UCSFFSL_02_01_16_11Aug2025.csv",                 # <-- METTI il nome file reale
+    category='volumes',
+    keep_columns=['RID', 'VISCODE2', 'EXAMDATE', 'FLDSTRENG', 'IMAGEUID', 'OVERALLQC', 'TEMPQC', 'VENTQC', 'STATUS', 'ST37SV', 'ST10CV', 'ST24CV', 'ST26CV', 'ST29SV', 'ST40CV', 'ST96SV', 'ST83CV', 'ST85CV', 'ST88SV', 'ST99CV'],
+)
+
+# ======================================================================
+# UCSFFSL51   [categoria: volumes]
+#   dall'Excel: 20 keep, 2 drop
+# ----------------------------------------------------------------------
+UCSFFSL51 = DatasetConfig(
+    file_code="UCSFFSL51",
+    source="UCSFFSL51_03_01_22_11Aug2025.csv",                 # <-- METTI il nome file reale
+    category='volumes',
+    keep_columns=['RID', 'VISCODE2', 'EXAMDATE', 'COLPROT', 'IMAGEUID', 'OVERALLQC', 'TEMPQC', 'VENTQC', 'STATUS', 'ST37SV', 'ST10CV', 'ST24CV', 'ST26CV', 'ST29SV', 'ST40CV', 'ST96SV', 'ST83CV', 'ST85CV', 'ST88SV', 'ST99CV'],
+)
+
+# ======================================================================
+# UCSFFSL51ALL   [categoria: volumes]
+#   dall'Excel: 17 keep, 5 drop
+# ----------------------------------------------------------------------
+UCSFFSL51ALL = DatasetConfig(
+    file_code="UCSFFSL51ALL",
+    source="UCSFFSL51ALL_08_01_16_11Aug2025.csv",                 # <-- METTI il nome file reale
+    category='volumes',
+    keep_columns=['RID', 'VISCODE2', 'EXAMDATE', 'COLPROT', 'IMAGEUID', 'STATUS', 'ST37SV', 'ST10CV', 'ST24CV', 'ST26CV', 'ST29SV', 'ST40CV', 'ST96SV', 'ST83CV', 'ST85CV', 'ST88SV', 'ST99CV'],
+)
+
+# ======================================================================
+# UCSFFSL51Y1   [categoria: volumes]
+#   dall'Excel: 20 keep, 2 drop
+# ----------------------------------------------------------------------
+UCSFFSL51Y1 = DatasetConfig(
+    file_code="UCSFFSL51Y1",
+    source="UCSFFSL51Y1_08_01_16_11Aug2025.csv",                 # <-- METTI il nome file reale
+    category='volumes',
+    keep_columns=['RID', 'VISCODE2', 'EXAMDATE', 'COLPROT', 'IMAGEUID', 'OVERALLQC', 'TEMPQC', 'VENTQC', 'STATUS', 'ST37SV', 'ST10CV', 'ST24CV', 'ST26CV', 'ST29SV', 'ST40CV', 'ST96SV', 'ST83CV', 'ST85CV', 'ST88SV', 'ST99CV'],
+)
+
+# ======================================================================
+# UCSFFSX   [categoria: volumes]
+#   dall'Excel: 20 keep, 0 drop
+# ----------------------------------------------------------------------
+UCSFFSX = DatasetConfig(
+    file_code="UCSFFSX",
+    source="UCSFFSX_11_02_15_11Aug2025.csv",                 # <-- METTI il nome file reale
+    category='volumes',
+    keep_columns=['RID', 'VISCODE', 'EXAMDATE', 'FLDSTRENG', 'IMAGEUID', 'OVERALLQC', 'TEMPQC', 'VENTQC', 'STATUS', 'ST37SV', 'ST10CV', 'ST24CV', 'ST26CV', 'ST29SV', 'ST40CV', 'ST96SV', 'ST83CV', 'ST85CV', 'ST88SV', 'ST99CV'],
+)
+
+# ======================================================================
+# UCSFFSX51   [categoria: volumes]
+#   dall'Excel: 20 keep, 2 drop
+# ----------------------------------------------------------------------
+UCSFFSX51 = DatasetConfig(
+    file_code="UCSFFSX51",
+    source="UCSFFSX51_11_08_19_11Aug2025.csv",                 # <-- METTI il nome file reale
+    category='volumes',
+    keep_columns=['RID', 'COLPROT', 'VISCODE2', 'EXAMDATE', 'IMAGEUID', 'OVERALLQC', 'TEMPQC', 'VENTQC', 'STATUS', 'ST37SV', 'ST10CV', 'ST24CV', 'ST26CV', 'ST29SV', 'ST40CV', 'ST96SV', 'ST83CV', 'ST85CV', 'ST88SV', 'ST99CV'],
+)
+
+# ======================================================================
+# UCSFFSX51_ADNI1_3T   [categoria: volumes]
+#   dall'Excel: 19 keep, 0 drop
+# ----------------------------------------------------------------------
+UCSFFSX51_ADNI1_3T = DatasetConfig(
+    file_code="UCSFFSX51_ADNI1_3T",
+    source="UCSFFSX51_ADNI1_3T_02_01_16_11Aug2025.csv",                 # <-- METTI il nome file reale
+    category='volumes',
+    keep_columns=['RID', 'VISCODE', 'EXAMDATE', 'IMAGEUID', 'OVERALLQC', 'TEMPQC', 'VENTQC', 'STATUS', 'ST37SV', 'ST10CV', 'ST24CV', 'ST26CV', 'ST29SV', 'ST40CV', 'ST96SV', 'ST83CV', 'ST85CV', 'ST88SV', 'ST99CV'],
+)
+
+# ======================================================================
+# UCSFFSX6   [categoria: volumes]
+#   dall'Excel: 21 keep, 0 drop
+# ----------------------------------------------------------------------
+UCSFFSX6 = DatasetConfig(
+    file_code="UCSFFSX6",
+    source="UCSFFSX6_11Aug2025.csv",                 # <-- METTI il nome file reale
+    category='volumes',
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'PHASE': 'COLPROT',
+    },
+    keep_columns=['RID', 'COLPROT', 'VISCODE2', 'EXAMDATE', 'IMAGEUID', 'OVERALLQC', 'TEMPQC', 'VENTQC', 'HIPPOQC', 'STATUS', 'ST37SV', 'ST10CV', 'ST24CV', 'ST26CV', 'ST29SV', 'ST40CV', 'ST96SV', 'ST83CV', 'ST85CV', 'ST88SV', 'ST99CV'],
+)
+
+# ======================================================================
+# UCSFFSX7   [categoria: volumes]
+#   dall'Excel: 19 keep, 4 drop
+# ----------------------------------------------------------------------
+UCSFFSX7 = DatasetConfig(
+    file_code="UCSFFSX7",
+    source="UCSFFSX7_11Aug2025.csv",                 # <-- METTI il nome file reale
+    category='volumes',
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'PHASE': 'COLPROT',
+    },
+    keep_columns=['RID', 'COLPROT', 'VISCODE2', 'EXAMDATE', 'IMAGEUID', 'FIELD_STRENGTH', 'FSVER', 'STATUS', 'ST37SV', 'ST10CV', 'ST24CV', 'ST26CV', 'ST29SV', 'ST40CV', 'ST96SV', 'ST83CV', 'ST85CV', 'ST88SV', 'ST99CV'],
+)
+
+# ======================================================================
+# UPENNBIOMK_ADNIDIAN_ES_2017   [categoria: csf]
+#   dall'Excel: 9 keep, 0 drop
+# ----------------------------------------------------------------------
+UPENNBIOMK_ADNIDIAN_ES_2017 = DatasetConfig(
+    file_code="UPENNBIOMK_ADNIDIAN_ES_2017",
+    source="UPENNBIOMKADNIDIAN2017_09Oct2025.csv",                 # <-- METTI il nome file reale
+    category='csf',
+    constant_columns={"METHOD_CSF": "elecsys"},   # da Unit
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'STUDY': 'COLPROT',
+        'ABETA': 'AB42_CSF',
+        'AB40': 'AB40_CSF',
+        'TAU': 'TTAU_CSF',
+        'PTAU': 'PT181_CSF',
+        'A4240': 'AB4240_CSF',
+    },
+    keep_columns=['RID', 'VISCODE2', 'EXAMDATE', 'COLPROT', 'AB42_CSF', 'AB40_CSF', 'TTAU_CSF', 'PT181_CSF', 'AB4240_CSF'],
+)
+
+# ======================================================================
+# UPENNBIOMK_MASTER   [categoria: csf]
+#   dall'Excel: 6 keep, 0 drop
+# ----------------------------------------------------------------------
+UPENNBIOMK_MASTER = DatasetConfig(
+    file_code="UPENNBIOMK_MASTER",
+    source="UPENNBIOMK_MASTER_23Oct2025.csv",                 # <-- METTI il nome file reale
+    category='csf',
+    constant_columns={"METHOD_CSF": "AlzBio3"},   # da Unit
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'ABETA': 'AB42_CSF',
+        'TAU': 'TTAU_CSF',
+        'PTAU': 'PT181_CSF',
+    },
+    keep_columns=['RID', 'DRAWDTE', 'VISCODE', 'AB42_CSF', 'TTAU_CSF', 'PT181_CSF'],
+)
+
+# ======================================================================
+# UPENNBIOMK_ROCHE_ELECSYS   [categoria: csf]
+#   dall'Excel: 7 keep, 1 drop
+# ----------------------------------------------------------------------
+UPENNBIOMK_ROCHE_ELECSYS = DatasetConfig(
+    file_code="UPENNBIOMK_ROCHE_ELECSYS",
+    source="UPENNBIOMK_ROCHE_ELECSYS_09Oct2025.csv",                 # <-- METTI il nome file reale
+    category='csf',
+    constant_columns={"METHOD_CSF": "elecsys"},   # da Unit
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'PHASE': 'COLPROT',
+        'ABETA42': 'AB42_CSF',
+        'TAU': 'TTAU_CSF',
+        'PTAU': 'PT181_CSF',
+    },
+    keep_columns=['RID', 'VISCODE2', 'EXAMDATE', 'COLPROT', 'AB42_CSF', 'TTAU_CSF', 'PT181_CSF'],
+)
+
+# ======================================================================
+# UPENN_2DUPLC_CRM   [categoria: csf]
+#   dall'Excel: 5 keep, 0 drop
+# ----------------------------------------------------------------------
+UPENN_2DUPLC_CRM = DatasetConfig(
+    file_code="UPENN_2DUPLC_CRM",
+    source="UPENN_2DUPLC_CRM_09Oct2025.csv",                 # <-- METTI il nome file reale
+    category='csf',
+    constant_columns={"METHOD_CSF": "2DUPLC_massospectometry"},   # da Unit
+    rename={               # grezzo -> standard (VERIFICA, dedotto da parameter)
+        'ABETA40': 'AB40_CSF',
+        'ABETA42CRM': 'AB42_CSF',
+    },
+    keep_columns=['RID', 'VISCODE2', 'EXAMDATE', 'AB40_CSF', 'AB42_CSF'],
+)
+
+# ======================================================================
+# UPENN_ROI_MARS   [categoria: volumes]
+#   dall'Excel: 14 keep, 0 drop
+# ----------------------------------------------------------------------
+UPENN_ROI_MARS = DatasetConfig(
+    file_code="UPENN_ROI_MARS",
+    source="UPENNROI_MARS_06_01_16_09Oct2025.csv",                 # <-- METTI il nome file reale
+    category='volumes',
+    keep_columns=['RID', 'VISCODE', 'EXAMDATE', 'IMAGE_UID', 'STATUS', 'R702', 'R525', 'R517', 'R122', 'R123', 'R116', 'R117', 'R47', 'R48'],
+)
+
 
 
 # ---------------------------------------------------------------------------
@@ -355,10 +838,87 @@ CATEGORY_MERGE = {
 
 
 # ---------------------------------------------------------------------------
+# 5d. ARMONIZZAZIONE per categoria — stadio che precede il merge largo.
+#     Idea: si impilano i file puliti (long, una riga per metodo), e per ogni
+#     misura si portano TUTTI i metodi sulla scala di un metodo di riferimento,
+#     calibrando sui campioni-ponte (stesso soggetto-visita misurato da 2 metodi).
+#     Le DECISIONI (riferimento, strategia, covariate) stanno qui; i coefficienti
+#     stimati NON si scrivono a mano: li calcola la pipeline e li salva in un
+#     artefatto (harmonization_fit.json), cosi' la conversione e' auditabile.
+# ---------------------------------------------------------------------------
+@dataclass
+class HarmonizeConfig:
+    method_column: str = "METHOD_PLASMA"
+    reference: Optional[str] = None                 # metodo su cui si collassa la scala
+    strategy: str = "deming"                        # 'deming' | 'passing_bablok' | 'none'
+    measurands: Optional[list] = None               # misure da armonizzare; None -> auto (numeriche multi-metodo)
+    reference_overrides: dict = field(default_factory=dict)   # {misura: metodo} se il rif cambia per misura
+    buffer_days: int = 80                           # tolleranza per appaiare le visite fra metodi
+    min_bridge: int = 40                            # sotto -> converte ma AVVISA che il ponte e' debole
+
+
+HARMONIZE = {
+    # per il plasma: riferimento = spettrometria di massa (C2N) per l'Abeta;
+    # NFL/GFAP/PT217/APS2 hanno un solo metodo -> passano invariati in automatico.
+    "plasma": HarmonizeConfig(
+        method_column="METHOD_PLASMA",
+        reference="massospectrometry",
+        strategy="deming",
+    ),
+}
+
+
+# ---------------------------------------------------------------------------
+# 5e. CATEGORY_RENAME — rename PER CATEGORIA (risolve i biomarcatori ambigui per
+#     matrice). Lo STESSO nome grezzo mappa a standard diversi secondo la categoria:
+#     ABETA42 -> AB42_PL nei plasma, -> AB42_CSF nei CSF. Non puo' stare nel CATALOG
+#     globale (collisione), quindi vive qui e si applica ai file di quella categoria.
+#     Precedenza (in effective_rename): CATALOG globale < categoria < rename per-file.
+#     BOZZA: verifica/estendi con Chiara i mapping clinici.
+# ---------------------------------------------------------------------------
+CATEGORY_RENAME = {
+    "plasma": {
+        "NF_LIGHT": "NFL_PL", "PLASMA_NFL": "NFL_PL",
+        "ABETA42": "AB42_PL", "AB42": "AB42_PL",
+        "ABETA40": "AB40_PL", "AB40": "AB40_PL",
+        "TAU": "TTAU_PL", "PTAU": "PT181_PL",
+    },
+    "csf": {
+        "ABETA": "AB42_CSF", "ABETA42": "AB42_CSF",
+        "TAU": "TTAU_CSF", "PTAU": "PT181_CSF",
+    },
+    "pet": {
+        "META_TEMPORAL_SUVR": "TAU_METAROI", "SUMMARYSUVR": "SUMMARY_SUVR",
+        "CENTILOIDS": "AMY_CENTILOIDS",
+    },
+}
+
+
+# ---------------------------------------------------------------------------
 # 6. Helper derivati
 # ---------------------------------------------------------------------------
+def _build_rename_map() -> dict[str, str]:
+    """Reverse-map alias(grezzo) -> nome standard. [nota Chiara #4] Con controllo
+    anti-collisione: se due variabili standard rivendicano lo stesso alias -> errore
+    esplicito a import-time, invece di un rename ambiguo silenzioso."""
+    m: dict[str, str] = {}
+    for std, v in CATALOG.items():
+        for alias in v.aliases:
+            if alias in m and m[alias] != std:
+                raise ValueError(
+                    f"CATALOG: alias '{alias}' condiviso da '{m[alias]}' e '{std}'. "
+                    f"Un alias grezzo puo' mappare a un solo nome standard."
+                )
+            m[alias] = std
+    return m
+
+
+RENAME = _build_rename_map()          # costruita (e validata) all'import
+
+
 def rename_map() -> dict[str, str]:
-    return {name: v.rename for name, v in CATALOG.items() if v.rename}
+    """Mappa grezzo -> standard (esclude le identita' std->std, inutili al rename)."""
+    return {raw: std for raw, std in RENAME.items() if raw != std}
 
 
 def columns_in(parameter: str) -> list[str]:
@@ -366,6 +926,43 @@ def columns_in(parameter: str) -> list[str]:
 
 
 def volume_columns(icv_column: str = "ICV") -> list[str]:
-    """Volumi da normalizzare su ICV: unita' mm3, ICV escluso (nomi stabili post-rename)."""
+    """Volumi da normalizzare su ICV: unita' mm3, ICV escluso (nomi standard stabili)."""
     return [name for name, v in CATALOG.items()
             if v.unit == "mm3" and name != icv_column]
+
+
+DATASETS = {d.file_code: d for d in (
+    ADNIMERGE,
+    PLASMA_ADX_VUMC,
+    PLASMA_NFL,
+    PLASMA_C2N,
+    ADAS,
+    ADNI_DIAN_COMPARISON,
+    ADSP_PHC_BIOMARKER,
+    APOERES,
+    CDR,
+    DXSUM,
+    EUROIMMUN,
+    FAQ,
+    FUJIREBIOABETA,
+    MESOSCALE,
+    MMSE,
+    MOCA,
+    PTDEMOG,
+    SALADAX_BIOMEDICAL,
+    UCSDVOL,
+    UCSFFSL,
+    UCSFFSL51,
+    UCSFFSL51ALL,
+    UCSFFSL51Y1,
+    UCSFFSX,
+    UCSFFSX51,
+    UCSFFSX51_ADNI1_3T,
+    UCSFFSX6,
+    UCSFFSX7,
+    UPENNBIOMK_ADNIDIAN_ES_2017,
+    UPENNBIOMK_MASTER,
+    UPENNBIOMK_ROCHE_ELECSYS,
+    UPENN_2DUPLC_CRM,
+    UPENN_ROI_MARS,
+)}
