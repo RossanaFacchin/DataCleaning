@@ -159,3 +159,27 @@ def rename_map() -> dict[str, str]:
 
 def columns_in(parameter: str) -> list[str]:
     return [name for name, v in CATALOG.items() if v.parameter == parameter]
+
+# ============================================================
+# PTDEMOG — Dati demografici dei soggetti (PTDEMOG_21Apr2026.csv)
+# ------------------------------------------------------------
+# Nessun filtro su essential_columns: il dataset viene caricato
+# così com'è (tutte le colonne), lo sfoltimento va fatto a mano
+# dopo lo STEP 1, confrontando le colonne col config.
+# recode_columns allineate a quelle già ricodificate in ADNIMERGE
+# (PTGENDER, PTMARRY, PTETHCAT, PTRACCAT).
+# recompute_age=False: non è presente AGE, solo PTDOBYY.
+# clean_fs_fields=False: nessun campo FreeSurfer in questo file.
+# compute_atn=False: l'ATN non si calcola su PTDEMOG.
+# ============================================================
+PTDEMOG = DatasetConfig(
+    file_code="PTDEMOG",
+    source="PTDEMOG_21Apr2026.csv",
+    id_column="RID",
+    essential_columns=[],     # nessun filtro: tieni tutte le colonne, si sfoltiscono a mano dopo
+    also_required=[],
+    recode_columns=["PTGENDER", "PTMARRY", "PTETHCAT", "PTRACCAT"],
+    recompute_age=False,      # non c'è AGE, solo PTDOBYY
+    clean_fs_fields=False,    # nessun campo FreeSurfer in questo file
+    compute_atn=False,
+)
