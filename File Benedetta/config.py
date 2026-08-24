@@ -186,7 +186,6 @@ class Var:
 CATALOG: dict[str, Var] = {
     "RID":      Var("ID"),
     "PTID":     Var("ID"),#potrebbe essere tolto
-    "ID":       Var("ID", rename="RID"),              #riga aggiunta ID PTDEMOG fr
     "COLPROT":  Var("Cohort"),
     "PHASE":    Var("Cohort"),                      #riga aggiunta fasi PTDEMOG fr
     "VISCODE":  Var("Visit"),
@@ -349,7 +348,7 @@ PTDEMOG = DatasetConfig(
     remove_single_visit=False,
     normalize_icv=False,                        # non applicabile: nessun ICV in PTDEMOG
     keep_columns=[
-        "PHASE", "PTID", "RID", "VISCODE2", "VISDATE", "ID", "SITEID",
+        "PHASE", "PTID", "RID", "VISCODE2", "VISDATE", "SITEID",
         "PTGENDER", "PTDOB", "PTMARRY", "PTEDUCAT", "PTETHCAT", "PTRACCAT",
         "PTADBEG", "PTCOGBEG", "PTADDX", "HAS_QC_ERROR", "update_stamp",
     ],
