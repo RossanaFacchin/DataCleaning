@@ -30,7 +30,7 @@ _HERE = Path(__file__).parent
 # ---------------------------------------------------------------------------
 # 1. POLICY  —  regole globali (prima erano numeri sparsi dentro le celle)
 # ---------------------------------------------------------------------------
-UNKNOWN_SENTINELS = ["Unknown", "unknown", "NA", "N/A", "-4", -4, 9999, 9999.0]
+UNKNOWN_SENTINELS = ["Unknown", "unknown", "NA", "N/A", "-4", -4, 9999, 9999.0, -1, "-1"]
 CENSORED_PREFIXES = (">", "<")          # biomarcatori CSF: ">1700", "<200"
 
 # Soglia usata SOLO dal report profile(): etichetta 'keep'/'drop', NON cancella nulla.
@@ -191,7 +191,7 @@ CATALOG: dict[str, Var] = {
     "PHASE":    Var("Cohort"),                      #riga aggiunta fasi PTDEMOG fr
     "VISCODE":  Var("Visit"),
     "VISCODE2": Var("Visit"),                       #riga aggiunta PTDEMOG fr
-    "VISDATE":  Var("Visit"),                       #riga aggiunta PTDEMOG fr
+    "VISDATE":  Var("Visit", rename="EXAMDATE"),                       #riga aggiunta PTDEMOG fr
     "EXAMDATE": Var("Visit"),
     "AGE":      Var("Demographic", unit="years"),
     "PTGENDER": Var("Demographic", rename="GENDER"),
@@ -333,8 +333,8 @@ PTDEMOG = DatasetConfig(
     viscode_reference="VISCODE2",               # <-- DA CONFERMARE: in PTDEMOG la colonna è VISCODE2, non VISCODE, perchè più aggiornato
 
     # cleaning 1 -----------------------------------------------------------
-    essential_columns=[],                       # deciso: nessun filtro missing in STEP 1, dataset caricato così com'è
-    also_required=[],                           # nessun secondo filtro
+    essential_columns=["PTGENDER", "PTMARRY", "PTETHCAT", "PTRACCAT"],                      
+    also_required=["PTDOB"],                           # nessun secondo filtro
     recode_columns=["PTGENDER", "PTMARRY", "PTETHCAT", "PTRACCAT"],   # <-- DA CONFERMARE (niente DX qui, non presente in PTDEMOG)
     recompute_age=False,                        # non c'è AGE, solo PTDOBYY/PTDOB (mese/anno di nascita)
     clean_fs_fields=False,                      # nessun campo FreeSurfer in questo file
@@ -396,7 +396,7 @@ PLASMA_NFL = DatasetConfig(
     keep_columns=["RID", "VISCODE", "EXAMDATE", "NFL_plasma", "METHOD_PLASMA", "update_stamp"],
 )
 
-DATASETS = {d.file_code: d for d in (ADNIMERGE, PLASMA_PANEL, PLASMA_NFL)}
+DATASETS = {d.file_code: d for d in (ADNIMERGE, PLASMA_PANEL, PLASMA_NFL, PTDEMOG)}
 
 
 # ---------------------------------------------------------------------------
