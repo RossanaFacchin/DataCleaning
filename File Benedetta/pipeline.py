@@ -49,7 +49,7 @@ import numpy as np
 import pandas as pd
 
 import config
-from config import DatasetConfig, ADNIMERGE
+from config import DatasetConfig, ADNIMERGE, PTDEMOG
 
 
 # ===========================================================================
