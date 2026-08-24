@@ -63,6 +63,7 @@ def parse_dates(df, cols):
     for c in cols:
         if c in df.columns:
             df[c] = pd.to_datetime(df[c], errors="coerce")
+            #df[c] = df[c].dt.date    # utilizzato per avere solo la data ma non l'orario
     return df
 
 
