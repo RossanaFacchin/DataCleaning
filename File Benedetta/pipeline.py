@@ -208,6 +208,7 @@ def run_cleaning1(cfg: DatasetConfig = ADNIMERGE) -> pd.DataFrame:
         df = decensor(df, cfg.decensor_columns or config.columns_in("Biomarker"))
     df = drop_if_all_none(df, cfg.essential_columns)             # 1° drop: colonne importanti
     df = drop_if_all_none(df, cfg.also_required)                 # 2° drop: DX obbligatoria
+    df = rename_variables(df, cfg)                               # new_variable_names (+ override per-file)
     df = parse_dates(df, [cfg.date_column])                      # to_date_format
     df = dedup_visits(df, cfg.id_column, cfg.date_column, cfg.essential_columns)
     df = add_visit_month(df, cfg.id_column, cfg.date_column)     # find_exam_code -> VISIT_MONTH
@@ -216,7 +217,6 @@ def run_cleaning1(cfg: DatasetConfig = ADNIMERGE) -> pd.DataFrame:
     df = recode(df, cfg.recode_columns)                          # categorize_*
     if cfg.clean_fs_fields:
         df = clean_fs_fields(df)                                 # FLDSTRENG/FSVERSION
-    df = rename_variables(df, cfg)                               # new_variable_names (+ override per-file)
     df = add_constant_columns(df, cfg.constant_columns)         # stampa il metodo/assay (armonizzazione)
     df = add_derived_ratios(df, cfg.derived_ratios)             # rapporti generici (es. AB42/AB40)
     if cfg.compute_atn:                                        # file con profilo ATN (CSF/plasma/PET)
