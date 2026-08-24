@@ -127,49 +127,22 @@ def column_ranges(columns, name: str, method: str = None) -> dict:
 #    notebook (README 5.1), non una nuova.
 # ---------------------------------------------------------------------------
 RECODE = {
-    "PTGENDER": {"Male": 1, "Female": 0},
+    "PTGENDER": {"Male": 1, "Female": 0, 1: 1, "1": 1, 2: 0, "2": 0},
     "PTMARRY":  {"Married": 1, "Divorced": 2, "Widowed": 3,
-                 "Never married": 0, "Unknown": np.nan,},
-    "PTETHCAT": {"Hisp/Latino": 1, "Not Hisp/Latino": 0, "Unknown": np.nan},
+                 "Never married": 0, "Unknown": np.nan, 1: 1, "1": 1,
+                 2: 3, "2": 3, 3: 2, "3": 2, 4: 0, "4": 0, 
+                 5: np.nan, "5": np.nan,6: 1, "6": 1,},
+    "PTETHCAT": {"Hisp/Latino": 1, "Not Hisp/Latino": 0, "Unknown": np.nan,
+                 1: 1, "1": 1, 2: 0, "2": 0, 3: np.nan, "3": np.nan,},
     "PTRACCAT": {"White": 5, "Black": 4, "Asian": 2, "Am Indian/Alaskan": 1,
-                 "Hawaiian/Other PI": 3, "More than one": 0, "Unknown": np.nan},
+                 "Hawaiian/Other PI": 3, "More than one": 0, "Unknown": np.nan, 
+                 1: 1, "1": 1, 2: 2, "2": 2,  3: 3, "3": 3, 4: 4, "4": 4, 
+                 5: 5, "5": 5, 6: 0, "6": 0, 7: np.nan, "7": np.nan,
+                 8: 3, "8": 3, 9: 3, "9": 3,},
     "DX":       {"CN": 0, "MCI": 1, "Dementia": 2},
 }
 
-# NUOVO: mappatura dedicata per PTDEMOG, dove PTMARRY arriva già come codice numerico
-# (vedi dizionario dati PTDEMOG: 1=Married, 2=Widowed, 3=Divorced, 4=Never married,
-#  5=Unknown, 6=Domestic Partnership)
-RECODE_PTDEMOG = {
-    "PTGENDER": {
-        1: 1, "1": 1,   # Male   -> Male (standard ADNIMERGE: 1)
-        2: 0,   # Female -> Female (standard ADNIMERGE: 0)
-    },
 
-    "PTMARRY": {
-        1: 1, "1": 1,          # Married       -> stesso codice standard di ADNIMERGE (1)
-        2: 3, "2": 3,          # Widowed       -> 3 (standard ADNIMERGE)
-        3: 2, "3": 2,        # Divorced      -> 2 (standard ADNIMERGE)
-        4: 0, "4": 0,         # Never married -> 0 (standard ADNIMERGE)
-        5: np.nan, "5": np.nan,    # Unknown       -> NaN (come in ADNIMERGE)
-        6: 1, "6": 1,  # Domestic Partnership -> accorpato a Married
-    },
-    "PTETHCAT": {
-        1: 1, "1": 1,       # Hispanic or Latino    -> stesso codice standard di ADNIMERGE (1)
-        2: 0, "2": 0,       # Not Hispanic or Latino -> 0 (standard ADNIMERGE)
-        3: np.nan, "3": np.nan,  # Unknown                -> NaN (come in ADNIMERGE)
-    },
-     "PTRACCAT": {
-        1: 1, "1": 1,       # American Indian or Alaskan Native -> Am Indian/Alaskan (standard: 1)
-        2: 2, "2": 2,       # Asian                              -> Asian (standard: 2)
-        3: 3, "3": 3,       # Native Hawaiian or Other Pacific Islander -> Hawaiian/Other PI (standard: 3)
-        4: 4, "4": 4,       # Black or African American          -> Black (standard: 4)
-        5: 5, "5": 5,       # White                               -> White (standard: 5)
-        6: 0, "6": 0,       # More than one race                  -> More than one (standard: 0)
-        7: np.nan, "7": np.nan,  # Unknown                              -> NaN
-        8: 3, "8": 3,       # Native Hawaiian            -> DA CONFERMARE: accorpato a "Hawaiian/Other PI" (3)
-        9: 3, "9": 3,       # Other Pacific Islander     -> DA CONFERMARE: accorpato a "Hawaiian/Other PI" (3)
-    },
-}
 
 # ---------------------------------------------------------------------------
 # 4. CATALOG  —  le variabili di interesse (ex tabella del support file Excel).
