@@ -129,13 +129,47 @@ def column_ranges(columns, name: str, method: str = None) -> dict:
 RECODE = {
     "PTGENDER": {"Male": 1, "Female": 0},
     "PTMARRY":  {"Married": 1, "Divorced": 2, "Widowed": 3,
-                 "Never married": 0, "Unknown": np.nan},
+                 "Never married": 0, "Unknown": np.nan,},
     "PTETHCAT": {"Hisp/Latino": 1, "Not Hisp/Latino": 0, "Unknown": np.nan},
     "PTRACCAT": {"White": 5, "Black": 4, "Asian": 2, "Am Indian/Alaskan": 1,
                  "Hawaiian/Other PI": 3, "More than one": 0, "Unknown": np.nan},
     "DX":       {"CN": 0, "MCI": 1, "Dementia": 2},
 }
 
+# NUOVO: mappatura dedicata per PTDEMOG, dove PTMARRY arriva già come codice numerico
+# (vedi dizionario dati PTDEMOG: 1=Married, 2=Widowed, 3=Divorced, 4=Never married,
+#  5=Unknown, 6=Domestic Partnership)
+RECODE_PTDEMOG = {
+    "PTGENDER": {
+        1: 1, "1": 1,   # Male   -> Male (standard ADNIMERGE: 1)
+        2: 0,   # Female -> Female (standard ADNIMERGE: 0)
+    },
+
+    "PTMARRY": {
+        1: 1, "1": 1,          # Married       -> stesso codice standard di ADNIMERGE (1)
+        2: 3, "2": 3,          # Widowed       -> 3 (standard ADNIMERGE)
+        3: 2, "3": 2,        # Divorced      -> 2 (standard ADNIMERGE)
+        4: 0, "4": 0,         # Never married -> 0 (standard ADNIMERGE)
+        5: np.nan, "5": np.nan,    # Unknown       -> NaN (come in ADNIMERGE)
+        6: 1, "6": 1,  # Domestic Partnership -> accorpato a Married
+    },
+    "PTETHCAT": {
+        1: 1, "1": 1,       # Hispanic or Latino    -> stesso codice standard di ADNIMERGE (1)
+        2: 0, "2": 0,       # Not Hispanic or Latino -> 0 (standard ADNIMERGE)
+        3: np.nan, "3": np.nan,  # Unknown                -> NaN (come in ADNIMERGE)
+    },
+     "PTRACCAT": {
+        1: 1, "1": 1,       # American Indian or Alaskan Native -> Am Indian/Alaskan (standard: 1)
+        2: 2, "2": 2,       # Asian                              -> Asian (standard: 2)
+        3: 3, "3": 3,       # Native Hawaiian or Other Pacific Islander -> Hawaiian/Other PI (standard: 3)
+        4: 4, "4": 4,       # Black or African American          -> Black (standard: 4)
+        5: 5, "5": 5,       # White                               -> White (standard: 5)
+        6: 0, "6": 0,       # More than one race                  -> More than one (standard: 0)
+        7: np.nan, "7": np.nan,  # Unknown                              -> NaN
+        8: 3, "8": 3,       # Native Hawaiian            -> DA CONFERMARE: accorpato a "Hawaiian/Other PI" (3)
+        9: 3, "9": 3,       # Other Pacific Islander     -> DA CONFERMARE: accorpato a "Hawaiian/Other PI" (3)
+    },
+}
 
 # ---------------------------------------------------------------------------
 # 4. CATALOG  —  le variabili di interesse (ex tabella del support file Excel).
@@ -151,12 +185,17 @@ class Var:
 
 CATALOG: dict[str, Var] = {
     "RID":      Var("ID"),
-    "PTID":     Var("ID"),
+    "PTID":     Var("ID"),#potrebbe essere tolto
+    "ID":       Var("ID", rename="RID"),              #riga aggiunta ID PTDEMOG fr
     "COLPROT":  Var("Cohort"),
+    "PHASE":    Var("Cohort"),                      #riga aggiunta fasi PTDEMOG fr
     "VISCODE":  Var("Visit"),
+    "VISCODE2": Var("Visit"),                       #riga aggiunta PTDEMOG fr
+    "VISDATE":  Var("Visit"),                       #riga aggiunta PTDEMOG fr
     "EXAMDATE": Var("Visit"),
     "AGE":      Var("Demographic", unit="years"),
     "PTGENDER": Var("Demographic", rename="GENDER"),
+    "PTDOP":    Var("Demographic"),               #riga aggiunta mese/anno PTDEMOG fr
     "PTEDUCAT": Var("Demographic", rename="EDUCATION", unit="years"),
     "PTMARRY":  Var("Demographic", rename="MARRY"),
     "PTETHCAT": Var("Demographic", rename="ETHNICITY"),
@@ -176,6 +215,11 @@ CATALOG: dict[str, Var] = {
     "ABETA":    Var("Biomarker", rename="AB42_CSF",  unit="pg/mL", role="predittore"),
     "TAU":      Var("Biomarker", rename="TTAU_CSF",  unit="pg/mL", role="predittore"),
     "PTAU":     Var("Biomarker", rename="PT181_CSF", unit="pg/mL", role="predittore"),
+    "PTADBEG":      Var("Demographic"),               #riga aggiunta  PTDEMOG fr
+    "PTCOGBEG":     Var("Demographic"),               #riga aggiunta  PTDEMOG fr             
+    "PTADDX":       Var("Diagnosis"),                 #riga aggiunta  PTDEMOG fr               
+    "HAS_QC_ERROR": Var("QC"),                        #riga aggiunta  PTDEMOG fr               
+    "update_stamp": Var("Metadata"),                  #riga aggiunta  PTDEMOG fr
 }
 
 
@@ -283,6 +327,33 @@ ADNIMERGE = DatasetConfig(
     ],
 )
 
+PTDEMOG = DatasetConfig(
+    file_code="PTDEMOG",
+    source="PTDEMOG_21Apr2026.csv",            # SEMPRE il file grezzo: cleaning1 legge il raw
+    viscode_reference="VISCODE2",               # <-- DA CONFERMARE: in PTDEMOG la colonna è VISCODE2, non VISCODE, perchè più aggiornato
+
+    # cleaning 1 -----------------------------------------------------------
+    essential_columns=[],                       # deciso: nessun filtro missing in STEP 1, dataset caricato così com'è
+    also_required=[],                           # nessun secondo filtro
+    recode_columns=["PTGENDER", "PTMARRY", "PTETHCAT", "PTRACCAT"],   # <-- DA CONFERMARE (niente DX qui, non presente in PTDEMOG)
+    recompute_age=False,                        # non c'è AGE, solo PTDOBYY/PTDOB (mese/anno di nascita)
+    clean_fs_fields=False,                      # nessun campo FreeSurfer in questo file
+    # compute_atn resta False: ATN calcolato solo per i file CSF, non per PTDEMOG
+
+    # cleaning 2 / 3 -------------------------------------------------------
+    drop_sparse_columns=False,                  # <-- DA CONFERMARE: deciso che la rimozione colonne sarà automatica in pipeline, non da questo flag?
+    make_dummies=True,                          # <-- DA CONFERMARE: applichi le dummy anche a PTDEMOG?
+    dummy_columns=["GENDER", "MARRY", "ETHNICITY", "RACE"],   # <-- DA CONFERMARE: nomi standard post-rename, senza DX
+    volume_row_keys=[],                         # non applicabile: PTDEMOG non ha colonne di volume/imaging
+
+    remove_single_visit=False,
+    normalize_icv=False,                        # non applicabile: nessun ICV in PTDEMOG
+    keep_columns=[
+        "PHASE", "PTID", "RID", "VISCODE2", "VISDATE", "ID", "SITEID",
+        "PTGENDER", "PTDOB", "PTMARRY", "PTEDUCAT", "PTETHCAT", "PTRACCAT",
+        "PTADBEG", "PTCOGBEG", "PTADDX", "HAS_QC_ERROR", "update_stamp",
+    ],
+)
 
 # ---------------------------------------------------------------------------
 # 5b. Altri dataset — ESEMPIO: i tuoi due file plasma, descritti SOLO come config.
