@@ -30,7 +30,7 @@ _HERE = Path(__file__).parent
 # ---------------------------------------------------------------------------
 # 1. POLICY  —  regole globali (prima erano numeri sparsi dentro le celle)
 # ---------------------------------------------------------------------------
-UNKNOWN_SENTINELS = ["Unknown", "unknown", "NA", "N/A", "-4", -4, 9999, 9999.0]
+UNKNOWN_SENTINELS = ["Unknown", "unknown", "NA", "N/A", "-4", -4, 9999, 9999.0, -1]
 CENSORED_PREFIXES = (">", "<")          # biomarcatori CSF: ">1700", "<200"
 MISSING_KEEP_THRESHOLD = 0.65           # sotto questa quota di validi -> 'drop' nel report
 
@@ -64,7 +64,7 @@ def cutoff(var: str, method: str = "unknown", path: str = "cutoffs.json"):
 #    notebook (README 5.1), non una nuova.
 # ---------------------------------------------------------------------------
 RECODE = {
-    "PTGENDER": {"Male": 1, "Female": 0},
+    "PTGENDER": {"Male": 1, "Female": 0, "1": 1, 1: 1, 2: 2, "2": 2},
     "PTMARRY":  {"Married": 1, "Divorced": 2, "Widowed": 3,
                  "Never married": 0, "Unknown": np.nan},
     "PTETHCAT": {"Hisp/Latino": 1, "Not Hisp/Latino": 0, "Unknown": np.nan},
@@ -88,12 +88,17 @@ class Var:
 
 CATALOG: dict[str, Var] = {
     "RID":      Var("ID"),
-    "PTID":     Var("ID"),
+    "PTID":     Var("ID"),#potrebbe essere tolto
+    "ID":         Var("ID", rename="RID"),
     "COLPROT":  Var("Cohort"),
+    "PHASE":      Var("Cohort"),                      #riga aggiunta fasi PTDEMOG fr
     "VISCODE":  Var("Visit"),
+    "VISCODE2":   Var("Visit"),                       #riga aggiunta PTDEMOG fr
+    "VISDATE":    Var("Visit"),                       #riga aggiunta PTDEMOG fr
     "EXAMDATE": Var("Visit"),
     "AGE":      Var("Demographic", unit="years"),
     "PTGENDER": Var("Demographic", rename="GENDER"),
+    "PTDOP":      Var("Demographic"),   #riga aggiunta mese/anno PTDEMOG fr
     "PTEDUCAT": Var("Demographic", rename="EDUCATION", unit="years"),
     "PTMARRY":  Var("Demographic", rename="MARRY"),
     "PTETHCAT": Var("Demographic", rename="ETHNICITY"),
@@ -113,6 +118,11 @@ CATALOG: dict[str, Var] = {
     "ABETA":    Var("Biomarker", rename="AB42_CSF",  unit="pg/mL", role="predittore"),
     "TAU":      Var("Biomarker", rename="TTAU_CSF",  unit="pg/mL", role="predittore"),
     "PTAU":     Var("Biomarker", rename="PT181_CSF", unit="pg/mL", role="predittore"),
+    "PTADBEG":      Var("Demographic"), 
+     "PTCOGBEG":    Var("Demographic"),                              
+    "PTADDX":       Var("Diagnosis"),                                
+    "HAS_QC_ERROR": Var("QC"),                                       
+    "update_stamp": Var("Metadata"), 
 }
 
 
@@ -176,7 +186,7 @@ PTDEMOG = DatasetConfig(
     file_code="PTDEMOG",
     source="PTDEMOG_21Apr2026.csv",
     id_column="RID",
-    essential_columns=[],     # nessun filtro: tieni tutte le colonne, si sfoltiscono a mano dopo
+    essential_columns=[],     #"PTGENDER", "PTDOP", "VISDATE", "
     also_required=[],
     recode_columns=["PTGENDER", "PTMARRY", "PTETHCAT", "PTRACCAT"],
     recompute_age=False,      # non c'è AGE, solo PTDOBYY
