@@ -136,7 +136,7 @@ RECODE = {
                  1: 1, "1": 1, 2: 0, "2": 0, 3: np.nan, "3": np.nan,},
     "PTRACCAT": {"White": 5, "Black": 4, "Asian": 2, "Am Indian/Alaskan": 1,
                  "Hawaiian/Other PI": 3, "More than one": 0, "Unknown": np.nan, 
-                 1: 1, "1": 1, 2: 2, "2": 2,  3: 3, "3": 3, 4: 4, "4": 4, 
+                 1: 1, "1": 1, 2: 2, "2": 2,  3: 3, "3": 3, 4: 4, "4": 4,   # |=0 cerca con unice
                  5: 5, "5": 5, 6: 0, "6": 0, 7: np.nan, "7": np.nan,
                  8: 3, "8": 3, 9: 3, "9": 3,},
     "DX":       {"CN": 0, "MCI": 1, "Dementia": 2},
@@ -204,7 +204,7 @@ class DatasetConfig:
     file_code: str
     source: str
     id_column: str = "RID"
-    date_column: str = "EXAMDATE"
+    date_column: str = "EXAMDATE"  
     viscode_reference: Optional[str] = "VISCODE"
     cohort_column: str = "COLPROT"
 
@@ -274,6 +274,7 @@ ADNIMERGE = DatasetConfig(
     recompute_age=True,
     clean_fs_fields=True,
     # compute_atn resta False: nel notebook l'ATN e' solo per i file CSF, non ADNIMERGE
+    # AGGIUNGI "other_date" (anche lista) 
 
     # cleaning 2 / 3 -------------------------------------------------------
     drop_sparse_columns=True,                  # come faceva Rossana (remove_param_few_subjects)
@@ -311,6 +312,7 @@ PTDEMOG = DatasetConfig(
     recompute_age=False,                        # non c'è AGE, solo PTDOBYY/PTDOB (mese/anno di nascita)
     clean_fs_fields=False,                      # nessun campo FreeSurfer in questo file
     # compute_atn resta False: ATN calcolato solo per i file CSF, non per PTDEMOG
+    # CREARE UNA NUOVA VARIABILE "other_date"(anche lista)
 
     # cleaning 2 / 3 -------------------------------------------------------
     drop_sparse_columns=False,                  # <-- DA CONFERMARE: deciso che la rimozione colonne sarà automatica in pipeline, non da questo flag?
