@@ -88,7 +88,7 @@ def drop_if_all_none(df, cols):
     return df.dropna(subset=present, how="all") if present else df
 
 
-def parse_dates(df, cols):
+def parse_dates(df, cols): # cols: da aggiungere la variabili PTDOP, updatestamp controlare in che formato è, senza creare problemi
     """Converte le colonne indicate in datetime vero."""
     df = df.copy()
     for c in cols:
@@ -115,7 +115,7 @@ def add_visit_month(df, id_col, date_col):
     return df
 
 
-def recompute_age(df, date_col="EXAMDATE", bl_date_col="EXAMDATE_bl", age_col="AGE"):
+def recompute_age(df, date_col="EXAMDATE", bl_date_col="EXAMDATE_bl", age_col="AGE"): # aggiungere un calcolo diverso per PTDEMOG(usare l'if)
     """AGE (fissa al baseline) -> AGE_bl; nuova AGE = AGE_bl + tempo trascorso per visita."""
     if age_col not in df.columns or bl_date_col not in df.columns:
         return df
@@ -307,6 +307,16 @@ def keep_only_columns(df, keep, extra=None):
     missing = [c for c in wanted if c not in df.columns]
     dropped = [c for c in df.columns if c not in wanted]
     return df[present], dropped, missing
+
+# def drop_columns(df, drop):
+#     """Rimuove le colonne in `drop`, se presenti.
+# 
+#     Restituisce (df, colonne_rimosse, colonne_richieste_ma_assenti).
+#     """
+#     drop = list(dict.fromkeys(drop))                       # niente duplicati, ordine stabile
+#     present = [c for c in drop if c in df.columns]
+#     missing = [c for c in drop if c not in df.columns]
+#     return df.drop(columns=present), present, missing
 
 
 def run_cleaning2(df: pd.DataFrame, cfg: DatasetConfig = ADNIMERGE):
