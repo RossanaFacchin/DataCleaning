@@ -311,6 +311,7 @@ PTDEMOG = DatasetConfig(
     recode_columns=["PTGENDER", "PTMARRY", "PTETHCAT", "PTRACCAT"],   # <-- DA CONFERMARE (niente DX qui, non presente in PTDEMOG)
     recompute_age=False,                        # non c'è AGE, solo PTDOBYY/PTDOB (mese/anno di nascita)
     clean_fs_fields=False,                      # nessun campo FreeSurfer in questo file
+    # drop_columns=["VISCODE"],  # ambiguo con ADNIMERGE.VISCODE; usiamo VISCODE2 <<<------------
     # compute_atn resta False: ATN calcolato solo per i file CSF, non per PTDEMOG
     # CREARE UNA NUOVA VARIABILE "other_date"(anche lista)
 
