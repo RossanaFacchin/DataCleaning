@@ -160,7 +160,7 @@ CATALOG: dict[str, Var] = {
     "RID":      Var("ID"),
     "PTID":     Var("ID"),#potrebbe essere tolto
     "COLPROT":  Var("Cohort"),
-    "PHASE":    Var("Cohort"),                      #riga aggiunta fasi PTDEMOG fr
+    "PHASE":    Var("Cohort", rename="COLPROT"),                      #riga aggiunta fasi PTDEMOG fr
     "VISCODE":  Var("Visit"),
     "VISCODE2": Var("Visit"),                       #riga aggiunta PTDEMOG fr
     "VISDATE":  Var("Visit", rename="EXAMDATE"),                       #riga aggiunta PTDEMOG fr
