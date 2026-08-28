@@ -358,6 +358,7 @@ PLASMA_PANEL = DatasetConfig(
         "NFL_plasma", "AB42_plasma", "AB40_plasma", "GFAP_plasma", "AB42_40_plasma",
         "METHOD_PLASMA", "update_stamp",
     ],
+    drop_columns=[],
 )
 
 # File 2 — solo plasma NfL (altro assay: stessa variabile standard, metodo diverso).
@@ -370,6 +371,7 @@ PLASMA_NFL = DatasetConfig(
     rename={"PLASMA_NFL": "NFL_plasma"},      # STESSO nome standard del file 1 -> armonizzazione
     constant_columns={"METHOD_PLASMA": "panelB"},        # <-- assay diverso
     keep_columns=["RID", "VISCODE", "EXAMDATE", "NFL_plasma", "METHOD_PLASMA", "update_stamp"],
+    drop_columns=[],
 )
 
 DATASETS = {d.file_code: d for d in (ADNIMERGE, PLASMA_PANEL, PLASMA_NFL, PTDEMOG)}
