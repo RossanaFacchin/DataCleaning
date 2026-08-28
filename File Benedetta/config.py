@@ -127,19 +127,19 @@ def column_ranges(columns, name: str, method: str = None) -> dict:
 #    notebook (README 5.1), non una nuova.
 # ---------------------------------------------------------------------------
 RECODE = {
-    "PTGENDER": {"Male": 1, "Female": 0, 1: 1, "1": 1, 2: 0, "2": 0},
-    "PTMARRY":  {"Married": 1, "Divorced": 2, "Widowed": 3,
-                 "Never married": 0, "Unknown": np.nan, 1: 1, "1": 1,
-                 2: 3, "2": 3, 3: 2, "3": 2, 4: 0, "4": 0, 
-                 5: np.nan, "5": np.nan,6: 1, "6": 1,},
-    "PTETHCAT": {"Hisp/Latino": 1, "Not Hisp/Latino": 0, "Unknown": np.nan,
-                 1: 1, "1": 1, 2: 0, "2": 0, 3: np.nan, "3": np.nan,},
-    "PTRACCAT": {"White": 5, "Black": 4, "Asian": 2, "Am Indian/Alaskan": 1,
-                 "Hawaiian/Other PI": 3, "More than one": 0, "Unknown": np.nan, 
-                 1: 1, "1": 1, 2: 2, "2": 2,  3: 3, "3": 3, 4: 4, "4": 4,   # |=0 cerca con unice
-                 5: 5, "5": 5, 6: 0, "6": 0, 7: np.nan, "7": np.nan,
-                 8: 3, "8": 3, 9: 3, "9": 3,},
-    "DX":       {"CN": 0, "MCI": 1, "Dementia": 2},
+    "GENDER":    {"Male": 1, "Female": 0, 1: 1, "1": 1, 2: 0, "2": 0},
+    "MARRY":     {"Married": 1, "Divorced": 2, "Widowed": 3,
+                  "Never married": 0, "Unknown": np.nan, 1: 1, "1": 1,
+                  2: 3, "2": 3, 3: 2, "3": 2, 4: 0, "4": 0,
+                  5: np.nan, "5": np.nan,6: 1, "6": 1,},
+    "ETHNICITY": {"Hisp/Latino": 1, "Not Hisp/Latino": 0, "Unknown": np.nan,
+                  1: 1, "1": 1, 2: 0, "2": 0, 3: np.nan, "3": np.nan,},
+    "RACE":      {"White": 5, "Black": 4, "Asian": 2, "Am Indian/Alaskan": 1,
+                  "Hawaiian/Other PI": 3, "More than one": 0, "Unknown": np.nan, 
+                  1: 1, "1": 1, 2: 2, "2": 2,  3: 3, "3": 3, 4: 4, "4": 4,   # |=0 cerca con unice
+                  5: 5, "5": 5, 6: 0, "6": 0, 7: np.nan, "7": np.nan,
+                  8: 3, "8": 3, 9: 3, "9": 3, "/": 0},
+    "DX":        {"CN": 0, "MCI": 1, "Dementia": 2},
 }
 
 
@@ -270,7 +270,7 @@ ADNIMERGE = DatasetConfig(
     # cleaning 1 -----------------------------------------------------------
     essential_columns=["APOE4", "MMSE", "Ventricles", "Hippocampus", "AGE"],
     also_required=["DX"],
-    recode_columns=["PTGENDER", "PTMARRY", "PTETHCAT", "PTRACCAT", "DX"],   # nomi standard post-rename
+    recode_columns=["GENDER", "MARRY", "ETHNICITY", "RACE", "DX"],   # nomi standard post-rename
     recompute_age=True,
     clean_fs_fields=True,
     drop_columns=[],
@@ -309,10 +309,10 @@ PTDEMOG = DatasetConfig(
     # cleaning 1 -----------------------------------------------------------
     essential_columns=["PTGENDER", "PTMARRY", "PTETHCAT", "PTRACCAT"],                      
     also_required=["PTDOB"],                           # nessun secondo filtro
-    recode_columns=["PTGENDER", "PTMARRY", "PTETHCAT", "PTRACCAT"],   # <-- DA CONFERMARE (niente DX qui, non presente in PTDEMOG)
+    recode_columns=["GENDER", "MARRY", "ETHNICITY", "RACE"],   # <-- DA CONFERMARE (niente DX qui, non presente in PTDEMOG)
     recompute_age=False,                        # non c'è AGE, solo PTDOBYY/PTDOB (mese/anno di nascita)
     clean_fs_fields=False,                      # nessun campo FreeSurfer in questo file
-    drop_columns=["VISCODE"],  # ambiguo con ADNIMERGE.VISCODE; usiamo VISCODE2 <<<------------
+    drop_columns=["VISCODE"],  # ambiguo con ADNIMERGE.VISCODE; usiamo VISCODE2 
     # compute_atn resta False: ATN calcolato solo per i file CSF, non per PTDEMOG
     # CREARE UNA NUOVA VARIABILE "other_date"(anche lista)
 
