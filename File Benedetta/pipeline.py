@@ -88,7 +88,7 @@ def drop_if_all_none(df, cols):
     return df.dropna(subset=present, how="all") if present else df
 
 
-def parse_dates(df, cols): # cols: da aggiungere la variabili PTDOP, updatestamp controlare in che formato è, senza creare problemi
+def parse_dates(df, cols): # cols: da aggiungere la variabili PTDOB, updatestamp controlare in che formato è, senza creare problemi
     """Converte le colonne indicate in datetime vero."""
     df = df.copy()
     for c in cols:
@@ -115,22 +115,20 @@ def add_visit_month(df, id_col, date_col):
     return df
 
 
-def recompute_age(df, date_col="EXAMDATE", bl_date_col="EXAMDATE_bl", age_col="AGE"): # aggiungere un calcolo diverso per PTDEMOG(usare l'if)
-    """AGE (fissa al baseline) -> AGE_bl; nuova AGE = AGE_bl + tempo trascorso per visita."""
-    # def recompute_age(df, date_col="EXAMDATE", bl_date_col="EXAMDATE_bl", age_col="AGE",
-    #                dob_col="PTDOP", visit_date_col="VISDATE"):
-    # """AGE (fissa al baseline) -> AGE_bl; nuova AGE = AGE_bl + tempo trascorso per visita.
+def recompute_age(df, date_col="EXAMDATE", bl_date_col="EXAMDATE_bl", age_col="AGE",
+                   dob_col="PTDOB"):
+    """AGE (fissa al baseline) -> AGE_bl; nuova AGE = AGE_bl + tempo trascorso per visita.
 
-    # Se il dataset ha dob_col e visit_date_col (caso PTDEMOG), AGE si calcola
-    # direttamente come (VISDATE - PTDOP) in anni, invece che per accumulo dal baseline.
-    # """
-    # df = df.copy()
+    Se il dataset ha dob_col e date_col (caso PTDEMOG), AGE si calcola
+    direttamente come (VISDATE - PTDOB) in anni, invece che per accumulo dal baseline.
+    """
+    df = df.copy()
 
-    # if dob_col in df.columns and visit_date_col in df.columns:
-    #     dob = pd.to_datetime(df[dob_col], format="%m/%Y", errors="coerce")
-    #     visit = pd.to_datetime(df[visit_date_col], errors="coerce")
-    #     df[age_col] = (visit - dob).dt.days / 365.25
-    #     return df
+    if dob_col in df.columns and date_col in df.columns:
+        dob = pd.to_datetime(df[dob_col], format="%m/%Y", errors="coerce")
+        visit = pd.to_datetime(df[date_col], errors="coerce")
+        df[age_col] = (visit - dob).dt.days / 365.25
+        return df
     if age_col not in df.columns or bl_date_col not in df.columns:
         return df
     df = df.copy().rename(columns={age_col: age_col + "_bl"})
