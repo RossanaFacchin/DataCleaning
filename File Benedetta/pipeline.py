@@ -233,7 +233,7 @@ def run_cleaning1(cfg: DatasetConfig = ADNIMERGE) -> pd.DataFrame:
     df = drop_if_all_none(df, cfg.essential_columns)             # 1° drop: colonne importanti
     df = drop_if_all_none(df, cfg.also_required)                 # 2° drop: DX obbligatoria
     df = rename_variables(df, cfg)                               # new_variable_names (+ override per-file)
-    df = parse_dates(df, [cfg.date_column])                      # to_date_format
+    df = parse_dates(df, [cfg.date_column] + cfg.extra_date_columns)                      # to_date_format<<<------controllare
     df = dedup_visits(df, cfg.id_column, cfg.date_column, cfg.essential_columns)
     df = add_visit_month(df, cfg.id_column, cfg.date_column)     # find_exam_code -> VISIT_MONTH
     if cfg.recompute_age:
