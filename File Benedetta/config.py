@@ -231,6 +231,7 @@ class DatasetConfig:
     compute_atn: bool = False           # rapporti + profilo ATN (solo file CSF)
     atn_method: str = "unknown"
     atn_axes: Optional[dict] = None     # {asse: (marcatore, 'below'|'above')}; None -> ATN_AXES_CSF
+    drop_columns: list[str] = field(default_factory=list)         # scarta colonne indesiderate (es. VISCODE in PTDEMOG) ---> aggiunta per ultima
 
     # --- cleaning 2 / 3  (le decisioni che Rossana aveva scritto a mano) -------
     drop_sparse_columns: bool = False           # scarta colonne sotto SPARSE_KEEP_THRESHOLD
