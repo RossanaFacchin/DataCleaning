@@ -167,7 +167,7 @@ CATALOG: dict[str, Var] = {
     "EXAMDATE": Var("Visit"),
     "AGE":      Var("Demographic", unit="years"),
     "PTGENDER": Var("Demographic", rename="GENDER"),
-    "PTDOP":    Var("Demographic"),               #riga aggiunta mese/anno PTDEMOG fr
+    "PTDOB":    Var("Demographic"),               #riga aggiunta mese/anno PTDEMOG fr
     "PTEDUCAT": Var("Demographic", rename="EDUCATION", unit="years"),
     "PTMARRY":  Var("Demographic", rename="MARRY"),
     "PTETHCAT": Var("Demographic", rename="ETHNICITY"),
@@ -270,9 +270,10 @@ ADNIMERGE = DatasetConfig(
     # cleaning 1 -----------------------------------------------------------
     essential_columns=["APOE4", "MMSE", "Ventricles", "Hippocampus", "AGE"],
     also_required=["DX"],
-    recode_columns=["PTGENDER", "PTMARRY", "PTETHCAT", "PTRACCAT", "DX"],
+    recode_columns=["PTGENDER", "PTMARRY", "PTETHCAT", "PTRACCAT", "DX"],   # nomi standard post-rename
     recompute_age=True,
     clean_fs_fields=True,
+    drop_columns=[],
     # compute_atn resta False: nel notebook l'ATN e' solo per i file CSF, non ADNIMERGE
     # AGGIUNGI "other_date" (anche lista) 
 
@@ -311,7 +312,7 @@ PTDEMOG = DatasetConfig(
     recode_columns=["PTGENDER", "PTMARRY", "PTETHCAT", "PTRACCAT"],   # <-- DA CONFERMARE (niente DX qui, non presente in PTDEMOG)
     recompute_age=False,                        # non c'è AGE, solo PTDOBYY/PTDOB (mese/anno di nascita)
     clean_fs_fields=False,                      # nessun campo FreeSurfer in questo file
-    # drop_columns=["VISCODE"],  # ambiguo con ADNIMERGE.VISCODE; usiamo VISCODE2 <<<------------
+    drop_columns=["VISCODE"],  # ambiguo con ADNIMERGE.VISCODE; usiamo VISCODE2 <<<------------
     # compute_atn resta False: ATN calcolato solo per i file CSF, non per PTDEMOG
     # CREARE UNA NUOVA VARIABILE "other_date"(anche lista)
 
