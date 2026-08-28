@@ -204,7 +204,7 @@ class DatasetConfig:
     file_code: str
     source: str
     id_column: str = "RID"
-    date_column: str = "EXAMDATE", "update_stamp", "PTDOB"  # colonna di data per merge (EXAMDATE o VISDATE)
+    date_column: str = "EXAMDATE"
     viscode_reference: Optional[str] = "VISCODE"
     cohort_column: str = "COLPROT"
 
@@ -243,6 +243,7 @@ class DatasetConfig:
     normalize_icv: bool = False                 # volumi -> % di ICV
     icv_column: str = "ICV"
     keep_columns: list[str] = field(default_factory=list)       # whitelist finale (NOMI STANDARD, post-rename)
+    extra_date_columns: list[str] = field(default_factory=list)   # <-- nuovo campo
 
     # --- output (decisioni, non calcoli) --------------------------------------
     output_cleaned1: Optional[str] = None
@@ -267,6 +268,8 @@ ADNIMERGE = DatasetConfig(
     file_code="ADNIMERGE",
     source="ADNIMERGE_05Mar2026.csv",          # SEMPRE il file grezzo: cleaning1 legge il raw
     viscode_reference="VISCODE",
+    date_column="EXAMDATE",
+    extra_date_columns=[],
 
     # cleaning 1 -----------------------------------------------------------
     essential_columns=["APOE4", "MMSE", "Ventricles", "Hippocampus", "AGE"],
@@ -306,6 +309,8 @@ PTDEMOG = DatasetConfig(
     file_code="PTDEMOG",
     source="PTDEMOG_21Apr2026.csv",            # SEMPRE il file grezzo: cleaning1 legge il raw
     viscode_reference="VISCODE2",               # <-- DA CONFERMARE: in PTDEMOG la colonna è VISCODE2, non VISCODE, perchè più aggiornato
+    date_column="EXAMDATE",
+    extra_date_columns=["PTDOB", "update_stamp"],
 
     # cleaning 1 -----------------------------------------------------------
     essential_columns=["PTGENDER", "PTMARRY", "PTETHCAT", "PTRACCAT"],                      
@@ -343,6 +348,7 @@ PLASMA_PANEL = DatasetConfig(
     source="PLASMA_ABETA_PROJECT_ADX_VUMC_11Aug2025.csv",           # <-- il tuo CSV
     category="plasma",
     date_column="EXAMDATE",
+    extra_date_columns=[],
     essential_columns=["NF_LIGHT", "ABETA42", "GFAP"],   # nomi GREZZI (pre-rename)
     rename={                                  # override per-file, non tocca il CATALOG
         "NF_LIGHT": "NFL_plasma",
@@ -368,6 +374,7 @@ PLASMA_NFL = DatasetConfig(
     source="ADNI_BLENNOWPLASMANFLLONG_10_03_18_11Aug2025.csv",
     category="plasma",
     date_column="EXAMDATE",
+    extra_date_columns=[],
     essential_columns=["PLASMA_NFL"],
     rename={"PLASMA_NFL": "NFL_plasma"},      # STESSO nome standard del file 1 -> armonizzazione
     constant_columns={"METHOD_PLASMA": "panelB"},        # <-- assay diverso
