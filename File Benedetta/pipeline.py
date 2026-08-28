@@ -212,9 +212,21 @@ def add_atn_profile(df, cfg):
     return df
 
 
+def drop_columns(df, drop):
+    """Rimuove le colonne in `drop`, se presenti.
+
+    Restituisce (df, colonne_rimosse, colonne_richieste_ma_assenti).
+    """
+    drop = list(dict.fromkeys(drop))                       # niente duplicati, ordine stabile
+    present = [c for c in drop if c in df.columns]
+    missing = [c for c in drop if c not in df.columns]
+    return df.drop(columns=present), present, missing
+
+
 def run_cleaning1(cfg: DatasetConfig = ADNIMERGE) -> pd.DataFrame:
     """Orchestratore di cleaning 1: raw -> dataframe pulito (in memoria, niente I/O)."""
     df = load(cfg)                                                # download -> CSV
+    df, _, _ = drop_columns(df, cfg.drop_columns)                 # rimuove colonne indesiderate (es. VISCODE in PTDEMOG)
     df = replace_unknown(df)                                      # replace_unknown_values
     if cfg.decensor_biomarkers:
         df = decensor(df, cfg.decensor_columns or config.columns_in("Biomarker"))
@@ -319,16 +331,6 @@ def keep_only_columns(df, keep, extra=None):
     missing = [c for c in wanted if c not in df.columns]
     dropped = [c for c in df.columns if c not in wanted]
     return df[present], dropped, missing
-
-# def drop_columns(df, drop):
-#     """Rimuove le colonne in `drop`, se presenti.
-# 
-#     Restituisce (df, colonne_rimosse, colonne_richieste_ma_assenti).
-#     """
-#     drop = list(dict.fromkeys(drop))                       # niente duplicati, ordine stabile
-#     present = [c for c in drop if c in df.columns]
-#     missing = [c for c in drop if c not in df.columns]
-#     return df.drop(columns=present), present, missing
 
 
 def run_cleaning2(df: pd.DataFrame, cfg: DatasetConfig = ADNIMERGE):
