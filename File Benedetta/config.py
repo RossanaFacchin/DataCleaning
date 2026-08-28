@@ -204,7 +204,7 @@ class DatasetConfig:
     file_code: str
     source: str
     id_column: str = "RID"
-    date_column: str = "EXAMDATE"  
+    date_column: str = "EXAMDATE", "update_stamp", "PTDOB"  # colonna di data per merge (EXAMDATE o VISDATE)
     viscode_reference: Optional[str] = "VISCODE"
     cohort_column: str = "COLPROT"
 
