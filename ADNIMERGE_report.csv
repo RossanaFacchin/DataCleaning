@@ -1,0 +1,119 @@
+variable,type,range,valid_values,missing_values,missing_pop,del
+RID,int64,"2, 7123",11458,0,,keep
+COLPROT,str,,11458,0,,keep
+ORIGPROT,str,,11458,0,,keep
+PTID,str,,11458,0,,keep
+SITE,int64,"2, 941",11458,0,,keep
+VISCODE,str,,11458,0,,keep
+EXAMDATE,datetime64[us],,11458,0,,keep
+DX_bl,str,,11458,0,,keep
+AGE_bl,float64,"50.4, 91.4",11451,7,,keep
+GENDER,int64,"0, 1",11458,0,,keep
+EDUCATION,int64,"4, 20",11458,0,,keep
+ETHNICITY,float64,"0.0, 1.0",11406,52,,keep
+RACE,float64,"0.0, 5.0",11432,26,,keep
+MARRY,float64,"0.0, 3.0",11411,47,,keep
+APOE4,float64,"0.0, 2.0",11176,282,,keep
+FDG,float64,"0.566989, 1.77617",3684,7774,,drop
+PIB,float64,"1.095, 2.9275",222,11236,"ADNIGO, ADNI2, ADNI3",drop
+AV45,float64,"0.809, 2.6866",3055,8403,ADNI1,drop
+FBB,float64,"0.8702, 2.0088",509,10949,"ADNI1, ADNIGO, ADNI2",drop
+AB42_CSF,str,,2367,9091,ADNI3,drop
+TTAU_CSF,str,,2367,9091,ADNI3,drop
+PT181_CSF,str,,2366,9092,ADNI3,drop
+CDRSB,float64,"0.0, 18.0",11309,149,,keep
+ADAS11,float64,"0.0, 70.0",11356,102,,keep
+ADAS13,float64,"0.0, 85.0",11257,201,,keep
+ADASQ4,float64,"0.0, 10.0",11388,70,,keep
+MMSE,float64,"0.0, 30.0",11389,69,,keep
+RAVLT_immediate,float64,"0.0, 75.0",11273,185,,keep
+RAVLT_learning,float64,"-5.0, 14.0",11063,395,,keep
+RAVLT_forgetting,float64,"-35.0, 15.0",11078,380,,keep
+RAVLT_perc_forgetting,float64,"-1650.0, 100.0",11169,289,,keep
+LDELTOTAL,float64,"0.0, 25.0",9367,2091,,keep
+DIGITSCOR,float64,"0.0, 83.0",3800,7658,"ADNIGO, ADNI2, ADNI3",drop
+TRABSCOR,float64,"0.0, 996.0",10944,514,,keep
+FAQ,float64,"0.0, 30.0",11289,169,,keep
+MOCA,float64,"0.0, 30.0",7355,4103,ADNI1,drop
+EcogPtMem,float64,"1.0, 4.0",7394,4064,ADNI1,drop
+EcogPtLang,float64,"1.0, 4.0",7377,4081,ADNI1,drop
+EcogPtVisspat,float64,"1.0, 4.0",7304,4154,ADNI1,drop
+EcogPtPlan,float64,"1.0, 4.0",7364,4094,ADNI1,drop
+EcogPtOrgan,float64,"1.0, 4.0",7225,4233,ADNI1,drop
+EcogPtDivatt,float64,"1.0, 4.0",7322,4136,ADNI1,drop
+EcogPtTotal,float64,"1.0, 4.0",7384,4074,ADNI1,drop
+EcogSPMem,float64,"1.0, 4.0",7382,4076,ADNI1,drop
+EcogSPLang,float64,"1.0, 4.0",7389,4069,ADNI1,drop
+EcogSPVisspat,float64,"1.0, 4.0",7227,4231,ADNI1,drop
+EcogSPPlan,float64,"1.0, 4.0",7308,4150,ADNI1,drop
+EcogSPOrgan,float64,"1.0, 4.0",7075,4383,ADNI1,drop
+EcogSPDivatt,float64,"1.0, 4.0",7191,4267,ADNI1,drop
+EcogSPTotal,float64,"1.0, 4.0",7382,4076,ADNI1,drop
+FLDSTRENG,str,,6995,4463,ADNI3,drop
+FSVERSION,str,,9321,2137,,keep
+IMAGEUID,float64,"31863.0, 1644018.0",9321,2137,,keep
+Ventricles,float64,"5650.0, 162729.0",8727,2731,,keep
+Hippocampus,float64,"2219.0, 11207.0",8137,3321,,keep
+WholeBrain,float64,"521287.0, 1486040.0",8963,2495,,keep
+Entorhinal,float64,"976.0, 7062.0",7746,3712,,keep
+Fusiform,float64,"7739.0, 29950.0",7746,3712,,keep
+MidTemp,float64,"8044.0, 32324.0",7746,3712,,keep
+ICV,float64,"716133.0, 3500150.0",9306,2152,,keep
+DX,int64,"0, 2",11458,0,,keep
+mPACCdigit,float64,"-58.8061, 7.826",11394,64,,keep
+mPACCtrailsB,float64,"-58.8061, 12.5901",11400,58,,keep
+EXAMDATE_bl,str,,11458,0,,keep
+CDRSB_bl,float64,"0.0, 10.0",11458,0,,keep
+ADAS11_bl,float64,"0.0, 42.67",11434,24,,keep
+ADAS13_bl,float64,"0.0, 54.67",11384,74,,keep
+ADASQ4_bl,float64,"0.0, 10.0",11457,1,,keep
+MMSE_bl,float64,"16.0, 30.0",11457,1,,keep
+RAVLT_immediate_bl,float64,"0.0, 71.0",11435,23,,keep
+RAVLT_learning_bl,float64,"-3.0, 12.0",11280,178,,keep
+RAVLT_forgetting_bl,float64,"-19.0, 15.0",11296,162,,keep
+RAVLT_perc_forgetting_bl,float64,"-316.667, 100.0",11418,40,,keep
+LDELTOTAL_BL,float64,"0.0, 23.0",11457,1,,keep
+DIGITSCOR_bl,float64,"0.0, 80.0",5146,6312,,drop
+TRABSCOR_bl,float64,"0.0, 300.0",11271,187,,keep
+FAQ_bl,float64,"0.0, 30.0",11398,60,,keep
+mPACCdigit_bl,float64,"-23.6034, 6.30031",11458,0,,keep
+mPACCtrailsB_bl,float64,"-23.6034, 7.42688",11458,0,,keep
+FLDSTRENG_bl,str,,9082,2376,,keep
+FSVERSION_bl,str,,11268,190,,keep
+IMAGEUID_bl,float64,"32003.0, 1633742.0",11268,190,,keep
+Ventricles_bl,float64,"5650.0, 157713.0",10903,555,,keep
+Hippocampus_bl,float64,"2991.0, 10769.0",9910,1548,,keep
+WholeBrain_bl,float64,"521287.0, 1486040.0",11111,347,,keep
+Entorhinal_bl,float64,"1106.0, 6273.0",9821,1637,,keep
+Fusiform_bl,float64,"8991.0, 29950.0",9821,1637,,keep
+MidTemp_bl,float64,"9375.0, 32324.0",9821,1637,,keep
+ICV_bl,float64,"882242.0, 3315210.0",11266,192,,keep
+MOCA_bl,float64,"4.0, 30.0",6185,5273,ADNI1,drop
+EcogPtMem_bl,float64,"1.0, 4.0",6271,5187,ADNI1,drop
+EcogPtLang_bl,float64,"1.0, 4.0",6270,5188,ADNI1,drop
+EcogPtVisspat_bl,float64,"1.0, 4.0",6246,5212,ADNI1,drop
+EcogPtPlan_bl,float64,"1.0, 4.0",6276,5182,ADNI1,drop
+EcogPtOrgan_bl,float64,"1.0, 4.0",6153,5305,ADNI1,drop
+EcogPtDivatt_bl,float64,"1.0, 4.0",6242,5216,ADNI1,drop
+EcogPtTotal_bl,float64,"1.0, 3.85294",6277,5181,ADNI1,drop
+EcogSPMem_bl,float64,"1.0, 4.0",6249,5209,ADNI1,drop
+EcogSPLang_bl,float64,"1.0, 4.0",6259,5199,ADNI1,drop
+EcogSPVisspat_bl,float64,"1.0, 4.0",6161,5297,ADNI1,drop
+EcogSPPlan_bl,float64,"1.0, 4.0",6214,5244,ADNI1,drop
+EcogSPOrgan_bl,float64,"1.0, 4.0",5960,5498,ADNI1,drop
+EcogSPDivatt_bl,float64,"1.0, 4.0",6142,5316,ADNI1,drop
+EcogSPTotal_bl,float64,"1.0, 3.94872",6253,5205,ADNI1,drop
+ABETA_bl,str,,6974,4484,,drop
+TAU_bl,str,,6974,4484,,drop
+PTAU_bl,str,,6974,4484,,drop
+FDG_bl,float64,"0.621933, 1.77617",7878,3580,,keep
+PIB_bl,float64,"1.155, 2.2825",111,11347,,drop
+AV45_bl,float64,"0.81, 2.0101",5339,6119,ADNI1,drop
+FBB_bl,float64,"0.8702, 1.909",785,10673,"ADNI1, ADNIGO, ADNI2",drop
+Years_bl,float64,"0.0, 16.961",11458,0,,keep
+Month_bl,float64,"0.0, 203.115",11458,0,,keep
+Month,int64,"0, 204",11458,0,,keep
+M,int64,"0, 204",11458,0,,keep
+update_stamp,str,,11458,0,,keep
+VISIT_MONTH,Int64,"0, 204",11458,0,,keep
+AGE,float64,"50.4, 97.88678986995208",11451,7,,keep
