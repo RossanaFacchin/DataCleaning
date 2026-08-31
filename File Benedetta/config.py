@@ -162,7 +162,7 @@ CATALOG: dict[str, Var] = {
     "COLPROT":  Var("Cohort"),
     "PHASE":    Var("Cohort", rename="COLPROT"),                      #riga aggiunta fasi PTDEMOG fr
     "VISCODE":  Var("Visit"),
-    "VISCODE2": Var("Visit"),                       #riga aggiunta PTDEMOG fr
+    "VISCODE2": Var("Visit", rename="VISCODE"),                       #riga aggiunta PTDEMOG fr
     "VISDATE":  Var("Visit", rename="EXAMDATE"),                       #riga aggiunta PTDEMOG fr
     "EXAMDATE": Var("Visit"),
     "AGE":      Var("Demographic", unit="years"),
@@ -189,7 +189,7 @@ CATALOG: dict[str, Var] = {
     "PTAU":     Var("Biomarker", rename="PT181_CSF", unit="pg/mL", role="predittore"),
     "PTADBEG":      Var("Demographic"),               #riga aggiunta  PTDEMOG fr
     "PTCOGBEG":     Var("Demographic"),               #riga aggiunta  PTDEMOG fr             
-    "PTADDX":       Var("Diagnosis"),                 #riga aggiunta  PTDEMOG fr               
+    "PTADDX":       Var("Diagnosis", "DX"),                 #riga aggiunta  PTDEMOG fr               
     "HAS_QC_ERROR": Var("QC"),                        #riga aggiunta  PTDEMOG fr               
     "update_stamp": Var("Metadata"),                  #riga aggiunta  PTDEMOG fr
 }
@@ -316,7 +316,7 @@ PTDEMOG = DatasetConfig(
     essential_columns=["PTGENDER", "PTMARRY", "PTETHCAT", "PTRACCAT"],                      
     also_required=["PTDOB"],                           # nessun secondo filtro
     recode_columns=["GENDER", "MARRY", "ETHNICITY", "RACE"],   # <-- DA CONFERMARE (niente DX qui, non presente in PTDEMOG)
-    recompute_age=False,                        # non c'è AGE, solo PTDOBYY/PTDOB (mese/anno di nascita)
+    recompute_age=True,                        # non c'è AGE, solo PTDOBYY/PTDOB (mese/anno di nascita)
     clean_fs_fields=False,                      # nessun campo FreeSurfer in questo file
     drop_columns=["VISCODE"],  # ambiguo con ADNIMERGE.VISCODE; usiamo VISCODE2 
     # compute_atn resta False: ATN calcolato solo per i file CSF, non per PTDEMOG
@@ -331,9 +331,9 @@ PTDEMOG = DatasetConfig(
     remove_single_visit=False,
     normalize_icv=False,                        # non applicabile: nessun ICV in PTDEMOG
     keep_columns=[
-        "PHASE", "PTID", "RID", "VISCODE2", "VISDATE", "SITEID",
-        "PTGENDER", "PTDOB", "PTMARRY", "PTEDUCAT", "PTETHCAT", "PTRACCAT",
-        "PTADBEG", "PTCOGBEG", "PTADDX", "HAS_QC_ERROR", "update_stamp",
+        "PHASE", "PTID", "RID", "VISCODE", "EXAMDATE", "GENDER", "PTDOB", 
+        "MARRY", "EDUCATION", "ETHNICITY", "RACE", "AGE",                       #AGE aggiunta a mano anche se non tra le variabili iniziali, ma creata in cleanining 1 e quindi non agiungibile a created
+        "PTADBEG", "PTCOGBEG", "DX", "HAS_QC_ERROR", "update_stamp",
     ],
 )
 
