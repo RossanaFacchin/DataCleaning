@@ -114,7 +114,7 @@ def add_visit_month(df, id_col, date_col):
     df["VISIT_MONTH"] = ((df[date_col] - baseline).dt.days / 30.44).round().astype("Int64")
     return df
 
-
+'%% MODIFICARE: rounding age'
 def recompute_age(df, date_col="EXAMDATE", bl_date_col="EXAMDATE_bl", age_col="AGE",
                    dob_col="PTDOB"):
     """AGE (fissa al baseline) -> AGE_bl; nuova AGE = AGE_bl + tempo trascorso per visita.
@@ -123,14 +123,17 @@ def recompute_age(df, date_col="EXAMDATE", bl_date_col="EXAMDATE_bl", age_col="A
     direttamente come (VISDATE - PTDOB) in anni, invece che per accumulo dal baseline.
     """
     df = df.copy()
-
+    print("  recompute_age: calcolo di AGE per visita")
     if dob_col in df.columns and date_col in df.columns:
+        print(f"  recompute_age: calcolo diretto da {dob_col} e {date_col}")
         dob = pd.to_datetime(df[dob_col], format="%m/%Y", errors="coerce")
         visit = pd.to_datetime(df[date_col], errors="coerce")
         df[age_col] = (visit - dob).dt.days / 365.25
         return df
     if age_col not in df.columns or bl_date_col not in df.columns:
+        print(f"  recompute_age: impossibile, manca {age_col} o {bl_date_col}")
         return df
+    print(f"  recompute_age: calcolo per accumulo da {age_col} e {bl_date_col}")
     df = df.copy().rename(columns={age_col: age_col + "_bl"})
     delta_y = (pd.to_datetime(df[date_col], errors="coerce")
                - pd.to_datetime(df[bl_date_col], errors="coerce")).dt.days / 365.25
@@ -326,6 +329,7 @@ def keep_only_columns(df, keep, extra=None):
     Restituisce (df, colonne_scartate, colonne_richieste_ma_assenti).
     """
     extra = extra or []
+    print(f"keep_only_columns: keep={keep}, extra={extra}")
     wanted = list(dict.fromkeys(list(keep) + list(extra)))     # unione senza duplicati, ordine stabile
     present = [c for c in wanted if c in df.columns]
     missing = [c for c in wanted if c not in df.columns]
