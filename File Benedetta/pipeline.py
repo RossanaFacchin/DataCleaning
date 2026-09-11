@@ -547,6 +547,34 @@ def run_all(datasets=None, do_merge=True, verbose=True):
 
     return summary
 
+# ==========================================================================
+# merge ROSSANA
+# ==========================================================================
+def merge_clean(left, right, keys=["RID", "EXAMDATE"]):
+    
+    # Controllo delle combinazioni uniche delle chiavi
+    left_keys = left[keys].drop_duplicates()
+    right_keys = right[keys].drop_duplicates()
+
+    key_match = left_keys.merge(
+        right_keys,
+        on=keys,
+        how="outer",
+        indicator=True
+    )
+
+    counts = key_match["_merge"].value_counts()
+
+    # Merge dei dataset
+    merged = pd.merge(
+        left,
+        right,
+        on=keys,
+        how="outer",
+        indicator=True
+    )
+
+    return merged, counts
 
 # ===========================================================================
 # ENTRY POINT  —  l'unico posto che esegue I/O. Pulisce tutto e mergia.
