@@ -226,10 +226,19 @@ def drop_columns(df, drop):
     return df.drop(columns=present), present, missing
 
 
+def drop_screen_fail(df, viscode_col="VISCODE"):
+    """Rimuove le righe con VISCODE == 'f' (screen fail, ADNI1). Se la colonna
+    non esiste o non contiene 'f', restituisce il df invariato senza errori."""
+    if viscode_col not in df.columns:
+        return df.copy()
+    return df[df[viscode_col] != "f"].copy()
+
+
 def run_cleaning1(cfg: DatasetConfig = ADNIMERGE) -> pd.DataFrame:
     """Orchestratore di cleaning 1: raw -> dataframe pulito (in memoria, niente I/O)."""
     df = load(cfg)                                                # download -> CSV
     df, _, _ = drop_columns(df, cfg.drop_columns)                 # rimuove colonne indesiderate (es. VISCODE in PTDEMOG)
+    df = drop_screen_fail(df, cfg.viscode_column)                 # rimuove righe VISCODE=='f' (screen fail)
     df = replace_unknown(df)                                      # replace_unknown_values
     if cfg.decensor_biomarkers:
         df = decensor(df, cfg.decensor_columns or config.columns_in("Biomarker"))
@@ -357,9 +366,9 @@ def run_cleaning2(df: pd.DataFrame, cfg: DatasetConfig = ADNIMERGE):
         log["single_visit"] = {**info, "righe_rimosse": n_before - len(df)}
 
     created = []
-    if cfg.make_dummies:
-        df, created = make_dummies(df, cfg.dummy_columns)
-        log["dummy_create"] = created
+    #if cfg.make_dummies:
+    #    df, created = make_dummies(df, cfg.dummy_columns)
+    #    log["dummy_create"] = created
 
     if cfg.volume_row_keys:
         n_before = len(df)
