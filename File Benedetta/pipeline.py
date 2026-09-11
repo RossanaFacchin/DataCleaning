@@ -590,13 +590,14 @@ if __name__ == "__main__":
     for what, why in summary["skipped"]:
         print(f"  saltato : {what}  ({why})")
 
-        """FACCHIN ROSSANA
-        Cosa deve fare il merge:
-        - merge = outer join (tutte le righe di tutti i file),
-        - creare una colonna che scelga il davo più opportuno delle variabili duplicate con eventuali accorgimenti,
-        - riutilizzare la funzione "recompute_visit_month" per ricalcolare "VISIT_MONTH",
-        - accertarsi che il dtype di tutte le colonne sia coerente (float, int, string, datetime)
-        Da fare dopo il merge:
-        - trasformare in dummys le variabili "GENDER", "RACE", "ETHNICITY", "MARRY",
-        - cancellare le variabili _x e _y (quelle duplicate da merge)
-        """
+"""FACCHIN ROSSANA
+Cosa deve fare il merge:
+- merge = outer join (tutte le righe di tutti i file),
+- creare una colonna che scelga il davo più opportuno delle variabili duplicate con eventuali accorgimenti,
+- riutilizzare la funzione "recompute_visit_month" per ricalcolare "VISIT_MONTH",
+- accertarsi che il dtype di tutte le colonne sia coerente (float, int, string, datetime)
+
+)Da fare dopo il merge:
+- trasformare in dummys le variabili "GENDER", "RACE", "ETHNICITY", "MARRY",
+- cancellare le variabili _x e _y (quelle duplicate da merge)
+"""
