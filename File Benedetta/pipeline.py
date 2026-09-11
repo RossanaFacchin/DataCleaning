@@ -128,7 +128,7 @@ def recompute_age(df, date_col="EXAMDATE", bl_date_col="EXAMDATE_bl", age_col="A
         print(f"  recompute_age: calcolo diretto da {dob_col} e {date_col}")
         dob = pd.to_datetime(df[dob_col], format="%m/%Y", errors="coerce")
         visit = pd.to_datetime(df[date_col], errors="coerce")
-        df[age_col] = (visit - dob).dt.days / 365.25
+        df[age_col] = ((visit - dob).dt.days / 365.25).round(1)
         return df
     if age_col not in df.columns or bl_date_col not in df.columns:
         print(f"  recompute_age: impossibile, manca {age_col} o {bl_date_col}")
@@ -137,7 +137,7 @@ def recompute_age(df, date_col="EXAMDATE", bl_date_col="EXAMDATE_bl", age_col="A
     df = df.copy().rename(columns={age_col: age_col + "_bl"})
     delta_y = (pd.to_datetime(df[date_col], errors="coerce")
                - pd.to_datetime(df[bl_date_col], errors="coerce")).dt.days / 365.25
-    df[age_col] = df[age_col + "_bl"] + delta_y
+    df[age_col] = df[age_col + "_bl"] + delta_y.round(1)
     return df
 
 
@@ -214,6 +214,12 @@ def add_atn_profile(df, cfg):
                           if n in df.columns and not pd.isna(r.get(n))) or np.nan, axis=1)
     return df
 
+def drop_rows_specific(df, col = "VISCODE", value =["f"]):
+    """Rimuove le righe con VISCODE == 'f' (screen fail, ADNI1). Se la colonna
+    non esiste o non contiene 'f', restituisce il df invariato senza errori."""
+    if col not in df.columns:
+        return df.copy()
+    return df[df[col] != value].copy()
 
 def drop_columns(df, drop):
     """Rimuove le colonne in `drop`, se presenti.
@@ -226,19 +232,11 @@ def drop_columns(df, drop):
     return df.drop(columns=present), present, missing
 
 
-def drop_screen_fail(df, viscode_col="VISCODE"):
-    """Rimuove le righe con VISCODE == 'f' (screen fail, ADNI1). Se la colonna
-    non esiste o non contiene 'f', restituisce il df invariato senza errori."""
-    if viscode_col not in df.columns:
-        return df.copy()
-    return df[df[viscode_col] != "f"].copy()
-
-
 def run_cleaning1(cfg: DatasetConfig = ADNIMERGE) -> pd.DataFrame:
     """Orchestratore di cleaning 1: raw -> dataframe pulito (in memoria, niente I/O)."""
     df = load(cfg)                                                # download -> CSV
     df, _, _ = drop_columns(df, cfg.drop_columns)                 # rimuove colonne indesiderate (es. VISCODE in PTDEMOG)
-    df = drop_screen_fail(df, cfg.viscode_column)                 # rimuove righe VISCODE=='f' (screen fail)
+    df = drop_rows_specific(df, col=cfg.viscode_column, value=["f"])  # rimuove righe VISCODE=='f' (screen fail)
     df = replace_unknown(df)                                      # replace_unknown_values
     if cfg.decensor_biomarkers:
         df = decensor(df, cfg.decensor_columns or config.columns_in("Biomarker"))
@@ -563,3 +561,14 @@ if __name__ == "__main__":
         print(f"  mergiato: {cat}  {shape}  da {files}")
     for what, why in summary["skipped"]:
         print(f"  saltato : {what}  ({why})")
+
+        """FACCHIN ROSSANA
+        Cosa deve fare il merge:
+        - merge = outer join (tutte le righe di tutti i file),
+        - creare una colonna che scelga il davo più opportuno delle variabili duplicate con eventuali accorgimenti,
+        - riutilizzare la funzione "recompute_visit_month" per ricalcolare "VISIT_MONTH",
+        - accertarsi che il dtype di tutte le colonne sia coerente (float, int, string, datetime)
+        Da fare dopo il merge:
+        - trasformare in dummys le variabili "GENDER", "RACE", "ETHNICITY", "MARRY",
+        - cancellare le variabili _x e _y (quelle duplicate da merge)
+        """
