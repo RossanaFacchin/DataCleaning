@@ -158,16 +158,16 @@ class Var:
 
 CATALOG: dict[str, Var] = {
     "RID":      Var("ID"),
-    "PTID":     Var("ID"),#potrebbe essere tolto
+    #"PTID":     Var("ID"),#potrebbe essere tolto
     "COLPROT":  Var("Cohort"),
     "PHASE":    Var("Cohort", rename="COLPROT"),                      #riga aggiunta fasi PTDEMOG fr
     "VISCODE":  Var("Visit"),
     "VISCODE2": Var("Visit", rename="VISCODE"),                       #riga aggiunta PTDEMOG fr
-    "VISDATE":  Var("Visit", rename="EXAMDATE"),                       #riga aggiunta PTDEMOG fr
+    "VISDATE":  Var("Visit", rename="EXAMDATE"),                      #riga aggiunta PTDEMOG fr
     "EXAMDATE": Var("Visit"),
     "AGE":      Var("Demographic", unit="years"),
     "PTGENDER": Var("Demographic", rename="GENDER"),
-    "PTDOB":    Var("Demographic"),               #riga aggiunta mese/anno PTDEMOG fr
+    "PTDOB":    Var("Demographic"),                                   #riga aggiunta mese/anno PTDEMOG fr
     "PTEDUCAT": Var("Demographic", rename="EDUCATION", unit="years"),
     "PTMARRY":  Var("Demographic", rename="MARRY"),
     "PTETHCAT": Var("Demographic", rename="ETHNICITY"),
@@ -187,9 +187,9 @@ CATALOG: dict[str, Var] = {
     "ABETA":    Var("Biomarker", rename="AB42_CSF",  unit="pg/mL", role="predittore"),
     "TAU":      Var("Biomarker", rename="TTAU_CSF",  unit="pg/mL", role="predittore"),
     "PTAU":     Var("Biomarker", rename="PT181_CSF", unit="pg/mL", role="predittore"),
-    "PTADBEG":      Var("Demographic"),               #riga aggiunta  PTDEMOG fr
-    "PTCOGBEG":     Var("Demographic"),               #riga aggiunta  PTDEMOG fr             
-    "PTADDX":       Var("Diagnosis", "DX"),                 #riga aggiunta  PTDEMOG fr               
+    "PTADBEG":      Var("Demographic"),               #riga aggiunta  PTDEMOG fr, "Participant AD BEGinning" — l'anno in cui è iniziata la diagnosi/il decorso di Alzheimer
+    "PTCOGBEG":     Var("Demographic"),               #riga aggiunta  PTDEMOG fr, l'anno in cui è iniziato il declino cognitivo             
+    "PTADDX":       Var("Diagnosis"),                 #riga aggiunta  PTDEMOG fr ,l'anno della diagnosi di Alzheimer              
     "HAS_QC_ERROR": Var("QC"),                        #riga aggiunta  PTDEMOG fr               
     "update_stamp": Var("Metadata"),                  #riga aggiunta  PTDEMOG fr
 }
