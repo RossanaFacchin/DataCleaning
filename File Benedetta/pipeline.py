@@ -14,10 +14,10 @@ dentro le celle arrivano da config.py.
     drop_if_all_none  x2                  drop_if_all_none()   [essential + also_required]
     to_date_format                        parse_dates()
     find_exam_code                        dedup_visits() + add_visit_month()
-    add_calculated_age                    recompute_age()
-    binarization_gender / categorize_*    recode()             [mappe in config.RECODE]
+    add_calculated_age                    derive_variables()   [AGE e rapporti: 'derived' in catalog.json]
+    binarization_gender / categorize_*    recode()             [mappe in config.RECODE, per sorgente]
     FLDSTRENG/FSVERSION .str.extract      clean_fs_fields()
-    new_variable_names (legge l'Excel)    rename_variables()   [mappa in config.CATALOG]
+    new_variable_names (legge l'Excel)    rename_variables()   [alias in catalog.json]
     (solo file CSF) get_ATN_profile       add_atn_profile()    [ADNIMERGE non lo usa]
     -- cleaning 2 / 3 --
     remove_param_few_subjects             drop_sparse_columns()
@@ -49,6 +49,7 @@ Uso:
 from __future__ import annotations
 import json
 import subprocess
+import warnings
 from datetime import datetime
 from pathlib import Path
 
@@ -129,9 +130,43 @@ def load(cfg):
     return pd.read_csv(cfg.source, low_memory=False)
 
 
-def replace_unknown(df):
-    """Sostituisce i sentinella di missing (-4, 'Unknown', 9999...) con NaN veri."""
-    return df.replace(config.UNKNOWN_SENTINELS, np.nan)
+def drop_columns(df, cols):
+    """[D016] Toglie colonne GREZZE indesiderate appena caricato il file, prima del rename
+    (es. VISCODE dove c'e' anche VISCODE2). Restituisce (df, colonne_tolte, richieste_ma_assenti).
+    Dal branch Assignment_analysis_fr (collega)."""
+    cols = list(dict.fromkeys(cols))                       # niente duplicati, ordine stabile
+    present = [c for c in cols if c in df.columns]
+    missing = [c for c in cols if c not in df.columns]
+    return df.drop(columns=present), present, missing
+
+
+def missing_values_for(cfg):
+    """[D027] Segnaposto di mancante per questo file: testi sempre + codici numerici del file."""
+    codes = config.DEFAULT_MISSING_CODES if cfg.missing_codes is None else cfg.missing_codes
+    return list(config.MISSING_STRINGS) + list(codes)
+
+
+def replace_unknown(df, values=None):
+    """Sostituisce i segnaposto di mancante ('Unknown', -4, 9999...) con NaN veri.
+    `values` arriva da missing_values_for(cfg): i codici numerici dipendono dal file [D027]."""
+    if values is None:
+        values = list(config.MISSING_STRINGS) + list(config.DEFAULT_MISSING_CODES)
+    return df.replace(values, np.nan)
+
+
+def drop_rows_by_value(df, rules):
+    """[D028] Scarta le righe in cui una colonna (NOME STANDARD) ha uno dei valori indicati,
+    es. {"VISCODE": ["f"]} = screen fail. Colonna assente -> regola ignorata.
+    Restituisce (df, {colonna: righe_tolte})."""
+    removed = {}
+    for col, values in rules.items():
+        if col not in df.columns:
+            removed[col] = "colonna assente: regola ignorata"
+            continue
+        mask = df[col].isin(values)
+        removed[col] = int(mask.sum())
+        df = df[~mask]
+    return df.copy(), removed
 
 
 def drop_required(df, cols):
@@ -163,11 +198,35 @@ def drop_if_all_none(df, cols):
     return df.dropna(subset=present, how="all") if present else df
 
 
-def parse_dates(df, cols):
-    """Converte le colonne indicate in datetime vero."""
+_MONTH_ONLY = r"\s*\d{1,2}/\d{4}\s*"          # es. "07/1940": data nota solo come mese/anno
+
+
+def month_only_mask(s):
+    """True per i valori scritti come MM/YYYY (giorno non noto)."""
+    return s.notna() & s.astype(str).str.fullmatch(_MONTH_ONLY)
+
+
+def parse_dates(df, cols, month_precision=()):
+    """Converte le colonne indicate in datetime vero.
+
+    [D029] Per le colonne in `month_precision` (es. PTDOB) i valori MM/YYYY vengono letti con
+    formato esplicito e il giorno, che non e' noto, e' imputato a config.DOB_IMPUTED_DAY (15):
+    errore centrato invece che sempre in eccesso. Le date COMPLETE, anche nella stessa colonna,
+    non vengono toccate; le altre colonne (EXAMDATE...) restano esattamente come sono.
+    """
     df = df.copy()
     for c in cols:
-        if c in df.columns:
+        if c not in df.columns:
+            continue
+        if c in month_precision:
+            raw = df[c]
+            month = month_only_mask(raw)
+            parsed = pd.to_datetime(raw.where(~month), errors="coerce")
+            imputed = (pd.to_datetime(raw[month].astype(str).str.strip(), format="%m/%Y")
+                       + pd.Timedelta(days=config.DOB_IMPUTED_DAY - 1))
+            parsed.loc[month] = imputed
+            df[c] = parsed
+        else:
             df[c] = pd.to_datetime(df[c], errors="coerce")
     return df
 
@@ -190,36 +249,153 @@ def add_visit_month(df, id_col, date_col):
     return df
 
 
-def recompute_age(df, date_col="EXAMDATE", bl_date_col="EXAMDATE_bl", age_col="AGE"):
-    """AGE (fissa al baseline) -> AGE_bl; nuova AGE = AGE_bl + tempo trascorso per visita."""
-    if age_col not in df.columns or bl_date_col not in df.columns:
-        return df
-    df = df.copy().rename(columns={age_col: age_col + "_bl"})
-    delta_y = (pd.to_datetime(df[date_col], errors="coerce")
-               - pd.to_datetime(df[bl_date_col], errors="coerce")).dt.days / 365.25
-    df[age_col] = df[age_col + "_bl"] + delta_y
-    return df
+# ---------------------------------------------------------------------------
+# VARIABILI DERIVATE  [D019, D030]  —  il catalogo dice COSA si calcola e DA COSA
+#   (campo 'derived': modi di calcolo in ordine di preferenza); qui c'e' il COME.
+#   'by' = nome di una funzione di DERIVATIONS. Le derivate con un 'by' che e' un
+#   passo della pipeline (add_visit_month, add_atn_profile, add_constant_columns)
+#   sono calcolate da quel passo, non da qui.
+# ---------------------------------------------------------------------------
+def _years_between(later, earlier):
+    return (pd.to_datetime(later, errors="coerce") - pd.to_datetime(earlier, errors="coerce")).dt.days / 365.25
 
 
-def unmapped_values(df, cols):
+def age_from_dob(df, dob, visit):
+    """AGE = (data visita - data di nascita) in anni (caso PTDEMOG, dalla collega). PTDOB e'
+    gia' una data: se nota solo come mese/anno ha il giorno imputato a meta' mese [D029]."""
+    return _years_between(df[visit], df[dob]).round(config.AGE_ROUND_DECIMALS)
+
+
+def age_from_baseline(df, age_bl, visit, visit_bl):
+    """AGE = AGE_bl + tempo trascorso dalla visita di baseline (caso ADNIMERGE, ex
+    add_calculated_age). Si arrotonda solo il valore FINALE [D030]."""
+    age = pd.to_numeric(df[age_bl], errors="coerce") + _years_between(df[visit], df[visit_bl])
+    return age.round(config.AGE_ROUND_DECIMALS)
+
+
+def ratio(df, num, den):
+    """Rapporto numeratore/denominatore (es. AB42/AB40)."""
+    return pd.to_numeric(df[num], errors="coerce") / pd.to_numeric(df[den], errors="coerce")
+
+
+DERIVATIONS = {"age_from_dob": age_from_dob, "age_from_baseline": age_from_baseline, "ratio": ratio}
+
+
+def derive_variables(df, id_col="RID"):
+    """Calcola le variabili 'derived' del catalogo che hanno un modo di calcolo in DERIVATIONS.
+    Restituisce (df, info) con, per ogni variabile, cosa e' successo [D019]:
+
+      - gia' nel file (dato MISURATO): non si ricalcola, il misurato vince. Se gli input di un
+        modo di calcolo ci sono, si calcola comunque per CONFRONTO e si registrano le righe
+        oltre config.DERIVED_CHECK_TOLERANCE (solo per le variabili li' elencate);
+      - assente: si usa il primo modo di calcolo con tutti gli input presenti. Le righe rimaste
+        senza valore vanno a log con, per soggetto, quali input mancano;
+      - assente e non calcolabile, ma con almeno un input presente: si registra cosa manca.
+    I RID finiscono solo nel run log locale (escluso da git).
+    """
+    df = df.copy()
+    info = {}
+    for name, var in config.derived_vars().items():
+        recipes = [r for r in var.derived if r["by"] in DERIVATIONS]
+        if not recipes:
+            continue                                   # calcolata da un passo dedicato
+        usable = [r for r in recipes if all(c in df.columns for c in r["from"])]
+        if name in df.columns:                         # MISURATA: vince il file
+            entry = {"origine": "dal_file"}
+            tol = config.DERIVED_CHECK_TOLERANCE.get(name)
+            if usable and tol is not None:
+                r = usable[0]
+                computed = DERIVATIONS[r["by"]](df, *r["from"])
+                diff = (pd.to_numeric(df[name], errors="coerce") - computed).abs()
+                bad = diff > tol
+                entry["controllo"] = {
+                    "modo": r["by"], "tolleranza": tol, "righe_confrontate": int(diff.notna().sum()),
+                    "righe_oltre_tolleranza": int(bad.sum()),
+                    "soggetti_oltre_tolleranza": int(df.loc[bad, id_col].nunique()) if id_col in df else None,
+                    "RID_oltre_tolleranza": sorted(df.loc[bad, id_col].dropna().unique().tolist())
+                                            if id_col in df else None,
+                }
+                if bad.any():
+                    warnings.warn(f"{name}: {int(bad.sum())} righe con differenza > {tol} tra valore "
+                                  f"del file e valore calcolato ({r['by']})")
+            info[name] = entry
+            continue
+        if not usable:                                 # non calcolabile
+            missing = {r["by"]: [c for c in r["from"] if c not in df.columns] for r in recipes}
+            if any(len(m) < len(r["from"]) for r, m in zip(recipes, missing.values())):
+                info[name] = {"origine": "non_calcolabile", "colonne_mancanti_per_modo": missing}
+            continue
+        r = usable[0]
+        df[name] = DERIVATIONS[r["by"]](df, *r["from"])
+        nan = df[name].isna()
+        entry = {"origine": "calcolata", "modo": r["by"], "da": r["from"],
+                 "righe_senza_valore": int(nan.sum())}
+        if nan.any() and id_col in df.columns:
+            per_rid = {}
+            for rid, row in df.loc[nan, [id_col] + r["from"]].iterrows():
+                key = str(row[id_col])
+                per_rid.setdefault(key, set()).update(c for c in r["from"] if pd.isna(row[c]))
+            entry["soggetti_senza_valore"] = len(per_rid)
+            entry["input_mancanti_per_RID"] = {k: sorted(v) for k, v in per_rid.items()}
+        info[name] = entry
+    return df, info
+
+
+def _recode_map(col, file_code):
+    return config.recode_map(col, file_code)
+
+
+def unmapped_values(df, cols, file_code=None):
     """Valori presenti nei dati ma assenti dalla mappa RECODE: recode() li trasformerebbe
     in NaN in silenzio. Restituisce {colonna: {valore: conteggio}} (solo colonne con casi)."""
     out = {}
     for c in cols:
-        if c in df.columns and c in config.RECODE:
+        mapping = _recode_map(c, file_code)
+        if c in df.columns and mapping:
             s = df[c].dropna()
-            missing = s[~s.isin(list(config.RECODE[c].keys()))]
+            s = s[~_multi_mask(s, c)]                    # i valori multipli hanno la loro regola
+            missing = s[~s.isin(list(mapping.keys()))]
             if len(missing):
                 out[c] = {str(k): int(v) for k, v in missing.value_counts().items()}
     return out
 
 
-def recode(df, cols):
-    """Stringa categorica -> etichetta standard, secondo le mappe in config.RECODE."""
+def values_outside_levels(df, cols):
+    """Etichette dopo il recode che non sono tra i 'levels' del catalogo (dovrebbe essere vuoto)."""
+    out = {}
+    cat = config.catalog()
+    for c in cols:
+        levels = cat[c].levels if c in cat else None
+        if c in df.columns and levels:
+            s = df[c].dropna()
+            bad = s[~s.isin(list(levels))]
+            if len(bad):
+                out[c] = {str(k): int(v) for k, v in bad.value_counts().items()}
+    return out
+
+
+def _multi_mask(s, col):
+    """True per i valori che contengono il separatore di config.RECODE_MULTI (es. RACE '1|5')."""
+    if col not in config.RECODE_MULTI:
+        return pd.Series(False, index=s.index)
+    sep = config.RECODE_MULTI[col][0]
+    return s.notna() & s.astype(str).str.contains(sep, regex=False)
+
+
+def recode(df, cols, file_code=None):
+    """Valore grezzo -> etichetta standard, secondo config.RECODE: mappa generica ("*") +
+    mappa del file sorgente (file_code) [D018]. I valori multipli (es. RACE '1|5') prendono
+    l'etichetta di config.RECODE_MULTI [D031]. Le etichette sono i 'levels' del catalogo."""
     df = df.copy()
     for c in cols:
-        if c in df.columns and c in config.RECODE:
-            df[c] = df[c].map(config.RECODE[c])
+        mapping = _recode_map(c, file_code)
+        if c in df.columns and mapping:
+            multi = _multi_mask(df[c], c)
+            mapped = df[c].map(mapping)
+            if multi.any():
+                mapped = mapped.astype(object)
+                mapped[multi] = config.RECODE_MULTI[c][1]
+            df[c] = mapped
     return df
 
 
@@ -251,15 +427,17 @@ def plan_rename(df, cfg):
 
 
 def rename_variables(df, cfg):
-    """Rinomina nei nomi standard: CATALOG globale + categoria + override per-file.
+    """Rinomina nei nomi standard con gli alias di catalog.json [D017]: per questo file
+    (cfg.dataset, cfg.file_code) vince l'alias piu' specifico.
 
     A prova di collisione: se un rename porterebbe due colonne allo STESSO nome
     (es. il grezzo ha gia' 'CDRSB' e un'altra colonna verrebbe mappata li'), quel
     rename viene SALTATO (si tiene il grezzo), cosi' non nascono colonne duplicate.
     """
     safe, collisions = plan_rename(df, cfg)
-    if collisions:
-        print(f"  [rename] {cfg.file_code}: saltati per collisione (tenuto il grezzo): {collisions}")
+    if collisions:                                       # [D016] warning, non solo print
+        warnings.warn(f"[rename] {cfg.file_code}: saltati per collisione (tenuto il grezzo): "
+                      f"{collisions}. Valutare drop_columns nel DatasetConfig.")
     return df.rename(columns=safe)
 
 
@@ -273,15 +451,11 @@ def add_constant_columns(df, mapping):
     return df
 
 
-def add_derived_ratios(df, ratios):
-    """Rapporti generici {nome: (num, den)} in nomi standard (es. AB42/AB40)."""
-    if not ratios:
-        return df
-    df = df.copy()
-    for name, (num, den) in ratios.items():
-        if num in df.columns and den in df.columns:
-            df[name] = pd.to_numeric(df[num], errors="coerce") / pd.to_numeric(df[den], errors="coerce")
-    return df
+def drop_scope_columns(df, scope):
+    """[D032] Toglie le colonne che il catalogo dichiara con questo ciclo di vita
+    (es. scope 'cleaning' a fine cleaning 1: PTDOB, EXAMDATE_bl). Restituisce (df, tolte)."""
+    cols = [c for c in config.scope_vars(scope) if c in df.columns]
+    return df.drop(columns=cols), cols
 
 
 def add_atn_profile(df, cfg):
@@ -326,10 +500,17 @@ def run_cleaning1(cfg: DatasetConfig = ADNIMERGE):
     log["shape_iniziale"] = df.shape
     log["soggetti_iniziali"] = _n_subjects(df, cfg.id_column)
 
-    n_na = int(df.isna().sum().sum())
-    new = replace_unknown(df)                                     # replace_unknown_values
-    df = _log_step(log, "replace_unknown", df, new,
-                   valori_convertiti_in_NaN=int(new.isna().sum().sum()) - n_na)
+    if cfg.drop_columns:                                          # [D016] prima del rename
+        new, removed, absent = drop_columns(df, cfg.drop_columns)
+        df = _log_step(log, "drop_columns", df, new, richieste_ma_assenti=absent)
+        if absent:
+            warnings.warn(f"{cfg.file_code}: drop_columns richiede colonne assenti: {absent}")
+
+    values = missing_values_for(cfg)                              # [D027] codici del file
+    new = replace_unknown(df, values)                             # replace_unknown_values
+    per_col = (new.isna().sum() - df.isna().sum())
+    df = _log_step(log, "replace_unknown", df, new, valori_cercati=values,
+                   convertiti_in_NaN_per_colonna={c: int(n) for c, n in per_col.items() if n > 0})
 
     safe, collisions = plan_rename(df, cfg)                      # <-- RENAME FIRST (#4)
     df = _log_step(log, "rename_variables", df, rename_variables(df, cfg),
@@ -339,6 +520,13 @@ def run_cleaning1(cfg: DatasetConfig = ADNIMERGE):
         cols = cfg.decensor_columns or config.columns_in("Biomarker")
         df = _log_step(log, "decensor", df, decensor(df, cols),
                        colonne=[c for c in cols if c in df.columns])
+    if cfg.drop_rows:                                             # [D028] es. screen fail
+        n_subj = _n_subjects(df, cfg.id_column)
+        new, removed = drop_rows_by_value(df, cfg.drop_rows)
+        df = _log_step(log, "drop_rows_by_value", df, new, regole=cfg.drop_rows,
+                       righe_tolte_per_colonna=removed,
+                       soggetti_persi=(n_subj - _n_subjects(new, cfg.id_column))
+                       if n_subj is not None else None)
     df = _log_step(log, "drop_required", df, drop_required(df, cfg.required_all_present),
                    colonne=cfg.required_all_present)             # [#1] scarta se manca ID/data
     df = _log_step(log, "drop_if_all_none (essential_columns)", df,
@@ -347,7 +535,21 @@ def run_cleaning1(cfg: DatasetConfig = ADNIMERGE):
     df = _log_step(log, "drop_if_all_none (also_required)", df,
                    drop_if_all_none(df, cfg.also_required),      # 2° filtro (es. DX obbligatoria)
                    colonne=cfg.also_required)
-    df = _log_step(log, "parse_dates", df, parse_dates(df, [cfg.date_column]))   # to_date_format
+    # date: date_column + tutte le variabili 'date' del catalogo presenti; la precisione
+    # mese/anno viene dal catalogo (date_precision='month') [D029]
+    dates = config.date_vars()
+    date_cols = [cfg.date_column] + [c for c in dates if c in df.columns and c != cfg.date_column]
+    month_cols = [c for c, v in dates.items() if v.date_precision == "month"]
+    imputed = {c: int(month_only_mask(df[c]).sum())              # [D029] giorno messo a 15
+               for c in month_cols if c in df.columns}
+    n_nat = {c: int(df[c].isna().sum()) for c in date_cols if c in df.columns}
+    new = parse_dates(df, date_cols, month_cols)                 # to_date_format
+    df = _log_step(log, "parse_dates", df, new,
+                   colonne=[c for c in date_cols if c in df.columns],
+                   giorno_imputato_per_colonna=imputed,
+                   date_non_leggibili_rese_NaT={c: int(new[c].isna().sum()) - n
+                                                for c, n in n_nat.items()
+                                                if int(new[c].isna().sum()) - n > 0})
 
     has_keys = (cfg.date_column in df.columns) and (cfg.id_column in df.columns)
     if has_keys:
@@ -359,25 +561,30 @@ def run_cleaning1(cfg: DatasetConfig = ADNIMERGE):
         missing = [c for c in (cfg.id_column, cfg.date_column) if c not in df.columns]
         _log_skip(log, "dedup_visits + add_visit_month", f"mancano le colonne chiave {missing}")
 
-    if cfg.recompute_age:
-        if cfg.date_column in df.columns:
-            df = _log_step(log, "recompute_age", df, recompute_age(df, cfg.date_column))
-        else:
-            _log_skip(log, "recompute_age", f"manca la colonna '{cfg.date_column}'")
+    # derivate del catalogo: AGE (da PTDOB o da AGE_bl), rapporti...  [D019, D030]
+    # (ex add_calculated_age + derived_ratios; niente flag: si calcola se manca e si puo')
+    new, derived = derive_variables(df, cfg.id_column)
+    df = _log_step(log, "derive_variables", df, new, **derived)
 
-    df = _log_step(log, "recode", df, recode(df, cfg.recode_columns),   # etichette standard (#3)
+    df = _log_step(log, "recode", df, recode(df, cfg.recode_columns, cfg.file_code),  # (#3)
                    colonne=[c for c in cfg.recode_columns if c in df.columns],
-                   valori_non_mappati_resi_NaN=unmapped_values(df, cfg.recode_columns))
+                   valori_non_mappati_resi_NaN=unmapped_values(df, cfg.recode_columns, cfg.file_code))
+    outside = values_outside_levels(df, cfg.recode_columns)
+    if outside:
+        log["passi"][-1].setdefault("dettagli", {})["etichette_fuori_dai_levels"] = outside
+        warnings.warn(f"{cfg.file_code}: etichette non previste dai levels del catalogo: {outside}")
     if cfg.clean_fs_fields:
         df = _log_step(log, "clean_fs_fields", df, clean_fs_fields(df))  # FLDSTRENG/FSVERSION
     if cfg.constant_columns:                                     # stampa il metodo/assay
         df = _log_step(log, "add_constant_columns", df,
                        add_constant_columns(df, cfg.constant_columns), valori=cfg.constant_columns)
-    if cfg.derived_ratios:                                       # rapporti generici (es. AB42/AB40)
-        df = _log_step(log, "add_derived_ratios", df, add_derived_ratios(df, cfg.derived_ratios))
     if cfg.compute_atn:                                          # file con profilo ATN (CSF/plasma/PET)
         df = _log_step(log, "add_atn_profile", df, add_atn_profile(df, cfg),
                        metodo=cfg.atn_method)
+
+    new, dropped = drop_scope_columns(df, "cleaning")            # [D032] es. PTDOB, EXAMDATE_bl
+    if dropped:
+        df = _log_step(log, "drop_scope_columns (cleaning)", df, new)
 
     log["shape_finale"] = df.shape
     log["soggetti_finali"] = _n_subjects(df, cfg.id_column)
@@ -423,13 +630,22 @@ def make_dummies(df, cols):
 
     [nota Chiara #3] le categoriche sono gia' ETICHETTE STANDARD (stringhe) dopo
     recode, quindi le dummy escono leggibili (DX_CN, GENDER_male) e i NaN non
-    generano colonna. Restituisce (df, colonne_dummy_create).
+    generano colonna. Se la variabile ha i 'levels' nel catalogo si crea una colonna
+    per OGNI livello, anche se in questo file manca: cosi' file diversi hanno le stesse
+    dummy. [D026: si usa dopo il merge] Restituisce (df, colonne_dummy_create).
     """
     df = df.copy()
     present = [c for c in cols if c in df.columns]
     before = set(df.columns)
-    if present:
-        df = pd.get_dummies(df, columns=present, dtype=int)
+    cat = config.catalog()
+    with_levels = [c for c in present if c in cat and cat[c].levels]
+    for c in with_levels:
+        for level in sorted(cat[c].levels, key=cat[c].levels.get):
+            df[f"{c}_{level}"] = (df[c] == level).astype(int)
+        df = df.drop(columns=c)
+    others = [c for c in present if c not in with_levels]
+    if others:
+        df = pd.get_dummies(df, columns=others, dtype=int)
     created = [c for c in df.columns if c not in before]
     return df, created
 
@@ -506,7 +722,7 @@ def run_cleaning2(df: pd.DataFrame, cfg: DatasetConfig = ADNIMERGE):
     if cfg.keep_columns:
         # dummy generate, colonne calcolate, volumi %ICV e le COSTANTI (metodo/assay) si
         # tengono in automatico: NON vanno elencate a mano nel config.
-        engineered = [c for c in ("VISIT_MONTH", "AGE_bl") if c in df.columns]
+        engineered = [c for c in config.derived_vars() if c in df.columns]   # dal catalogo
         auto = created + engineered + list(renamed_vol.values()) + list(cfg.constant_columns)
         new, dropped_cols, missing_cols = keep_only_columns(df, cfg.keep_columns, extra=auto)
         df = _log_step(log, "keep_only_columns", df, new,
@@ -816,6 +1032,7 @@ def run_all(datasets=None, do_merge=True, verbose=True):
     Restituisce un riepilogo (dict) di cosa e' stato pulito / saltato / mergiato.
     """
     datasets = datasets or config.DATASETS
+    config.catalog()                                 # catalogo letto e validato subito: se e' rotto, ci si ferma qui
     cleaned_by_category, summary = {}, {"cleaned": [], "skipped": [], "merged": []}
     run_info = {"eseguito_il": datetime.now().isoformat(timespec="seconds"),
                 "commit_git": _git_commit()}

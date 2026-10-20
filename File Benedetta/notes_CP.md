@@ -98,3 +98,12 @@ viene mantenuto il nome originale e in CATALOG resta il riferimento dell'unità 
 
 12. affrontare i metadati
 ora in CATALOG ma con modifiche dummies e volumi o altro si perde il link... come fare?
+
+13. verificare tutte le mappature RECODE (da fare in un secondo momento)
+Controllare sul dizionario dati ADNI tutte le mappature di `config.RECODE`, sia le stringhe di ADNIMERGE sia i codici numerici di PTDEMOG portati dal branch Assignment_analysis_fr (D031). In particolare: MARRY 6 → married, RACE 8 e 9 → hawaiian, RACE "/" → mixed, e i valori multipli tipo "1|5" → mixed. Le mappature sono state portate tali e quali, ritenute accurate.
+
+14. rivedere catalog.json (dopo i passi 4-6 del 20/10/2026)
+- Definizioni: sono in bozza (scritte da Claude), da rileggere voce per voce; le voci create dalla migrazione dei rename hanno "Definizione in bozza" e vanno completate.
+- Due rename del generatore di bozze, migrati tali e quali ma clinicamente dubbi: CDR `CDGLOBAL -> CDRSB` (CDR globale 0-3 non e' il Sum of Boxes 0-18) e APOERES `GENOTYPE -> APOE4` (genotipo vs numero di alleli e4). Vedi DECISIONI D017.
+- Codici standard: verificati solo MMSE (LOINC 72106-8) e MoCA (LOINC 72172-0). Completare a mano su Athena / loinc.org / AD-Mapper (D033).
+- Domini nuovi introdotti: History (PTADBEG, PTCOGBEG, PTADDX), QC, Metadata: confermare o rinominare.

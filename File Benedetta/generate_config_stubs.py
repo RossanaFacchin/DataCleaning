@@ -25,7 +25,7 @@ import warnings
 from pathlib import Path
 import pandas as pd
 
-import config   # solo per config.RENAME (grezzo->standard da CATALOG.aliases): match ESATTO
+import config   # solo per gli alias di catalog.json (grezzo->standard): match ESATTO [D017]
 
 SAMPLE_ROWS = 500
 # output della pipeline / file di test: non sono grezzi in ingresso
@@ -98,6 +98,8 @@ def stub_for(path: Path, reverse: dict):
     prof = {c: profile_col(df[c]) for c in cols} if len(df) else {c: {"kind": "?", "distinct": 0, "censored": False} for c in cols}
     code = DATE_SUFFIX.sub("", re.sub(r"\.csv$", "", path.name, flags=re.I)).strip("_")
     var = varname(code)
+    # alias gia' noti per QUESTO file (anche quelli qualificati col file_code) + generici
+    reverse = {**reverse, **config.rename_map_for("ADNI", code, keep_identity=True)}
 
     date_c, id_c, visit_c = detect_candidates(cols, prof)
     # rename automatico: SOLO match esatto col CATALOG (nessuna euristica)
@@ -168,12 +170,12 @@ def stub_for(path: Path, reverse: dict):
     if len(visit_c) == 1:
         L.append(f'    viscode_reference="{visit_c[0]}",')
     if auto_rename:
-        L.append(f"    rename={{                                    # SOLO match esatto col CATALOG")
+        L.append(f"    # rename automatico dagli alias di catalog.json (match esatto):")
         for r, s in auto_rename.items():
-            L.append(f"        {r!r}: {s!r},")
-        L.append(f"    }},")
+            L.append(f"    #   {r} -> {s}")
     if unknown:
-        L.append(f"    # {len(unknown)} colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):")
+        L.append(f"    # {len(unknown)} colonne DA DECIDERE (keep/scarta, o rinomina aggiungendo in")
+        L.append(f"    # catalog.json alla voce standard l'alias 'ADNI:{code}.<colonna>'):")
         L.append(f"    #   {unknown}")
     if st_cols:
         L.append(f"    # + {len(st_cols)} colonne ST* FreeSurfer da mappare col dizionario ADNI")
@@ -190,7 +192,7 @@ def stub_for(path: Path, reverse: dict):
 
 
 def main(folder: str = "."):
-    reverse = getattr(config, "RENAME", {})
+    reverse = config.rename_map_for("ADNI", keep_identity=True)   # alias generici (*:* e ADNI:*)
     csvs = sorted(p for p in Path(folder).glob("*.csv")
                   if not any(tok in p.name for tok in EXCLUDE))
     if not csvs:

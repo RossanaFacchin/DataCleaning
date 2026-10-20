@@ -27,14 +27,16 @@ Possibile estensione futura: inclusione di altri dataset di ADNI, ma anche poi d
 | Percorso | Cos'è | Stato |
 |---|---|---|
 | `File Benedetta/` | **Versione di riferimento attuale** del framework (config + pipeline) | Si lavora qui |
-| `File Benedetta/config.py` | Decisioni e dati (ex Excel) | Si modifica |
+| `File Benedetta/config.py` | Decisioni: POLICY, RECODE, `DatasetConfig` dei file, merge; carica e valida il catalogo | Si modifica |
+| `File Benedetta/catalog.json` | **Catalogo delle variabili**: definizione, unità, alias `DATASET:FILE.colonna`, derivate, levels, scope, codici standard | Dato, unica fonte di verità sulle variabili |
 | `File Benedetta/pipeline.py` | Logica di pulizia, merge, armonizzazione, report | Si modifica solo per *nuove operazioni* |
+| `File Benedetta/export_catalog.py` | Vista tabellare del catalogo e dizionario dati dei file puliti (solo consultazione) | Strumento |
 | `File Benedetta/cutoffs.json` | Soglie ATN (trasformano i dati → cleaning) | Dato |
 | `File Benedetta/ranges.json` | Range `[min, max, direzione]` per colonna, sezioni `normalization`/`volume`/`cofattori` (metadati → merge) | Dato |
 | `File Benedetta/generate_config_stubs.py` | Genera bozze di `DatasetConfig` osservando i file | Strumento |
 | `File Benedetta/config_datasets_draft.py` | Output del generatore: bozze con TODO | Generato, da rivedere |
 | `File Benedetta/count_bridges.py` | Conta i campioni-ponte tra metodi (per l'armonizzazione) | Strumento |
-| `File Benedetta/README_config.md` | Spiegazione del passaggio Excel → `config.py` (cleaning 1) | Parzialmente superato (vedi §9) |
+| `File Benedetta/README_config.md` | Guida al codice attuale (config, catalogo, pipeline, log) | Aggiornato al 20/10/2026 |
 | `File Benedetta/NOTE_PER_ROSSANA.md` | Errori tipici e checklist | Riferimento |
 | `File Benedetta/notes_CP.md` | Note di Chiara: domande, proposte, cose da fare | **Backlog di lavoro** (questioni aperte) |
 | `File Benedetta/DECISIONI.md` | Registro storico delle decisioni chiuse (dati e struttura del codice) | Aggiornato a fine sessione |
@@ -116,15 +118,25 @@ Corollari:
 ## 5. Le fasi della pipeline (stato attuale)
 
 **Cleaning 1** — `run_cleaning1(cfg)`, singolo file:
-`load` → `replace_unknown` → **`rename_variables` (per primo)** → `decensor` (opz.) →
-`drop_required` (manca anche una) → `drop_if_all_none` (essential, poi also_required) →
-`parse_dates` → `dedup_visits` + `add_visit_month` → `recompute_age` (opz.) →
-`recode` (in **etichette stringa standard**, non numeri) → `clean_fs_fields` (opz.) →
-`add_constant_columns` (metodo/assay) → `add_derived_ratios` → `add_atn_profile` (opz.)
+`load` → `drop_columns` (grezze, D016) → `replace_unknown` (codici del file, D027) →
+**`rename_variables` (per primo)** → `decensor` (opz.) → `drop_rows_by_value` (es. screen
+fail, D028) → `drop_required` (manca anche una) → `drop_if_all_none` (essential, poi
+also_required) → `parse_dates` (date_column + variabili `dtype: date` del catalogo;
+giorno 15 solo per `date_precision: month`, D029) → `dedup_visits` + `add_visit_month` →
+`derive_variables` (variabili `derived` del catalogo: AGE da PTDOB o da AGE_bl a 1
+decimale, rapporti; il misurato vince, D019/D030) → `recode` (in **etichette stringa
+standard**, per sorgente) → `clean_fs_fields` (opz.) → `add_constant_columns`
+(metodo/assay) → `add_atn_profile` (opz.) → `drop_scope_columns` (variabili con
+`scope: cleaning`, es. PTDOB, D032)
 
 **Cleaning 2/3** — `run_cleaning2(df, cfg)`, singolo file, in memoria:
-`drop_sparse_columns` → `remove_single_visit_subjects` → `make_dummies` →
-`normalize_volumes_icv` (rinomina in `<vol>%ICV`) → `keep_only_columns`
+`drop_sparse_columns` → `remove_single_visit_subjects` → `make_dummies` (spento: le dummy
+si fanno dopo il merge, D026) → `normalize_volumes_icv` (rinomina in `<vol>%ICV`) →
+`keep_only_columns`
+
+**Attenzione alle date.** Nessuna data va "normalizzata" in blocco: l'imputazione del
+giorno vale solo per le variabili con `date_precision: month` nel catalogo e solo per i valori
+`MM/YYYY`. Ogni modifica che tocca date o età va verificata riga per riga contro il grezzo.
 
 **Armonizzazione + merge per categoria** — `merge_category` / `run_harmonization`:
 impila i file puliti di una categoria (long), armonizza le misure multi-metodo su un
@@ -147,18 +159,33 @@ Sulla macchina di Chiara Python è quello di Anaconda: `~/anaconda3/python.exe`
 
 ---
 
-## 6. Elementi chiave del `config.py`
+## 6. Elementi chiave di `config.py` e `catalog.json`
 
-- **POLICY**: sentinelle dei mancanti, prefissi censurati, soglie.
-- **`CATALOG`**: indicizzato per **nome standard**; `Var(parameter, unit, role, aliases)`.
-  Gli `aliases` sono i nomi grezzi noti; la mappa grezzo→standard si genera da qui
-  con controllo anti-collisione all'import.
-- **Precedenza del rename** (`effective_rename`): CATALOG globale < `CATEGORY_RENAME`
-  (stesso grezzo → standard diverso per matrice, es. `ABETA42` → `AB42_PL`/`AB42_CSF`)
-  < `rename` per-file.
-- **`RECODE`**: mappe categoria → etichetta standard (chiavi = nomi standard).
-- **`DatasetConfig`**: scheda d'identità di ogni file (chiavi, categoria, filtri,
-  flag delle operazioni, output).
+- **`catalog.json`** (D006, D017, D018): unica fonte di verità sulle variabili. Chiave =
+  nome standard; campi `domain`, `definition`, `unit` (UCUM), `role`, `scope`
+  (`cleaning`/`merge`/`output`), `dtype`, `date_precision`, `aliases`, `derived`, `levels`,
+  `method_col`, codici standard, `note`, `log_ref`. Letto e validato da `config.catalog()`
+  (errore esplicito se qualcosa non torna). **Mai** rimettere variabili, alias o rename nel
+  `.py`; mai inserire codici standard non verificati su una fonte ufficiale (D033).
+- **Alias e precedenza del rename** (D017): `DATASET:FILE.colonna`, con `FILE` = `file_code`
+  o `*`; il nome nudo vale `*:*`. Vince il più specifico: file preciso > `ADNI:*` > `*:*`.
+  Stesso alias allo stesso livello per due variabili = errore. Per rinominare una colonna di
+  un file nuovo si aggiunge un alias al catalogo, non un campo nel `DatasetConfig`.
+- **Derivate** (D019): `derived` = modi di calcolo in ordine di preferenza
+  (`{"from": [...], "by": "..."}`); `by` è una funzione di `pipeline.DERIVATIONS`
+  (`age_from_dob`, `age_from_baseline`, `ratio`) o un passo dedicato. Il valore misurato
+  (alias) vince sempre; per AGE c'è un controllo di coerenza ±0,5 anni.
+- **POLICY**: segnaposto dei mancanti, prefissi censurati, soglie, giorno imputato
+  (`DOB_IMPUTED_DAY`), decimali dell'età, tolleranze delle derivate. I mancanti sono su due
+  livelli (D027): `MISSING_STRINGS` valgono sempre; i **codici numerici** (−4, −1, 9999) si
+  dichiarano per file in `DatasetConfig.missing_codes`, perché in alcune colonne sono valori
+  veri (es. RAVLT in ADNIMERGE). Mai aggiungere un codice numerico globale senza controllare
+  le distribuzioni.
+- **`RECODE`** per sorgente: `{"*": {...}, "<file_code>": {...}}`, la mappa del file vince;
+  le etichette d'arrivo sono i `levels` del catalogo (`config.encode`/`decode` per i numeri).
+  `RECODE_MULTI` gestisce i valori multipli (RACE `1|5` → mixed).
+- **`DatasetConfig`**: scheda d'identità di ogni file (dataset, chiavi, categoria, filtri,
+  codici di mancante, flag delle operazioni, output).
 - **`MergeConfig` / `CATEGORY_MERGE`** e **`HarmonizeConfig` / `HARMONIZE`**: regole
   di merge e armonizzazione per categoria (decisioni, non codice).
 - **Armonizzazione = una riga**: il metodo/assay è il file stesso, si assegna con
@@ -178,7 +205,8 @@ Sulla macchina di Chiara Python è quello di Anaconda: `~/anaconda3/python.exe`
 - [ ] Liste di colonne, soglie, mappe → config; calcoli → pipeline.
 - [ ] Colonne derivate tenute in automatico, non elencate a mano.
 - [ ] Ogni soglia ha un solo significato.
-- [ ] File nuovo → nuova `DatasetConfig` (+ rename), non nuova funzione.
+- [ ] File nuovo → nuova `DatasetConfig` + alias in `catalog.json`, non nuova funzione.
+- [ ] `export_catalog.py` sul file pulito: nessuna colonna fuori dal catalogo (o spiegata).
 - [ ] Dati JSON letti dal config, non copiati nel `.py`.
 - [ ] Eseguito e verificati shape / soggetti / colonne / report.
 
@@ -214,14 +242,16 @@ Sulla macchina di Chiara Python è quello di Anaconda: `~/anaconda3/python.exe`
 
 ## 9. Questioni aperte / incoerenze note
 
-- `README_config.md` descrive ancora `Var.rename` e il RECODE numerico: nel codice
-  attuale il CATALOG usa `aliases` (chiave = nome standard) e il RECODE produce
-  stringhe. Il README va aggiornato.
+- `catalog.json` da rivedere: definizioni in bozza, due rename dubbi migrati tali e quali
+  (CDR `CDGLOBAL → CDRSB`, APOERES `GENOTYPE → APOE4`), codici standard quasi tutti vuoti
+  (`notes_CP.md` D.14, `DECISIONI.md` D017/D033).
+- `scope: merge` (update_stamp, HAS_QC_ERROR) è dichiarato ma non ancora applicato: si
+  applicherà con il merge (in standby). Le liste `keep_columns` restano da semplificare.
 - `NOTE_PER_ROSSANA.md` cita `README_armonizzazione_merge.md`, che non è nel repo.
 - Root vs `File Benedetta/`: esistono due versioni di `config.py`/`pipeline.py`.
   Da decidere se archiviare quelle in root.
 - Strategia di merge da rivedere (outer join, suffissi di metodo, match con buffer,
   log delle distanze): vedi `notes_CP.md` §D.9.
 - Altre proposte in sospeso (`drop_if_all_none` con lista di liste, rimozione
-  colonne anticipata, arrotondamento età, metadati dopo dummy/volumi):
-  vedi `notes_CP.md` §A–D.
+  colonne anticipata): vedi `notes_CP.md` §A–D. (Arrotondamento età: D030; metadati
+  dopo dummy/volumi: dizionario dati di `export_catalog.py`.)

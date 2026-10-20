@@ -1,313 +1,338 @@
-# ADNI Cleaning 1 — ADNIMERGE
+# Pulizia dei dati ADNI — guida al codice
 
-Riscrittura del primo passo di pulizia dati ADNI (`adni_cleaning1.ipynb`), adattato
-al file `ADNIMERGE_05Mar2026.csv` ed eseguibile in locale, senza datalake.
+Questa cartella contiene la riscrittura della pulizia dei file ADNI, che prima era fatta con i
+notebook `adni_cleaning1/2/3.ipynb`, l'oggetto `dataCleaner` e il file Excel
+`ADNI_variables_statistics.xlsx`. Tutto gira in locale: CSV in ingresso, CSV in uscita, niente
+datalake.
 
-Questo README è pensato per chi conosce il **vecchio** script (notebook + Excel di
-supporto) e deve capire **cosa è cambiato**. Per ogni pezzo trovi: a cosa serve,
-come si collega al vecchio mondo, e cosa aspettarti come risultato.
+Aggiornata al 20/10/2026. Il *perché* di ogni scelta è in [`DECISIONI.md`](DECISIONI.md)
+(citata qui con gli ID `D0NN`); le questioni ancora aperte sono in [`notes_CP.md`](notes_CP.md).
 
 ---
 
 ## 1. L'idea in una frase
 
-Il lavoro è diviso in due file, e la divisione è tutto:
+Il lavoro è diviso tra **decisioni/dati** e **logica**:
 
-- **`config.py` = decisioni e dati.** Cosa tenere, come rinominare le variabili,
-  quali soglie usare. È la parte che una persona sceglie. Sostituisce il vecchio
-  file Excel `ADNI_variables_statistics.xlsx`.
-- **`pipeline.py` = logica.** Le operazioni di pulizia vere e proprie, scritte una
-  volta sola. Non si tocca per cambiare un dataset: si cambia solo il `config.py`.
+| File | Contiene | Si modifica per… |
+|---|---|---|
+| `catalog.json` | **Cosa sono le variabili**: nome standard, definizione, unità, da quali colonne grezze arrivano, come si calcolano, codifiche | aggiungere o descrivere una variabile, rinominare una colonna di un file |
+| `config.py` | **Come si pulisce ogni file**: una `DatasetConfig` per file, soglie (`POLICY`), ricodifiche (`RECODE`) | aggiungere un file o cambiare una regola di pulizia |
+| `pipeline.py` | **Le operazioni**, scritte una volta sola | solo se serve un'operazione che non esiste |
 
-Regola pratica per orientarsi: davanti a qualsiasi cosa, chiediti *«è una decisione/
-un dato, o è un calcolo?»*. Se è una decisione (il nome standard di una variabile,
-una soglia clinica) sta nel `config`; se è un calcolo (quanti valori mancano, il
-minimo e il massimo) lo fa la `pipeline` e non lo scrivi a mano da nessuna parte.
+Regola pratica: davanti a qualsiasi cosa chiediti *«è una decisione o un dato, oppure un
+calcolo?»*. Un nome standard, una soglia o una lista di colonne è una decisione e va in
+`config.py`/`catalog.json`. Un conteggio, un minimo o una dummy è un calcolo: lo fa la
+pipeline, e non si scrive a mano da nessuna parte.
 
 ---
 
-## 2. Il `config.py`: perché, com'è fatto, come si scrive
+## 2. I file della cartella
 
-Questa è la parte più importante da capire per chi arriva dal vecchio script.
+| File | Cos'è |
+|---|---|
+| `catalog.json` | Catalogo delle variabili: unica fonte di verità (§4) |
+| `config.py` | Configurazione dei file, `POLICY`, `RECODE`; carica e valida il catalogo (§5) |
+| `pipeline.py` | Pulizia (cleaning 1 e 2), merge e armonizzazione (in standby), report, log (§6) |
+| `export_catalog.py` | Vista tabellare del catalogo e dizionario dati dei file puliti (§8) |
+| `generate_config_stubs.py` | Genera bozze di `DatasetConfig` osservando i CSV grezzi (§8) |
+| `count_bridges.py` | Conta i campioni-ponte tra metodi (serve all'armonizzazione) |
+| `cutoffs.json` | Soglie del profilo ATN: guidano un calcolo, quindi servono alla pulizia |
+| `ranges.json` | Range `[min, max, direzione]` per colonna: metadati per il merge |
+| `DECISIONI.md` / `notes_CP.md` | Registro delle decisioni prese / questioni aperte |
 
-### 2.1 Perché l'abbiamo tolto dall'Excel
+I CSV, sia grezzi sia di output, e i log di esecuzione non vanno in git (`.gitignore`).
 
-Il vecchio `ADNI_variables_statistics.xlsx` mescolava **due cose diverse** nella
-stessa tabella:
+---
 
-1. **Decisioni umane** — a che gruppo appartiene una variabile (`parameter`), come si
-   rinomina (`orig_variable_code → variable_code`), se è un predittore, la sua unità.
-2. **Statistiche calcolate dai dati** — tipo, range, numero di validi/mancanti, in
-   quali coorti manca, `keep`/`drop`. Queste il codice le *ricava*, non le sceglie.
+## 3. Come si esegue
 
-Il problema è che il notebook **leggeva e riscriveva lo stesso Excel a ogni giro**.
-Da qui tre grane che forse hai già notato studiando il vecchio codice:
+Dalla cartella `File Benedetta/`:
 
-- l'ordine di esecuzione contava (il file cambiava sotto i piedi);
-- i continui checkpoint "apri l'Excel e verifica a mano" prima di proseguire;
-- il rischio concreto di corrompere il file.
-
-La soluzione è separare le due cose:
-
-- le **decisioni** vanno in `config.py` — che è *codice*, quindi versionato in git,
-  leggibile in un diff, e se sbagli il nome di un campo il programma si ferma con un
-  errore chiaro invece di produrre dati sbagliati in silenzio;
-- le **statistiche** non si scrivono più a mano: le rigenera la funzione `profile()`
-  in un CSV, ogni volta che serve.
-
-In una riga: **l'Excel era insieme input e output; ora l'input è il `config.py` e
-l'output è un report che si ricalcola da solo.**
-
-### 2.2 Com'è strutturato
-
-`config.py` ha sei sezioni. Ecco cosa contengono e a quale pezzo del vecchio mondo
-corrispondono:
-
-| Sezione in `config.py` | Cosa contiene | Da dove viene |
-|------------------------|---------------|---------------|
-| `POLICY` | Regole globali: valori-segnaposto dei mancanti, soglia keep/drop 65% | Numeri prima scritti a mano dentro le celle |
-| `cutoff()` | Legge `cutoffs.json` (solo se serve) | `load_cutoffs` del vecchio codice |
-| `RECODE` | Mappe stringa→codice (es. `DX`: CN→0, MCI→1) | Le mappe *dentro* le funzioni `categorize_*` |
-| `CATALOG` | La tabella delle variabili | Le **righe** del foglio Excel |
-| `DatasetConfig` + `ADNIMERGE` | La "scheda d'identità" del file | I valori scritti a mano in cima a ogni blocco del notebook |
-| helper | Funzioncine di comodo (`rename_map`, `columns_in`) | — |
-
-Il pezzo che sostituisce direttamente l'Excel è il **`CATALOG`**. Ogni riga del
-vecchio foglio diventa una voce `Var`, e le colonne del foglio diventano i campi:
-
-| Colonna Excel | Campo in `Var` |
-|---------------|----------------|
-| `parameter` | `Var.parameter` (il gruppo: ID, Demographic, Biomarker…) |
-| `orig_variable_code` → `variable_code` | la **chiave** del catalogo (nome grezzo) → `Var.rename` (nome standard) |
-| `Unit` | `Var.unit` |
-| `metadati_fattori` = 'predittore' | `Var.role="predittore"` |
-| `metadati_normalizzazione` | `Var.role="normalizzazione"` |
-| `type_variable`, `classes`, `range`, `valid_values`, `missing_values`, `missing_pop`, `del` | **niente** — le rigenera `profile()` |
-
-Quindi la riga di Excel `PTGENDER … parameter=Demographic … variable_code=GENDER`
-diventa una sola riga di codice:
-
-```python
-"PTGENDER": Var("Demographic", rename="GENDER"),
+```bash
+python pipeline.py
 ```
 
-E i valori che nel notebook erano scritti a mano in cima a ogni blocco (es.
-`columns_must_be_verified`, `viscode_reference='VISCODE'`, le chiamate `categorize_*`,
-l'`if file_code=='UCSFFSL'`) diventano campi della `DatasetConfig`:
+Il comando pulisce tutti i file registrati in `config.DATASETS` il cui CSV grezzo è presente
+nella cartella; gli altri vengono saltati con un avviso. Per ogni file scrive:
 
-| Nel notebook (a mano nella cella) | Campo in `DatasetConfig` |
-|-----------------------------------|--------------------------|
-| `columns_must_be_verified = [...]` | `essential_columns` |
-| `single_column_required = ['DX']` | `also_required` |
-| `find_exam_code(..., viscode_reference='VISCODE')` | `viscode_reference` |
-| le chiamate `binarization_gender`, `categorize_marry`… | `recode_columns` (+ le mappe in `RECODE`) |
-| `add_calculated_age(...)` presente | `recompute_age=True` |
-| pulizia `FLDSTRENG`/`FSVERSION` | `clean_fs_fields=True` |
-| `get_ATN_profile(...)` presente (file CSF) | `compute_atn=True`, `atn_method=...` |
+| Output | Contenuto |
+|---|---|
+| `<FILE>_cleaned_01.csv` | dopo cleaning 1 |
+| `<FILE>_cleaned_02.csv` | dopo cleaning 2 |
+| `<FILE>_report.csv`, `<FILE>_report_02.csv` | statistiche di qualità per colonna (`profile()`) |
+| `<FILE>_runlog.json` | log di esecuzione passo per passo (§7) |
 
-### 2.3 Come si scrive
+Esempio di riferimento, ADNIMERGE: **11.458 righe e 2.409 soggetti** dopo cleaning 1.
 
-Tre casi pratici, che coprono quasi tutto quello che farai.
-
-**A) Aggiungere una variabile** (equivale ad aggiungere una riga all'Excel).
-Aggiungi una voce al `CATALOG`. La chiave è il nome **grezzo** (come sta nel CSV),
-`rename` è il nome **standard** che vuoi in uscita (omettilo se non cambia):
+Da Python, senza scrivere nulla su disco:
 
 ```python
-CATALOG = {
-    ...
-    "MOCA": Var("Cognitive", role="predittore"),          # tenuta col suo nome
-    "PTEDUCAT": Var("Demographic", rename="EDUCATION"),   # rinominata
+import config, pipeline
+df1, log1 = pipeline.run_cleaning1(config.ADNIMERGE)
+df2, log2 = pipeline.run_cleaning2(df1, config.ADNIMERGE)
+```
+
+Importare `pipeline` non legge né scrive nulla: il disco si tocca solo in `run_all` e nel
+`__main__`.
+
+---
+
+## 4. Il catalogo: `catalog.json`
+
+Sostituisce le righe del vecchio Excel. È un file JSON perché contiene dati, non logica, come
+`cutoffs.json` e `ranges.json`. Lo legge e lo **valida** `config.catalog()`: se c'è un errore,
+il programma si ferma con un messaggio chiaro invece di produrre un rename sbagliato in
+silenzio.
+
+### 4.1 Una voce
+
+La chiave è il **nome standard** della variabile:
+
+```json
+"AB42_CSF": {
+  "domain": "Biomarker",
+  "definition": "Beta-amiloide 1-42 nel liquor.",
+  "unit": "pg/mL",
+  "role": "predittore",
+  "scope": "output",
+  "dtype": null,
+  "date_precision": null,
+  "aliases": ["ADNI:*.ABETA", "ADNI:EUROIMMUN.BETA_AMYLOID_1_42"],
+  "derived": null,
+  "levels": null,
+  "method_col": "METHOD_CSF",
+  "omop_concept_id": null,
+  "vocab_code": null,
+  "admapper_ref": null,
+  "standard_match": "none",
+  "note": "Chiave = chiave di cutoffs.json.",
+  "log_ref": ["D003"]
 }
 ```
 
-**B) Ricodificare una categoria** (equivale a una funzione `categorize_*`).
-Aggiungi la mappa a `RECODE` e poi elenca la colonna in `recode_columns` del dataset:
+| Campo | Significato |
+|---|---|
+| `domain` | gruppo: ID, Visit, Demographic, Cognitive, Imaging, Biomarker, History, QC, Metadata… |
+| `definition` | cosa misura, quando, come; deve bastare a chi non apre il codice |
+| `unit` | unità in notazione UCUM (`a` = anni, `mm3`, `pg/mL`, `{score}`) |
+| `role` | predittore, normalizzazione, metodo, qualita, metadato, identificativo… |
+| `scope` | fin dove vive la variabile: `cleaning` (tolta a fine cleaning 1), `merge` (fino al merge), `output` (D032) |
+| `dtype` / `date_precision` | `date` = da convertire in data; `month` = nota solo come mese/anno (D029) |
+| `aliases` | colonne grezze da cui arriva (§4.2) |
+| `derived` | come si calcola (§4.3) |
+| `levels` | solo per le categoriche: etichetta → codice intero (§4.4) |
+| `method_col` | colonna che dice con quale metodo è misurata la riga |
+| `omop_concept_id`, `vocab_code`, `admapper_ref`, `standard_match` | codici standard: **solo se verificati** su una fonte ufficiale (D033) |
+| `note`, `log_ref` | note libere; ID delle decisioni collegate |
 
-```python
-RECODE = {
-    ...
-    "DX": {"CN": 0, "MCI": 1, "Dementia": 2},   # stringa -> codice
+In cima al file, sotto `_templates`, ci sono due modelli da copiare: **variabile estratta** da
+un file e **variabile calcolata**. Le chiavi che iniziano con `_` sono ignorate.
+
+### 4.2 Alias e rename
+
+Un alias dice "questa colonna grezza è questa variabile standard". Formato
+`DATASET:FILE.colonna`, dove `FILE` è il `file_code` della `DatasetConfig` oppure `*`:
+
+| Alias | Vale per |
+|---|---|
+| `ADNI:ADNIMERGE.AGE` | solo la colonna AGE del file ADNIMERGE |
+| `ADNI:*.PTGENDER` | la colonna PTGENDER in tutti i file ADNI |
+| `*:*.SEX` oppure `SEX` | la colonna SEX in qualsiasi dataset |
+
+Se più alias rivendicano la stessa colonna **vince il più specifico**: file preciso, poi
+`ADNI:*`, poi `*:*`. Per esempio `TAU` vale `TTAU_PL` nei file plasma (alias per file) e
+`TTAU_CSF` altrove (alias `ADNI:*`). Lo stesso alias allo stesso livello per due variabili è
+un errore (D017).
+
+Quando due colonne finirebbero sullo stesso nome (es. VISCODE e VISCODE2 → VISCODE), quella di
+troppo si toglie prima del rename con `drop_columns` nella `DatasetConfig` (D016). Una
+collisione non risolta dà un warning e viene registrata nel log.
+
+### 4.3 Variabili derivate
+
+`derived` è una lista di modi di calcolo, in ordine di preferenza:
+
+```json
+"AGE": {
+  "aliases": ["ADNI:ADNI_DIAN_COMPARISON.VISITAGE"],
+  "derived": [
+    {"from": ["PTDOB", "EXAMDATE"], "by": "age_from_dob"},
+    {"from": ["AGE_bl", "EXAMDATE", "EXAMDATE_bl"], "by": "age_from_baseline"}
+  ]
 }
-# e nel DatasetConfig:
-recode_columns = ["PTGENDER", "DX", ...]
 ```
 
-**C) Configurare un file** (equivale a scrivere l'intestazione di un blocco del
-notebook). Compili una `DatasetConfig`. Questa è quella di ADNIMERGE, commentata:
+Regole (D019):
+
+- **Il dato misurato vince.** Se il file ha già la variabile tramite un alias, non si
+  ricalcola. Se gli input ci sono, si calcola comunque per **confronto**: per AGE, le righe
+  con differenza oltre ±0,5 anni finiscono nel log con un warning.
+- **Si calcola quando manca**, con il primo modo che ha tutti gli input. Le righe rimaste senza
+  valore vengono registrate nel log, per soggetto, con l'input mancante.
+- `by` è una funzione di `pipeline.DERIVATIONS` (`age_from_dob`, `age_from_baseline`,
+  `ratio`) oppure il nome di un passo dedicato (`add_visit_month`, `add_atn_profile`,
+  `add_constant_columns`).
+
+Il caso dell'età:
+- in ADNIMERGE la colonna AGE è l'età **al baseline** → alias di `AGE_bl`; `AGE` alla visita si
+  calcola come `AGE_bl` + tempo trascorso;
+- in PTDEMOG AGE non c'è → si calcola da `PTDOB`;
+- il risultato è arrotondato a 1 decimale (D030).
+
+### 4.4 Categoriche: `levels` e `RECODE`
+
+- `levels` (catalogo) è il **vocabolario standard**, valido ovunque, con il suo codice
+  numerico: GENDER `{"female": 0, "male": 1}`, DX `{"CN": 0, "MCI": 1, "Dementia": 2}`… Per
+  passare da etichetta a numero e viceversa: `config.encode(serie, "GENDER")` /
+  `config.decode(...)`.
+- `RECODE` (`config.py`) dice **come ogni file scrive** quei valori: `"Male"` in ADNIMERGE,
+  `1` in PTDEMOG. È indicizzato per sorgente, `{"*": {...}, "PTDEMOG": {...}}`, e la mappa del
+  file vince su quella generica.
+
+Le categoriche restano **una colonna in stringa** fino al merge. Le dummy si creano dopo
+(D026): una colonna per ogni livello del catalogo, così tutti i file hanno le stesse dummy.
+
+---
+
+## 5. La configurazione di un file: `DatasetConfig`
+
+Esempio commentato (PTDEMOG):
 
 ```python
-ADNIMERGE = DatasetConfig(
-    file_code="ADNIMERGE",
-    source="ADNIMERGE_05Mar2026.csv",
-    essential_columns=["APOE4","MMSE","Ventricles","Hippocampus","AGE"],  # tieni riga se >=1 c'è
-    also_required=["DX"],                     # ...e in più DX deve esserci
-    recode_columns=["PTGENDER","PTMARRY","PTETHCAT","PTRACCAT","DX"],
-    recompute_age=True,                       # ricalcola l'età a ogni visita
-    clean_fs_fields=True,                     # sistema FLDSTRENG/FSVERSION
-    # compute_atn resta False: ADNIMERGE non calcola l'ATN
+PTDEMOG = DatasetConfig(
+    file_code="PTDEMOG",                    # = FILE negli alias del catalogo
+    source="PTDEMOG_21Apr2026.csv",         # SEMPRE il file grezzo
+    category="cofactor",                    # gruppo per il merge
+    drop_columns=["VISCODE"],               # grezze tolte subito: si usa VISCODE2 (D016)
+    drop_rows={"VISCODE": ["f"]},           # righe scartate per valore: screen fail (D028)
+    missing_codes=[-4, "-4", -1, "-1", 9999, 9999.0],   # codici di "mancante" del file (D027)
+    essential_columns=["GENDER", "MARRY", "ETHNICITY", "RACE"],  # tieni la riga se >=1 c'e'
+    also_required=["PTDOB"],                # ...e in piu' questa deve esserci
+    recode_columns=["GENDER", "MARRY", "ETHNICITY", "RACE"],
+    make_dummies=False,                     # dummy dopo il merge (D026)
+    keep_columns=[...],                     # colonne da tenere in cleaning 2 (nomi standard)
 )
 ```
 
-Cosa **non** devi fare: aprire `pipeline.py` per cambiare un dataset. Se ti trovi a
-volerlo modificare per aggiungere un file, probabilmente quella cosa era una
-decisione e andava nel `config`. La `pipeline` cambia solo se serve una *nuova
-operazione* che prima non esisteva.
+Tutte le liste usano i **nomi standard**, perché il rename avviene subito dopo il caricamento.
+Fanno eccezione `drop_columns`, che agisce prima del rename e quindi usa i nomi grezzi, e
+`missing_codes`, che contiene valori e non nomi.
+
+**Codici di mancante (D027).** I testi come "Unknown" o "NA" diventano NaN sempre. I codici
+numerici (−4, −1, 9999) solo dove sono dichiarati, perché in alcune colonne sono valori veri:
+in ADNIMERGE, −4 e −1 in RAVLT_learning/forgetting sono differenze di punteggio reali
+(ADNIMERGE ha `missing_codes=[]`). Se un file non dichiara nulla vale il default di prima
+(−4, 9999).
+
+**Colonne di metodo.** `constant_columns={"METHOD_CSF": "elecsys"}` riempie la colonna metodo
+della riga con il saggio del file. È un'informazione di riga: dopo il merge può avere valori
+diversi da una riga all'altra (D020, in standby).
 
 ---
 
-## 3. I file del pacchetto
+## 6. Cosa fa la pipeline, passo per passo
 
-| File | Cos'è | Si modifica? |
-|------|-------|--------------|
-| `config.py` | Decisioni e dati (ex Excel) | Sì, qui si lavora |
-| `pipeline.py` | La logica di pulizia | No, si legge |
-| `ADNIMERGE_05Mar2026.csv` | I dati grezzi in ingresso | No |
-| `README.md` | Questo documento | — |
+**Cleaning 1** — `run_cleaning1(cfg)`, un file:
 
-Mettili tutti nella stessa cartella.
+| Passo | Cosa fa | Ex notebook |
+|---|---|---|
+| `load` | legge il CSV grezzo | download dal datalake |
+| `drop_columns` | toglie le colonne grezze indesiderate | — |
+| `replace_unknown` | segnaposto di mancante → NaN (testi sempre, codici per file) | `replace_unknown_values` |
+| `rename_variables` | nomi grezzi → nomi standard con gli alias del catalogo | `new_variable_names` |
+| `decensor` | `">1700"` → 1700 (biomarcatori, se attivo) | — |
+| `drop_rows_by_value` | scarta righe per valore (es. screen fail) | — |
+| `drop_required` / `drop_if_all_none` | scarta righe senza ID/data o senza misure essenziali | `drop_if_all_none` ×2 |
+| `parse_dates` | converte in data `date_column` e le variabili `dtype: date`; per le date mese/anno mette il giorno 15, **solo** ai valori MM/YYYY (D029) | `to_date_format` |
+| `dedup_visits` + `add_visit_month` | una riga per soggetto e data; `VISIT_MONTH` | `find_exam_code` |
+| `derive_variables` | calcola le derivate del catalogo (AGE, rapporti) | `add_calculated_age` |
+| `recode` | categorie → etichette standard | `categorize_*` |
+| `clean_fs_fields` | normalizza FLDSTRENG / FSVERSION (se attivo) | — |
+| `add_constant_columns` | colonne metodo | — |
+| `add_atn_profile` | profilo ATN da `cutoffs.json` (se `compute_atn`) | `get_ATN_profile` |
+| `drop_scope_columns` | toglie le variabili con `scope: cleaning` (es. PTDOB, EXAMDATE_bl) | — |
 
----
+**Cleaning 2/3** — `run_cleaning2(df, cfg)`:
 
-## 4. Come si esegue
+| Passo | Cosa fa |
+|---|---|
+| `drop_sparse_columns` | toglie le colonne con meno del 65% di valori validi (se attivo) |
+| `remove_single_visit_subjects` | toglie i soggetti con una sola visita (se attivo) |
+| `make_dummies` | dummy delle categoriche (oggi spento: si fa dopo il merge) |
+| `normalize_volumes_icv` | volumi in % di ICV, rinominati `<vol>%ICV` (se attivo) |
+| `keep_only_columns` | tiene `keep_columns` più, in automatico, le derivate del catalogo, le dummy, i %ICV e le colonne metodo |
 
-Da terminale, nella cartella:
-
-```bash
-python3 pipeline.py
-```
-
-**Output atteso:**
-
-```
-cleaning1 ADNIMERGE: 11458 righe x 118 colonne
-scritti: ADNIMERGE_cleaned_01.csv, ADNIMERGE_report.csv
-```
-
-Vengono creati due file: `ADNIMERGE_cleaned_01.csv` (il dataset pulito) e
-`ADNIMERGE_report.csv` (le statistiche di qualità, che prima si riscrivevano a mano
-nell'Excel e ora si rigenerano da sole).
-
----
-
-## 5. Cosa fa, passo per passo
-
-La funzione `run_cleaning1()` in `pipeline.py` esegue queste azioni in ordine. Per
-ognuna: cosa faceva il notebook originale, l'obiettivo, e l'output atteso.
-
-### Passo 0 — Caricamento (`load`)
-- **Notebook:** scaricava il file dal datalake. **Qui:** `pd.read_csv`.
-- **Obiettivo:** portare i dati grezzi in memoria.
-- **Output atteso:** ~16.421 righe.
-
-### Passo 1 — Uniformare i valori mancanti (`replace_unknown`)
-- **Obiettivo:** i dataset clinici indicano "dato assente" in tanti modi diversi
-  (`"Unknown"`, `-4`, `9999`…). Questo passo li trasforma tutti in un unico valore
-  mancante standard (`NaN`), così i conteggi successivi sono corretti.
-- **Output atteso:** stesso numero di righe, ma i segnaposto ora sono `NaN`.
-
-### Passo 2 — Scartare le righe senza dati importanti (`drop_if_all_none`, 1ª volta)
-- **Obiettivo:** buttare via le righe che non hanno **nessuna** delle misure chiave
-  (`APOE4, MMSE, Ventricles, Hippocampus, AGE`). Una riga si tiene se ne ha almeno una.
-- **Output atteso:** ~16.421 righe (in pratica non scarta quasi nulla, perché `AGE`
-  è quasi sempre presente — è un controllo di sicurezza più che un taglio).
-
-### Passo 3 — Richiedere la diagnosi (`drop_if_all_none`, 2ª volta, su `DX`)
-- **Obiettivo:** tenere solo le righe che hanno la diagnosi clinica `DX`.
-- **Output atteso:** **11.458 righe.** *È qui che avviene il taglio vero* (da ~16.421
-  a 11.458): sono le righe senza diagnosi a essere rimosse.
-
-### Passo 4 — Sistemare le date (`parse_dates`)
-- **Obiettivo:** trasformare la colonna `EXAMDATE` in vere date, così si possono
-  ordinare e sottrarre.
-- **Output atteso:** stesso numero di righe; `EXAMDATE` diventa di tipo data.
-
-### Passo 5 — Riconoscere le visite (`dedup_visits` + `add_visit_month`)
-- **Obiettivo:** se lo stesso soggetto ha due righe nella stessa data, tenere la più
-  completa; poi calcolare `VISIT_MONTH` = mesi trascorsi dalla prima visita.
-- **Output atteso:** 11.458 righe (0 duplicati in ADNIMERGE), **2.409 soggetti unici**,
-  `VISIT_MONTH` con valori 0, 6, 12, 24…
-
-### Passo 6 — Ricalcolare l'età (`recompute_age`)
-- **Obiettivo:** nel file `AGE` è l'età alla prima visita. Questo passo la rinomina in
-  `AGE_bl` e crea una nuova `AGE` aggiornata a ogni visita (età iniziale + tempo passato).
-- **Output atteso:** compaiono `AGE_bl` (fissa) e `AGE` (che cresce nelle visite successive).
-
-### Passo 7 — Ricodificare le categorie (`recode`)
-- **Obiettivo:** trasformare le stringhe in codici numerici secondo le mappe in
-  `config.RECODE` (es. `DX`: CN→0, MCI→1, Dementia→2; sesso, stato civile, etnia, razza).
-- **Output atteso:** `GENDER` diventa 0/1, `DX` diventa 0/1/2, ecc.
-
-### Passo 8 — Pulire i campi tecnici (`clean_fs_fields`)
-- **Obiettivo:** normalizzare `FLDSTRENG` e `FSVERSION` estraendone la parte numerica.
-- **Output atteso:** `FLDSTRENG` diventa `1.5T` / `3T`.
-
-### Passo 9 — Rinominare secondo lo standard (`rename_variables`)
-- **Notebook:** leggeva la mappa dei nomi dall'Excel. **Qui:** dalla sezione `CATALOG`
-  del `config.py`.
-- **Obiettivo:** dare a ogni variabile il nome standard del progetto (es. `PTGENDER→GENDER`).
-- **Output atteso:** le colonne del `CATALOG` compaiono col nome nuovo.
-
-### Passo 10 — Report di qualità (`profile`)
-- **Notebook:** aggiornava a mano l'Excel di supporto. **Qui:** genera un CSV.
-- **Obiettivo:** per ogni variabile, calcolare tipo, min/max, quanti valori validi e
-  mancanti, in quali coorti manca, e se tenerla o scartarla (soglia 65%).
-- **Output atteso:** `ADNIMERGE_report.csv`. Attenzione: «gira» non vuol dire «giusto» —
-  il report serve proprio a guardare *cosa* è uscito.
-
-### Risultato finale
-Un dataset di **11.458 righe × 118 colonne**, 2.409 soggetti, salvato in
-`ADNIMERGE_cleaned_01.csv`.
+**Merge e armonizzazione** (`merge_category`, `run_harmonization`) esistono ma sono **in
+standby**: la strategia di merge è ancora da decidere (`notes_CP.md` §D.9).
 
 ---
 
-## 6. Quali JSON servono e quali no
+## 7. Log e report
 
-Il progetto ha quattro file JSON di settaggio. **Per questo passo (cleaning 1 su
-ADNIMERGE) NON ne serve nessuno.** Ecco perché, uno per uno:
+| Cosa | Dove | Risponde a |
+|---|---|---|
+| Run log | `<FILE>_runlog.json` | *cosa è successo* in questa esecuzione: per ogni passo righe e colonne prima/dopo, mappa di rename, codici convertiti per colonna, valori non ricodificati, derivate calcolate o non calcolabili, controlli di coerenza; data e commit git |
+| Report | `<FILE>_report*.csv` | com'è fatto il dataset: tipo, range, validi/mancanti, soggetti, coorti scoperte |
+| Registro decisioni | `DECISIONI.md` | *perché* si fa così |
 
-| File JSON | A cosa serve | Serve qui? |
-|-----------|--------------|------------|
-| `cutoffs.json` | Soglie per il profilo ATN (Amiloide/Tau/Neurodegenerazione) | **No** per ADNIMERGE. L'ATN si calcola solo sui file CSF (es. UPENNBIOMK); ADNIMERGE non lo fa, quindi il file non viene nemmeno letto. |
-| `normalization_settings.json` | Intervalli per la normalizzazione min-max | **No.** Appartiene a un passo successivo (cleaning 3/4), non a cleaning 1. |
-| `volume_values_settings.json` | Intervalli dei volumi cerebrali | **No.** Anche questo è di cleaning 3/4. |
-| `cofattori_values_settings.json` | Intervalli dei cofattori (es. APOE) | **No.** Cleaning 2/3/4. |
-
-Prova concreta: se togli `cutoffs.json` dalla cartella e riesegui, `pipeline.py`
-**funziona lo stesso** e produce le stesse 11.458 righe, perché ADNIMERGE non lo usa.
-Il file `cutoffs.json` diventa necessario solo se in `config.py` un dataset ha
-`compute_atn=True` (i file CSF) — e in quel caso, se manca, il codice si ferma con un
-errore chiaro invece di produrre dati incompleti in silenzio.
+I run log possono contenere RID (per esempio i soggetti per cui l'età non è calcolabile):
+restano in locale e non si condividono.
 
 ---
 
-## 7. Le scelte fatte (e perché)
+## 8. Strumenti
 
-Queste sono le decisioni prese in `config.py`, fedeli al blocco ADNIMERGE del notebook:
-
-- **Righe da tenere:** almeno una tra `APOE4/MMSE/Ventricles/Hippocampus/AGE`, **e** la
-  diagnosi `DX` presente. È la ragione delle 11.458 righe.
-- **Codici delle categorie:** seguono la convenzione del notebook (es. razza:
-  White=5, Black=4, Asian=2, Am Indian=1, Hawaiian=3, More than one=0). Non è una
-  convenzione nuova: è quella già in uso, per restare compatibili.
-- **Niente profilo ATN:** nel notebook l'ATN è solo per i file CSF, non per ADNIMERGE.
-  Qui si è mantenuta la stessa scelta (`compute_atn=False`).
-- **Età ricalcolata per visita** e **`FLDSTRENG/FSVERSION` normalizzati**, come nel notebook.
-
-Se un domani cambia l'obiettivo dell'analisi (es. serve un dataset centrato sui
-biomarcatori invece che sulla diagnosi), si modifica solo `essential_columns` /
-`also_required` in `config.py`: la logica in `pipeline.py` resta identica.
+- **`python export_catalog.py`** → `catalog_table.csv`, il catalogo in forma di tabella da
+  consultare (non modificarlo: la fonte è il JSON), più alcuni controlli stampati a video.
+- **`python export_catalog.py ADNIMERGE_cleaned_02.csv`** → `ADNIMERGE_cleaned_02_dizionario.csv`:
+  per ogni colonna del file pulito, la voce del catalogo (anche per dummy e `%ICV`) e l'elenco
+  delle colonne non riconducibili al catalogo.
+- **`python generate_config_stubs.py [cartella]`** → `config_datasets_draft.py`: bozze di
+  `DatasetConfig` per i CSV della cartella, con i rename già noti dal catalogo e la lista delle
+  colonne da decidere.
 
 ---
 
-## 8. Cosa NON fa questo pacchetto
+## 9. Ricette
 
-È solo **cleaning 1** (pulizia del singolo file). Restano fuori, come nel progetto
-originale, i passi successivi, che seguono lo stesso schema config + pipeline:
+**Aggiungere una variabile.** Si copia `_templates.variabile_estratta` in `catalog.json`,
+con chiave = nome standard e alias verso la colonna grezza. Se è categorica servono anche
+`levels` e la mappa in `RECODE`.
 
-- creazione delle variabili dummy e rimozione di soggetti/variabili scarse (cleaning 2);
-- normalizzazione dei volumi rispetto all'ICV (cleaning 3/4);
-- unione tra file diversi (merge).
+**Rinominare una colonna di un file nuovo.** Si aggiunge l'alias
+`"ADNI:<file_code>.<colonna>"` alla voce standard del catalogo. Non si tocca né la
+`DatasetConfig` né la pipeline.
 
-E il datalake: qui è sostituito dalla lettura/scrittura di CSV in locale, perché
-l'accesso al datalake non è il punto — il punto è come è scritta la pipeline.
+**Aggiungere una variabile calcolata.** Si copia `_templates.variabile_calcolata`. Se il modo
+di calcolo non esiste ancora, si aggiunge una funzione in `pipeline.DERIVATIONS`: è l'unico
+caso in cui si tocca la pipeline.
+
+**Aggiungere un file.**
+1. `generate_config_stubs.py` per avere la bozza.
+2. Una `DatasetConfig` in `config.py`, registrata in `DATASETS`.
+3. Gli alias nel catalogo.
+4. Si esegue la pipeline e si controllano il run log e `export_catalog.py` sul file pulito.
+
+---
+
+## 10. Dal vecchio mondo al nuovo
+
+| Prima | Ora |
+|---|---|
+| Excel `ADNI_variables_statistics.xlsx`, letto e riscritto a ogni giro | `catalog.json` (input) + `profile()` (output che si rigenera) |
+| `parameter`, `variable_code`, `Unit`, `metadati_*` | `domain`, chiave del catalogo + `aliases`, `unit`, `role` |
+| `rename` per file e `CATEGORY_RENAME` in `config.py` | alias qualificati nel catalogo (migrati il 20/10/2026, D017) |
+| `categorize_*` con numeri dentro le funzioni | `RECODE` per sorgente → etichette; `levels` → numeri |
+| `add_calculated_age`, `recompute_age=True`, `derived_ratios` | variabili `derived` del catalogo, calcolate quando servono |
+| checkpoint "apri l'Excel e controlla" | run log + report + `export_catalog.py` |
+
+---
+
+## 11. Da verificare
+
+- Le **definizioni** del catalogo sono in bozza.
+- Due rename ereditati dal generatore di bozze sono dubbi: CDR `CDGLOBAL → CDRSB` e APOERES
+  `GENOTYPE → APOE4` (`notes_CP.md` D.14).
+- **Codici standard**: verificati solo MMSE (LOINC 72106-8) e MoCA (LOINC 72172-0) (D033).
+- Le mappature di `RECODE` per PTDEMOG (`notes_CP.md` D.13).
