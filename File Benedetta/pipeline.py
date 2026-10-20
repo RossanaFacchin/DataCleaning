@@ -36,20 +36,88 @@ Contratto del modulo:
       senza leggere o scrivere nulla.
     * Ogni funzione prende un DataFrame e ne restituisce uno nuovo (niente
       stato globale, niente rilettura da disco tra un passo e l'altro).
-    * L'unico punto che tocca il disco e' il blocco __main__ (e save_dataset).
+    * L'unico punto che tocca il disco e' il blocco __main__ (e save_dataset / save_log).
+    * Gli orchestratori restituiscono (df, log): il log di esecuzione registra,
+      passo per passo, righe e colonne prima/dopo [D015].
 
 Uso:
-    python3 pipeline.py                 # esegue cleaning1 -> cleaning2 e salva output + report
+    python3 pipeline.py                 # cleaning1 -> cleaning2, salva output + report + run log
     from pipeline import run_cleaning1, run_cleaning2
-    df1 = run_cleaning1()
-    df2, log = run_cleaning2(df1)
+    df1, log1 = run_cleaning1()
+    df2, log2 = run_cleaning2(df1)
 """
 from __future__ import annotations
+import json
+import subprocess
+from datetime import datetime
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
 import config
 from config import DatasetConfig, ADNIMERGE
+
+
+# ===========================================================================
+# LOG DI ESECUZIONE  —  [D015] registra COSA e' successo in un run (il PERCHE'
+#   sta in DECISIONI.md). Le funzioni atomiche restano df -> df: e' l'orchestratore
+#   che confronta il df prima/dopo ogni passo e scrive la voce nel log.
+# ===========================================================================
+def _log_step(log, step, before, after, **details):
+    """Aggiunge a log["passi"] righe e colonne prima/dopo `step`. Restituisce `after`,
+    cosi' si usa in linea:  df = _log_step(log, "passo", df, funzione(df))."""
+    entry = {
+        "passo": step,
+        "righe_prima": len(before),
+        "righe_dopo": len(after),
+        "righe_rimosse": len(before) - len(after),
+        "colonne_aggiunte": [c for c in after.columns if c not in before.columns],
+        "colonne_rimosse": [c for c in before.columns if c not in after.columns],
+    }
+    if details:
+        entry["dettagli"] = details
+    log.setdefault("passi", []).append(entry)
+    return after
+
+
+def _log_skip(log, step, reason):
+    """Registra un passo previsto dal config ma non eseguibile sui dati (es. manca la data)."""
+    log.setdefault("saltati", []).append({"passo": step, "motivo": reason})
+
+
+def _n_subjects(df, id_col):
+    return int(df[id_col].nunique()) if id_col in df.columns else None
+
+
+def _git_commit():
+    """Commit corrente del repo (+ '-modificato' se ci sono modifiche non salvate). None se git manca."""
+    here = Path(__file__).parent
+    try:
+        sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=here,
+                             capture_output=True, text=True, check=True).stdout.strip()
+        dirty = subprocess.run(["git", "status", "--porcelain"], cwd=here,
+                               capture_output=True, text=True, check=True).stdout.strip()
+        return sha + ("-modificato" if dirty else "")
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+def _json_default(o):
+    """Rende serializzabili i tipi numpy/pandas che finiscono nei log."""
+    if isinstance(o, np.generic):
+        return o.item()
+    if isinstance(o, (set, frozenset)):
+        return sorted(o, key=str)
+    return str(o)
+
+
+def save_log(log, path):
+    """Scrive un log in JSON. NB: i run log possono contenere RID -> restano locali
+    (esclusi da git), mai condivisi: vincolo del Data Use Agreement ADNI."""
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(log, f, indent=2, ensure_ascii=False, default=_json_default)
+    print(f"  log salvato: {path}")
 
 
 # ===========================================================================
@@ -133,8 +201,21 @@ def recompute_age(df, date_col="EXAMDATE", bl_date_col="EXAMDATE_bl", age_col="A
     return df
 
 
+def unmapped_values(df, cols):
+    """Valori presenti nei dati ma assenti dalla mappa RECODE: recode() li trasformerebbe
+    in NaN in silenzio. Restituisce {colonna: {valore: conteggio}} (solo colonne con casi)."""
+    out = {}
+    for c in cols:
+        if c in df.columns and c in config.RECODE:
+            s = df[c].dropna()
+            missing = s[~s.isin(list(config.RECODE[c].keys()))]
+            if len(missing):
+                out[c] = {str(k): int(v) for k, v in missing.value_counts().items()}
+    return out
+
+
 def recode(df, cols):
-    """Stringa categorica -> codice numerico, secondo le mappe in config.RECODE."""
+    """Stringa categorica -> etichetta standard, secondo le mappe in config.RECODE."""
     df = df.copy()
     for c in cols:
         if c in df.columns and c in config.RECODE:
@@ -152,6 +233,23 @@ def clean_fs_fields(df):
     return df
 
 
+def plan_rename(df, cfg):
+    """Calcola, senza applicarlo, il rename di rename_variables: restituisce
+    (mappa_applicata, collisioni). Serve all'orchestratore per il log [D015]."""
+    mapping = cfg.effective_rename()
+    taken = set(df.columns)
+    safe, collisions = {}, []
+    for raw, std in mapping.items():
+        if raw not in df.columns or std == raw:
+            continue
+        if std in taken:
+            collisions.append((raw, std))
+            continue
+        safe[raw] = std
+        taken.discard(raw); taken.add(std)
+    return safe, collisions
+
+
 def rename_variables(df, cfg):
     """Rinomina nei nomi standard: CATALOG globale + categoria + override per-file.
 
@@ -159,18 +257,7 @@ def rename_variables(df, cfg):
     (es. il grezzo ha gia' 'CDRSB' e un'altra colonna verrebbe mappata li'), quel
     rename viene SALTATO (si tiene il grezzo), cosi' non nascono colonne duplicate.
     """
-    mapping = cfg.effective_rename()
-    taken = set(df.columns)
-    safe = {}
-    collisions = []
-    for raw, std in mapping.items():
-        if raw not in df.columns or std == raw:
-            continue
-        if std in taken:                       # il nome standard e' gia' occupato -> non rinominare
-            collisions.append((raw, std))
-            continue
-        safe[raw] = std
-        taken.discard(raw); taken.add(std)
+    safe, collisions = plan_rename(df, cfg)
     if collisions:
         print(f"  [rename] {cfg.file_code}: saltati per collisione (tenuto il grezzo): {collisions}")
     return df.rename(columns=safe)
@@ -226,36 +313,75 @@ def add_atn_profile(df, cfg):
     return df
 
 
-def run_cleaning1(cfg: DatasetConfig = ADNIMERGE) -> pd.DataFrame:
+def run_cleaning1(cfg: DatasetConfig = ADNIMERGE):
     """Orchestratore di cleaning 1: raw -> dataframe pulito (in memoria, niente I/O).
+    Restituisce (df, log): il log registra righe/colonne prima e dopo ogni passo [D015].
 
     [nota Chiara #4] RENAME PER PRIMO: subito dopo aver uniformato i missing si
     portano le colonne ai nomi standard, cosi' tutto il resto (drop, recode, decensor,
     dedup, eta') lavora su nomi standard ed e' agganciato al CATALOG.
     """
+    log = {}
     df = load(cfg)                                                # download -> CSV
-    df = replace_unknown(df)                                      # replace_unknown_values
-    df = rename_variables(df, cfg)                               # <-- RENAME FIRST (#4)
+    log["shape_iniziale"] = df.shape
+    log["soggetti_iniziali"] = _n_subjects(df, cfg.id_column)
+
+    n_na = int(df.isna().sum().sum())
+    new = replace_unknown(df)                                     # replace_unknown_values
+    df = _log_step(log, "replace_unknown", df, new,
+                   valori_convertiti_in_NaN=int(new.isna().sum().sum()) - n_na)
+
+    safe, collisions = plan_rename(df, cfg)                      # <-- RENAME FIRST (#4)
+    df = _log_step(log, "rename_variables", df, rename_variables(df, cfg),
+                   mappa_applicata=safe, collisioni_saltate=collisions)
+
     if cfg.decensor_biomarkers:
-        df = decensor(df, cfg.decensor_columns or config.columns_in("Biomarker"))
-    df = drop_required(df, cfg.required_all_present)             # [#1] scarta se manca ID/data
-    df = drop_if_all_none(df, cfg.essential_columns)             # scarta se TUTTE le essenziali NaN
-    df = drop_if_all_none(df, cfg.also_required)                 # 2° filtro (es. DX obbligatoria)
-    df = parse_dates(df, [cfg.date_column])                      # to_date_format
+        cols = cfg.decensor_columns or config.columns_in("Biomarker")
+        df = _log_step(log, "decensor", df, decensor(df, cols),
+                       colonne=[c for c in cols if c in df.columns])
+    df = _log_step(log, "drop_required", df, drop_required(df, cfg.required_all_present),
+                   colonne=cfg.required_all_present)             # [#1] scarta se manca ID/data
+    df = _log_step(log, "drop_if_all_none (essential_columns)", df,
+                   drop_if_all_none(df, cfg.essential_columns),  # scarta se TUTTE le essenziali NaN
+                   colonne=cfg.essential_columns)
+    df = _log_step(log, "drop_if_all_none (also_required)", df,
+                   drop_if_all_none(df, cfg.also_required),      # 2° filtro (es. DX obbligatoria)
+                   colonne=cfg.also_required)
+    df = _log_step(log, "parse_dates", df, parse_dates(df, [cfg.date_column]))   # to_date_format
+
     has_keys = (cfg.date_column in df.columns) and (cfg.id_column in df.columns)
     if has_keys:
-        df = dedup_visits(df, cfg.id_column, cfg.date_column, cfg.essential_columns)
-        df = add_visit_month(df, cfg.id_column, cfg.date_column)  # find_exam_code -> VISIT_MONTH
-    if cfg.recompute_age and (cfg.date_column in df.columns):
-        df = recompute_age(df, cfg.date_column)                  # add_calculated_age (AGE->AGE_bl)
-    df = recode(df, cfg.recode_columns)                          # categorie -> etichette standard (#3)
+        df = _log_step(log, "dedup_visits", df,
+                       dedup_visits(df, cfg.id_column, cfg.date_column, cfg.essential_columns))
+        df = _log_step(log, "add_visit_month", df,             # find_exam_code -> VISIT_MONTH
+                       add_visit_month(df, cfg.id_column, cfg.date_column))
+    else:
+        missing = [c for c in (cfg.id_column, cfg.date_column) if c not in df.columns]
+        _log_skip(log, "dedup_visits + add_visit_month", f"mancano le colonne chiave {missing}")
+
+    if cfg.recompute_age:
+        if cfg.date_column in df.columns:
+            df = _log_step(log, "recompute_age", df, recompute_age(df, cfg.date_column))
+        else:
+            _log_skip(log, "recompute_age", f"manca la colonna '{cfg.date_column}'")
+
+    df = _log_step(log, "recode", df, recode(df, cfg.recode_columns),   # etichette standard (#3)
+                   colonne=[c for c in cfg.recode_columns if c in df.columns],
+                   valori_non_mappati_resi_NaN=unmapped_values(df, cfg.recode_columns))
     if cfg.clean_fs_fields:
-        df = clean_fs_fields(df)                                 # FLDSTRENG/FSVERSION
-    df = add_constant_columns(df, cfg.constant_columns)         # stampa il metodo/assay (armonizzazione)
-    df = add_derived_ratios(df, cfg.derived_ratios)             # rapporti generici (es. AB42/AB40)
-    if cfg.compute_atn:                                        # file con profilo ATN (CSF/plasma/PET)
-        df = add_atn_profile(df, cfg)
-    return df
+        df = _log_step(log, "clean_fs_fields", df, clean_fs_fields(df))  # FLDSTRENG/FSVERSION
+    if cfg.constant_columns:                                     # stampa il metodo/assay
+        df = _log_step(log, "add_constant_columns", df,
+                       add_constant_columns(df, cfg.constant_columns), valori=cfg.constant_columns)
+    if cfg.derived_ratios:                                       # rapporti generici (es. AB42/AB40)
+        df = _log_step(log, "add_derived_ratios", df, add_derived_ratios(df, cfg.derived_ratios))
+    if cfg.compute_atn:                                          # file con profilo ATN (CSF/plasma/PET)
+        df = _log_step(log, "add_atn_profile", df, add_atn_profile(df, cfg),
+                       metodo=cfg.atn_method)
+
+    log["shape_finale"] = df.shape
+    log["soggetti_finali"] = _n_subjects(df, cfg.id_column)
+    return df, log
 
 
 # ===========================================================================
@@ -348,52 +474,57 @@ def keep_only_columns(df, keep, extra=None):
 def run_cleaning2(df: pd.DataFrame, cfg: DatasetConfig = ADNIMERGE):
     """Orchestratore di cleaning 2/3: dataframe cleaned_01 -> cleaned_02 (in memoria).
 
-    Riceve il DataFrame in input (NON rilegge da disco) e restituisce (df, log),
-    dove log e' un dizionario di conteggi utile per la stampa nel __main__.
+    Riceve il DataFrame in input (NON rilegge da disco) e restituisce (df, log), con
+    lo stesso formato a passi del log di cleaning 1 [D015].
     """
-    log = {}
-    r0, c0 = df.shape
+    log = {"shape_iniziale": df.shape, "soggetti_iniziali": _n_subjects(df, cfg.id_column)}
 
     if cfg.drop_sparse_columns:
-        df, dropped = drop_sparse_columns(df)
-        log["colonne_scartate_sparse"] = dropped
+        new, dropped = drop_sparse_columns(df)
+        df = _log_step(log, "drop_sparse_columns", df, new,
+                       soglia=config.SPARSE_KEEP_THRESHOLD)
 
     if cfg.remove_single_visit:
-        n_before = len(df)
-        df, info = remove_single_visit_subjects(
+        new, info = remove_single_visit_subjects(
             df, cfg.id_column, force=cfg.keep_even_single_visit)
-        log["single_visit"] = {**info, "righe_rimosse": n_before - len(df)}
+        df = _log_step(log, "remove_single_visit_subjects", df, new, **info)
 
     created = []
     if cfg.make_dummies:
-        df, created = make_dummies(df, cfg.dummy_columns)
-        log["dummy_create"] = created
+        new, created = make_dummies(df, cfg.dummy_columns)
+        df = _log_step(log, "make_dummies", df, new,
+                       colonne_origine=[c for c in cfg.dummy_columns if c in df.columns])
 
     # [nota Chiara #9] il drop-righe-per-volumi NON si fa piu' qui (rischia di
     # buttare righe con altri dati): si fa dopo il merge, con drop_rows_no_signal().
 
     renamed_vol = {}
     if cfg.normalize_icv:
-        df, renamed_vol = normalize_volumes_icv(df, cfg.icv_column)   # #11: rinomina in <vol>%ICV
-        log["icv_rinominati"] = renamed_vol
+        new, renamed_vol = normalize_volumes_icv(df, cfg.icv_column)   # #11: rinomina in <vol>%ICV
+        df = _log_step(log, "normalize_volumes_icv", df, new, rinominati=renamed_vol)
 
     if cfg.keep_columns:
         # dummy generate, colonne calcolate, volumi %ICV e le COSTANTI (metodo/assay) si
         # tengono in automatico: NON vanno elencate a mano nel config.
         engineered = [c for c in ("VISIT_MONTH", "AGE_bl") if c in df.columns]
         auto = created + engineered + list(renamed_vol.values()) + list(cfg.constant_columns)
-        df, dropped_cols, missing_cols = keep_only_columns(df, cfg.keep_columns, extra=auto)
-        log["colonne_scartate_finali"] = dropped_cols
-        log["colonne_richieste_assenti"] = missing_cols
+        new, dropped_cols, missing_cols = keep_only_columns(df, cfg.keep_columns, extra=auto)
+        df = _log_step(log, "keep_only_columns", df, new,
+                       colonne_richieste_assenti=missing_cols)
+        if missing_cols:
+            print(f"  ATTENZIONE {cfg.file_code}: colonne richieste in keep_columns ma assenti: {missing_cols}")
 
-    log["shape_iniziale"] = (r0, c0)
     log["shape_finale"] = df.shape
+    log["soggetti_finali"] = _n_subjects(df, cfg.id_column)
     return df, log
 
 
 def run_cleaning(cfg: DatasetConfig):
-    """Comodita': cleaning1 + cleaning2 in memoria per un cfg qualsiasi. Restituisce (df, log)."""
-    return run_cleaning2(run_cleaning1(cfg), cfg)
+    """Comodita': cleaning1 + cleaning2 in memoria per un cfg qualsiasi.
+    Restituisce (df, log) con log = {"cleaning1": ..., "cleaning2": ...}."""
+    df1, log1 = run_cleaning1(cfg)
+    df2, log2 = run_cleaning2(df1, cfg)
+    return df2, {"cleaning1": log1, "cleaning2": log2}
 
 
 # ===========================================================================
@@ -680,11 +811,14 @@ def run_all(datasets=None, do_merge=True, verbose=True):
     - salta con avviso i file il cui `source` non e' nella cartella (non e' un errore:
       cosi' puoi tenere registrati file che oggi non hai sottomano);
     - mergia solo le categorie che hanno una regola in config.CATEGORY_MERGE.
+    Per ogni file salva anche il run log (cfg.runlog_file) con i passi di cleaning 1 e 2 [D015];
+    per ogni categoria mergiata salva <CATEGORIA>_mergelog.json.
     Restituisce un riepilogo (dict) di cosa e' stato pulito / saltato / mergiato.
     """
-    from pathlib import Path
     datasets = datasets or config.DATASETS
     cleaned_by_category, summary = {}, {"cleaned": [], "skipped": [], "merged": []}
+    run_info = {"eseguito_il": datetime.now().isoformat(timespec="seconds"),
+                "commit_git": _git_commit()}
 
     for code, cfg in datasets.items():
         if not Path(cfg.source).exists():
@@ -692,19 +826,21 @@ def run_all(datasets=None, do_merge=True, verbose=True):
             if verbose:
                 print(f"[skip] {code}: '{cfg.source}' non trovato nella cartella")
             continue
-        df1 = run_cleaning1(cfg)
+        df1, log1 = run_cleaning1(cfg)
         save_dataset(df1, cfg.output_cleaned1)
         profile(df1, cfg.cohort_column).to_csv(cfg.report_file, index=False)
-        df2, log = run_cleaning2(df1, cfg)
+        df2, log2 = run_cleaning2(df1, cfg)
         save_dataset(df2, cfg.output_cleaned2)
         # [nota Chiara #5] profile anche dopo cleaning2
         profile(df2, cfg.cohort_column).to_csv(cfg.report_file.replace("_report", "_report_02"), index=False)
+        save_log({**run_info, "file_code": code, "source": cfg.source,
+                  "output": [cfg.output_cleaned1, cfg.output_cleaned2],
+                  "cleaning1": log1, "cleaning2": log2}, cfg.runlog_file)
         summary["cleaned"].append((code, df2.shape))
         if cfg.category:
             cleaned_by_category.setdefault(cfg.category, {})[code] = df2
 
     if do_merge:
-        import json
         for category, dfs in cleaned_by_category.items():
             if len(dfs) < 1:
                 continue
@@ -713,6 +849,9 @@ def run_all(datasets=None, do_merge=True, verbose=True):
             if mlog.get("harmonize"):                        # artefatto dei fit di armonizzazione
                 with open(f"harmonization_fit_{category}.json", "w") as f:
                     json.dump(mlog["harmonize"], f, indent=2)
+            save_log({**run_info, "categoria": category, "file": list(dfs),
+                      "shape_finale": merged.shape, "collapse": mlog.get("collapse")},
+                     f"{category.upper()}_mergelog.json")
             summary["merged"].append((category, merged.shape, list(dfs)))
             if verbose and mlog.get("collapse"):
                 print(f"[{category}] collapse: {mlog['collapse']}")

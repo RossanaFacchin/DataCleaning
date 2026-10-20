@@ -245,6 +245,7 @@ class DatasetConfig:
     output_cleaned1: Optional[str] = None
     output_cleaned2: Optional[str] = None
     report_file: Optional[str] = None
+    runlog_file: Optional[str] = None           # [D015] log di esecuzione (contiene RID: resta locale)
 
     def __post_init__(self):
         # i nomi di output derivano da file_code se non specificati a mano
@@ -254,6 +255,8 @@ class DatasetConfig:
             self.output_cleaned2 = f"{self.file_code}_cleaned_02.csv"
         if self.report_file is None:
             self.report_file = f"{self.file_code}_report.csv"
+        if self.runlog_file is None:
+            self.runlog_file = f"{self.file_code}_runlog.json"
 
     def effective_rename(self) -> dict[str, str]:
         """CATALOG globale < rename di CATEGORIA < override per-file (il piu' specifico vince)."""

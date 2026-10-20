@@ -32,7 +32,7 @@ def clean_category(category: str) -> dict:
         if not Path(cfg.source).exists():
             print(f"[skip] {code}: '{cfg.source}' non trovato")
             continue
-        cleaned[code] = pipeline.run_cleaning(cfg)   # cleaning1 -> cleaning2 in memoria
+        cleaned[code], _ = pipeline.run_cleaning(cfg)   # cleaning1 -> cleaning2 in memoria (log ignorato)
         print(f"[ok]   {code}: {cleaned[code].shape}")
     return cleaned
 

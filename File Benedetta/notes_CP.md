@@ -9,12 +9,28 @@ D. Cose da fare/strategia
 
 
 ## A. Domande
-### A.1 eliminazione colonne
-Come mai le colonne che non ci servono vengono rimosse solo in Cleaning_2 e non subito dopo il load? --> discussione B.1
+### A.1 Anticipare rename
+Pro e contro di anticipare il rename il prima possibile
+
+### A.2 eliminazione colonne
+Come mai le colonne che non ci servono vengono rimosse solo in Cleaning_2 e non subito dopo il load? --> discussione B.2
+
+### A.3 aggiunta info di log
+def profile(df, cohort_col="COLPROT") -> pd.DataFrame:
+riga 440 --> valutare e discutere quali altre info possono essere utili, tipo numero di visite per sogg con quel valore vero, ... Aggiungere il calcolo di profile anche dopo clenaing2
+
+### A.4 line removal
+ci son 2 funzioni per rimuovere soggetti e righe (single subject ecc...) in cleaning 2. Un idea sarebbe fare 1 sola fase di pulizia pre merge e qua non mettere nemmeno questa possibilità e togliere il flag true e false dalle info del file. E mettere questi removal direttamente post merge.
+
+### A.5 Merge
+rivedere la strategia di merge --> spunto analsi Rossana
+
+
 
 ## B. Cose da cambiare/proposte
 ### B.1 anticipare RENAME
-
+Riprendere codic Rossana, anticipare RENAME permette di poi usare i nomi standard delle varribaili.
+Cambiamento discutibile.
 
 ### B.2 anticipare eliminazione colonne
 Non so se spostare completamente l'elminazione delle colonne non utili, tipo variabili che non studiamo, subito dopo il loader, oppure fare uno split, eliminare subito le variabili che possono causare problemi (VISCODE quando c'è VISCODE2). E alla fine della pulizia pre merge eliminare le colonne che ci servivano per calcolare cose come l'età. E magari riutilizzare la stessa finzione dopo il merge per eliminare variabili di qualità o time stamp utili per decidere quale valore tenere nel caso di duplicati. 
@@ -27,10 +43,20 @@ Da valutare se il costo computazionale di usare un for è eccessivo.
 
 ### B.4 def recompute_age
 (riga 122, pipeline) va adattata alle diverse info che i dataset hanno per calcolare l'età. Nel branch di Rossana ci sono già dei miglioramnti. 
-Direi di arrotondare l'età al primo valore decimale.
+Direi di **arrotondare** l'età al primo valore decimale.
 
 ### B.5 def recode(df, cols):
 (riga 130, pipeline) valutare di mappare non numericamente ma con stringhe standard poi utili per dummies per non ritrasformarle in numeri o dummies leggibili.
+
+### B.6 CATALOG definizione rename
+NB partial implemented
+Partire dal nome standard quindi lista di variabili che corrispondono a tale name standard, e non nome grezzo e quindi definisco il rename, ottimizza la compilazione di nuove variabili.
+Un solo punto dove aggiungere un nuovo sinonimo quando lo si scopre in un nuovo file (basta appendere alla lista aliases), senza toccare parameter/unit/role. Il nome standard è scritto una sola volta (come chiave del dizionario) → niente più rischio di typo sparsi tra file diversi. Assicurarsi non ci sia lo stesso nome per diversi nomi standard / alias. I casi speciali restano.
+Aspetti da verificare:
+- dinamica che vince l'ultimo valonre nel rename.
+- Cosa succede se ci sono 2 var nello stesso DF che vengono rinominate nello stesso modo? (special cases o eliminazione del duplicato es VISCODE se c'è VISCODE2)
+- Come trattare volumi e dummies (magari possiamo aggiungere subito le variabili modificate come aggiuntive standard, ma no alias iniziali.)
+
 
 ## C. Cosa aggiungere
 ### C.1 automatic range 
@@ -43,41 +69,10 @@ magari qua dobbiamo fare un file precedente a pipeline le cui info poi servono p
 ## D. Cose da fare/strategia
 
 
-
-3. def recode(df, cols):
-riga 130 --> valutare di mappare non numericamente ma con stringhe standard poi utili per dummies per non ritrasformarle in numeri.
-
-4. CATALOG r def rename
-sia in config che in pipeline Problema attuale
-
-CATALOG è indicizzato per nome grezzo (PTGENDER, NF_LIGHT...), non per concetto. Se la stessa variabile concettuale (es. "genere") appare con nomi diversi tra file (PTGENDER, SEX, Gender...), oggi l'unico modo per gestirlo è:
-
-aggiungere ogni sinonimo come voce separata in CATALOG (duplica parameter/unit/role più volte), oppure aggiungerlo nel self.rename del singolo DatasetConfig (ma allora quel sinonimo non eredita gli attributi di CATALOG — solo il nome standard). In entrambi i casi il nome standard ("GENDER") resta una stringa scritta a mano in più punti → rischio di typo silenziosi.
-
-Strategia proposta: invertire la chiave di CATALOG
-
-Indicizzare CATALOG per nome standard invece che per nome grezzo, e aggiungere alla Var una lista di sinonimi noti:
-
-CATALOG = { "GENDER": Var(parameter="Demographic", aliases=["PTGENDER", "SEX", "Gender"]), "AGE": Var(parameter="Demographic", unit="years", aliases=["AGE"]), ... } Da qui si genera automaticamente la mappa inversa (grezzo → standard) usata per il rename:
-
-def rename_map(): return {alias: std for std, v in CATALOG.items() for alias in v.aliases} Vantaggi:
-
-Un solo punto dove aggiungere un nuovo sinonimo quando lo si scopre in un nuovo file (basta appendere alla lista aliases), senza toccare parameter/unit/role. Il nome standard è scritto una sola volta (come chiave del dizionario) → niente più rischio di typo sparsi tra file diversi. Si può validare a "import time" che nessun alias sia condiviso per errore da due variabili standard diverse (basta un controllo che segnali duplicati in fase di costruzione della reverse map). Cosa resta invariato: self.rename per-file continua a esistere per i casi eccezionali già visti (stesso nome grezzo che significa cose diverse a seconda del file, o override intenzionali) — resta il meccanismo di "ultima parola" che vince sui conflitti, ma sarebbe usato solo per le vere eccezioni, non per i sinonimi comuni ormai gestiti da aliases.
-
-Trade-off da considerare: richiede di riscrivere CATALOG esistente (migrazione una tantum) e serve decidere cosa succede se due file usano lo stesso alias con significati diversi — da gestire con un controllo esplicito invece che lasciarlo implicito come oggi.
-
-Sarebbe da sopostare prima di tutto il renamen e quindi fare le funzioni che hanno bisogno di info da CATALOG dopo il rename.
-
-5. def profile(df, cohort_col="COLPROT") -> pd.DataFrame:
-riga 440 --> valutare e discutere quali altre info possono essere utili, tipo numero di visite per sogg con quel valore vero, ... Aggiungere il calcolo di profile anche dopo clenaing2
-
 6. verbose - parametro ORCHESTRATORE
-cosa significa? cos ainidca (riga 470)
+cosa significa? cosa inidca (riga 470)
 
-7. def merge_category(datasets: dict, category: str, mcfg=None):
-riga 398 --> capire meglio la logica quindi integrare con regole altre categorie
 
-Dubbio sul fatto che visite combacianti con metodi differenti vengano unite in una sola riga modificando il nome della variabile con il metodo. Da valutre e capire meglio perchè non tenere le cose separate.
 
 8. cleaned_by_category
 riga 495 --> capire come funziona

@@ -1,5 +1,9 @@
 /*.png
 /*.csv
 /File Benedetta/*.csv
+# log di esecuzione: possono contenere RID (Data Use Agreement ADNI) [D015]
+/File Benedetta/*_runlog.json
+/File Benedetta/*_mergelog.json
 /*.xlsx
 __pycache__
+adni_catalog_metodologia.html
