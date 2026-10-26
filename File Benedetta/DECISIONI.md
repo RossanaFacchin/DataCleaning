@@ -55,6 +55,12 @@ registra qui e in `notes_CP.md` si lascia il rimando all'ID.
 | D032 | 20/10/2026 | Struttura | Campo `scope` nel catalogo (ciclo di vita delle variabili) | Implementata in parte (20/10/2026) |
 | D033 | 20/10/2026 | Dati | Codici standard: solo verificati (MMSE, MoCA su LOINC) | Implementata in parte |
 | D034 | 20/10/2026 | Dati | Effetti collaterali del catalogo: EXAMDATE_bl esce, update_stamp diventa data | Implementata |
+| D035 | 26/10/2026 | Dati | ICV resta in mm3 quando si normalizzano i volumi | Implementata |
+| D036 | 26/10/2026 | Struttura | Evoluzioni nel catalogo: dummy e %ICV come voci figlie generate | Implementata |
+| D037 | 26/10/2026 | Struttura | Separatore delle dummy: `/` (es. `GENDER/male`) | Implementata |
+| D038 | 26/10/2026 | Struttura | `dtype` eliminato: è una data chi ha `date_precision` (`day`/`month`); modelli del catalogo separati | Implementata |
+| D039 | 26/10/2026 | Dati | `date_precision: year`: date note solo come anno, imputate al 1° luglio | Implementata |
+| D040 | 26/10/2026 | Struttura | Campo `worsening` nel catalogo: direzione di peggioramento (`increase`/`decrease`) | Implementata |
 
 \* Data indicativa: decisioni prese prima, già presenti nel codice a quella data (dopo la quale
 il codice non è cambiato in modo significativo).
@@ -419,3 +425,105 @@ il codice non è cambiato in modo significativo).
   cleaning 1; update_stamp ha `dtype = date` e viene convertita in data in tutti i file (utile al
   merge per la scelta del valore più recente). I volumi Entorhinal, Fusiform, MidTemp sono ora nel
   catalogo con unità mm3: se si attiva `normalize_icv`, verranno normalizzati anche loro.
+
+---
+
+## Decisioni del 26/10/2026
+
+### D035 · ICV resta in mm3
+- **Area:** Dati · **Stato:** Implementata
+- **Problema:** `normalize_volumes_icv` normalizzava anche ICV su se stessa: creava `ICV%ICV`
+  (sempre 100, nessuna informazione) ed eliminava la colonna ICV originale.
+- **Decisione:** ICV non viene mai normalizzata e resta in mm3, utile come covariata, per altri
+  metodi di correzione (es. residui) e per controllare la normalizzazione.
+- **Impatto:** nessuno sugli output attuali (`normalize_icv` è spento in tutti i file); quando si
+  attiverà, `ICV` resterà nel file pulito e non comparirà `ICV%ICV`.
+
+### D036 · Evoluzioni: dummy e %ICV come voci del catalogo
+- **Area:** Struttura · **Stato:** Implementata
+- **Problema:** dal catalogo si ricavano i metadati dei file creati (es. elenco dei predittori o
+  dei cofattori presenti nel df), ma le dummy e i volumi `%ICV` non avevano una voce: il
+  collegamento era solo ricostruito dal nome.
+- **Decisione (opzione A):** la variabile madre dichiara il **tipo** di trasformazione nel campo
+  `evolution`; le voci figlie le genera il caricamento del catalogo (`generated = true`), con
+  dominio, ruolo, scope e `log_ref` ereditati dalla madre, definizione automatica e `derived` che
+  punta alla madre. Una voce scritta a mano con lo stesso nome vince su quella generata.
+  - `dummy` (GENDER, MARRY, ETHNICITY, RACE, DX): `<VAR>/<livello>` (D037) per ogni livello di `levels`,
+    uguali per tutti i file; si creano **dopo il merge** dalle stringhe; sostituiscono la colonna
+    madre ma sono **reversibili** (`pipeline.undummy`, che conta e segnala le righe incoerenti:
+    nessun 1 o più di un 1). Dove la categoria manca le dummy sono NA, non 0, per poter tornare
+    indietro senza perdere l'informazione.
+  - `pct_icv` (Ventricles, Hippocampus, WholeBrain, Entorhinal, Fusiform, MidTemp): `<VOL>%ICV`;
+    **sostituisce** il volume in mm3, che non si recupera. ICV resta in mm3 (D035).
+  - Quali variabili diventano dummy e quali volumi si normalizzano lo dice solo il catalogo:
+    rimosso `DatasetConfig.dummy_columns`; `volume_columns()` usa `evolution` invece dell'unità.
+  - Funzioni: `config.evolutions(var)` (figlie), `config.parent_of(var)` (madre),
+    `config.evolution_vars(tipo)`.
+- **Alternative scartate:** una voce scritta a mano per ogni dummy e ogni `%ICV` (più righe,
+  ripetizioni); campo `evolution` con la lista dei nomi delle figlie (nomi già determinati da
+  una regola, rischio di disallineamento). Da rivedere se in futuro servirà.
+- **Impatto:** catalogo da 65 a 88 voci (23 generate); output dei file invariati (dummy e
+  normalizzazione sono spente). Chiude la proposta di `notes_CP.md` punto 15.
+- **Da completare:** molte madri hanno `role` vuoto (MARRY, ETHNICITY, RACE, DX, quasi tutti i
+  volumi): le figlie lo ereditano vuoto, quindi l'elenco dei predittori/cofattori è incompleto
+  finché i ruoli non sono compilati.
+
+### D037 · Separatore delle dummy "/"
+- **Area:** Struttura · **Stato:** Implementata
+- **Problema:** con `_` non si distingue dove finisce il nome della variabile e dove inizia il
+  livello, perché molti nomi e livelli contengono già `_` (`MARRY_never_married`).
+- **Decisione:** le dummy si chiamano `<VAR>/<livello>` (es. `GENDER/male`, `MARRY/never_married`);
+  il separatore è `config.DUMMY_SEP`, usato da catalogo, `make_dummies`, `undummy` ed
+  `export_catalog.py`. Supera la forma `<VAR>_<livello>` citata in D010, D018, D026.
+- **Da sapere:** alcuni strumenti a valle trattano male "/" nei nomi di colonna (R lo converte in
+  ".", le formule statsmodels richiedono `Q("GENDER/male")`); cambiarlo costa una riga.
+- **Nota sui nomi:** le dummy si creano dai `levels` del catalogo, che coincidono con i valori
+  nelle colonne perché `recode` produce esattamente quelle etichette; un livello assente in un
+  file produce comunque la sua colonna (tutta 0), così tutti i file hanno le stesse dummy.
+
+### D038 · Solo `date_precision` per le date; modelli del catalogo separati
+- **Area:** Struttura · **Stato:** Implementata
+- **Problema:** `dtype` aveva un solo valore possibile (`date`) e serviva solo insieme a
+  `date_precision`: due campi per un'informazione. I modelli del catalogo erano annidati
+  (`_variabile_calcolata` dentro `_templates`), e una parentesi sbagliata rendeva il file illeggibile.
+- **Decisione:** `dtype` eliminato. Una variabile è una data se ha `date_precision`: `day` = data
+  completa (EXAMDATE, EXAMDATE_bl, update_stamp), `month` = solo mese/anno (PTDOB); assente = non è
+  una data. In cima a `catalog.json`, uno accanto all'altro: `_istruzioni` (generali),
+  `_template_variabile_estratta`, `_template_variabile_calcolata`. Ogni chiave dei modelli ha la sua
+  spiegazione, che comincia con `OBBLIGATORIO.` o `Facoltativo.`; nessun `null`. I modelli sono le
+  prime righe di `catalog_table.csv`.
+- **Impatto:** stesse 88 voci, stesse 4 variabili data; output della pipeline identici.
+
+### D039 · Date note solo come anno
+- **Area:** Dati · **Stato:** Implementata
+- **Decisione:** terzo valore di `date_precision`, `year`, per le date note solo come anno (valori
+  `YYYY`, anche letti come numero 1940.0). La data è imputata a metà anno, al 1° luglio
+  (`POLICY.YEAR_IMPUTED_MONTH_DAY = (7, 1)`): errore centrato, massimo ±6 mesi, stessa logica del
+  giorno 15 per `month` (D029). L'imputazione vale solo per i valori scritti `YYYY`; le date complete
+  nella stessa colonna non si toccano. Il run log conta i valori imputati per colonna.
+- **Confermato:** niente `dtype` (D038). La prova `"dtype": str` su RID non viene tenuta; restano le
+  altre modifiche di Chiara a RID (campi vuoti tolti).
+- **Da decidere:** PTADBEG, PTCOGBEG, PTADDX sono anni scritti come numeri; oggi restano numeri
+  (anno di calendario). Marcarli `year` li trasformerebbe in date.
+- **Impatto:** nessuna variabile del catalogo usa ancora `year`; output invariati.
+
+### D040 · Direzione di peggioramento nel catalogo (`worsening`)
+- **Area:** Struttura · **Stato:** Implementata
+- **Problema:** per scale cliniche, volumi e biomarcatori serve sapere se un aumento o una
+  diminuzione indica un peggioramento. L'informazione c'era solo in `ranges.json` (terzo elemento di
+  `[min, max, direzione]`: `increasing` / `inverse`), non usata da nessuna funzione e invisibile nel
+  catalogo.
+- **Decisione:** campo facoltativo `worsening` nel catalogo, valori `increase` (peggiora se aumenta)
+  e `decrease` (peggiora se diminuisce), validato da `config.load_catalog`. Compilato copiando
+  `ranges.json` tale e quale (`increasing → increase`, `inverse → decrease`) per scale, volumi e
+  biomarcatori. Le figlie %ICV lo ereditano dalla madre, le dummy no. La direzione **resta anche in
+  `ranges.json`**; `export_catalog.py` controlla che i due coincidano.
+- **APOE4:** solo nella descrizione (più alleli e4 = rischio maggiore), perché non è un parametro
+  che cambia nel tempo.
+- **Alternative scartate:** lasciarla solo in `ranges.json` (fuori dalla fonte unica delle
+  variabili, D006); toglierla da `ranges.json` (si tocca `column_ranges` senza necessità per ora).
+- **Da verificare:** `WholeBrain` non compilato (in `ranges.json` c'è `Brain` = increasing ma
+  `Brain%ICV` = inverse, contraddittori); `ICV` copiato `decrease` ma è una variabile di
+  normalizzazione, non un marcatore; `APS2` non è in `ranges.json`. Vedi `notes_CP.md` punto 17.
+- **Impatto:** 31 variabili compilate (17 `increase`, 14 `decrease`) più 5 figlie %ICV;
+  nessuna discordanza con `ranges.json`; output della pipeline invariati (solo metadati).

@@ -199,6 +199,7 @@ def drop_if_all_none(df, cols):
 
 
 _MONTH_ONLY = r"\s*\d{1,2}/\d{4}\s*"          # es. "07/1940": data nota solo come mese/anno
+_YEAR_ONLY = r"\s*\d{4}(\.0+)?\s*"             # es. "1940" o 1940.0: data nota solo come anno
 
 
 def month_only_mask(s):
@@ -206,28 +207,42 @@ def month_only_mask(s):
     return s.notna() & s.astype(str).str.fullmatch(_MONTH_ONLY)
 
 
-def parse_dates(df, cols, month_precision=()):
+def year_only_mask(s):
+    """True per i valori scritti come YYYY (mese e giorno non noti)."""
+    return s.notna() & s.astype(str).str.fullmatch(_YEAR_ONLY)
+
+
+def parse_dates(df, cols, month_precision=(), year_precision=()):
     """Converte le colonne indicate in datetime vero.
 
     [D029] Per le colonne in `month_precision` (es. PTDOB) i valori MM/YYYY vengono letti con
-    formato esplicito e il giorno, che non e' noto, e' imputato a config.DOB_IMPUTED_DAY (15):
-    errore centrato invece che sempre in eccesso. Le date COMPLETE, anche nella stessa colonna,
+    formato esplicito e il giorno, che non e' noto, e' imputato a config.DOB_IMPUTED_DAY (15).
+    [D039] Per le colonne in `year_precision` i valori YYYY diventano il giorno
+    config.YEAR_IMPUTED_MONTH_DAY (1 luglio) di quell'anno.
+    Errore centrato invece che sempre in eccesso. Le date COMPLETE, anche nella stessa colonna,
     non vengono toccate; le altre colonne (EXAMDATE...) restano esattamente come sono.
     """
     df = df.copy()
     for c in cols:
         if c not in df.columns:
             continue
-        if c in month_precision:
-            raw = df[c]
-            month = month_only_mask(raw)
-            parsed = pd.to_datetime(raw.where(~month), errors="coerce")
-            imputed = (pd.to_datetime(raw[month].astype(str).str.strip(), format="%m/%Y")
-                       + pd.Timedelta(days=config.DOB_IMPUTED_DAY - 1))
-            parsed.loc[month] = imputed
+        raw = df[c]
+        if c in month_precision or c in year_precision:
+            partial = month_only_mask(raw) if c in month_precision else year_only_mask(raw)
+            parsed = pd.to_datetime(raw.where(~partial), errors="coerce")
+            if partial.any():
+                text = raw[partial].astype(str).str.strip()
+                if c in month_precision:
+                    imputed = (pd.to_datetime(text, format="%m/%Y")
+                               + pd.Timedelta(days=config.DOB_IMPUTED_DAY - 1))
+                else:
+                    month, day = config.YEAR_IMPUTED_MONTH_DAY
+                    imputed = pd.to_datetime(pd.DataFrame(
+                        {"year": text.astype(float).astype(int), "month": month, "day": day}))
+                parsed.loc[partial] = imputed
             df[c] = parsed
         else:
-            df[c] = pd.to_datetime(df[c], errors="coerce")
+            df[c] = pd.to_datetime(raw, errors="coerce")
     return df
 
 
@@ -540,13 +555,17 @@ def run_cleaning1(cfg: DatasetConfig = ADNIMERGE):
     dates = config.date_vars()
     date_cols = [cfg.date_column] + [c for c in dates if c in df.columns and c != cfg.date_column]
     month_cols = [c for c, v in dates.items() if v.date_precision == "month"]
+    year_cols = [c for c, v in dates.items() if v.date_precision == "year"]
     imputed = {c: int(month_only_mask(df[c]).sum())              # [D029] giorno messo a 15
                for c in month_cols if c in df.columns}
+    imputed_y = {c: int(year_only_mask(df[c]).sum())             # [D039] data messa al 1 luglio
+                 for c in year_cols if c in df.columns}
     n_nat = {c: int(df[c].isna().sum()) for c in date_cols if c in df.columns}
-    new = parse_dates(df, date_cols, month_cols)                 # to_date_format
+    new = parse_dates(df, date_cols, month_cols, year_cols)      # to_date_format
     df = _log_step(log, "parse_dates", df, new,
                    colonne=[c for c in date_cols if c in df.columns],
                    giorno_imputato_per_colonna=imputed,
+                   mese_e_giorno_imputati_per_colonna=imputed_y,
                    date_non_leggibili_rese_NaT={c: int(new[c].isna().sum()) - n
                                                 for c, n in n_nat.items()
                                                 if int(new[c].isna().sum()) - n > 0})
@@ -625,29 +644,62 @@ def remove_single_visit_subjects(df, id_col, min_multivisit_subjects=None, force
     return df[visits_per_subject > 1].copy(), info
 
 
-def make_dummies(df, cols):
+def make_dummies(df, cols=None):
     """One-hot delle colonne categoriche presenti (ex classes_to_dummies).
+    cols=None -> le variabili con evolution 'dummy' nel catalogo [D036]: le dummy prodotte
+    sono le voci figlie generate dal catalogo (<VAR>/<livello>, config.DUMMY_SEP). Reversibile con undummy().
 
     [nota Chiara #3] le categoriche sono gia' ETICHETTE STANDARD (stringhe) dopo
-    recode, quindi le dummy escono leggibili (DX_CN, GENDER_male) e i NaN non
+    recode, quindi le dummy escono leggibili (DX/CN, GENDER/male) e i NaN non
     generano colonna. Se la variabile ha i 'levels' nel catalogo si crea una colonna
     per OGNI livello, anche se in questo file manca: cosi' file diversi hanno le stesse
     dummy. [D026: si usa dopo il merge] Restituisce (df, colonne_dummy_create).
     """
     df = df.copy()
+    if cols is None:
+        cols = config.evolution_vars("dummy")
     present = [c for c in cols if c in df.columns]
     before = set(df.columns)
     cat = config.catalog()
     with_levels = [c for c in present if c in cat and cat[c].levels]
     for c in with_levels:
+        missing = df[c].isna()
         for level in sorted(cat[c].levels, key=cat[c].levels.get):
-            df[f"{c}_{level}"] = (df[c] == level).astype(int)
+            # 0/1, ma NA dove la categoria manca: cosi' undummy() ricostruisce anche i mancanti
+            df[f"{c}{config.DUMMY_SEP}{level}"] = (df[c] == level).astype("Int64").mask(missing)
         df = df.drop(columns=c)
     others = [c for c in present if c not in with_levels]
     if others:
-        df = pd.get_dummies(df, columns=others, dtype=int)
+        df = pd.get_dummies(df, columns=others, dtype=int, prefix_sep=config.DUMMY_SEP)
     created = [c for c in df.columns if c not in before]
     return df, created
+
+
+def undummy(df, cols=None):
+    """Inverso di make_dummies [D036]: dalle dummy <VAR>/<livello> ricostruisce la colonna
+    singola VAR con l'etichetta (NaN dove le dummy sono NA). cols=None -> tutte le variabili
+    con evolution 'dummy' le cui dummy sono nel df. Le righe INCOERENTI (nessun 1 o piu' di un 1,
+    es. dopo un merge con valori discordanti) diventano NaN e vengono contate, con warning.
+    Restituisce (df, {variabile_ricostruita: righe_incoerenti})."""
+    df = df.copy()
+    cat = config.catalog()
+    cols = config.evolution_vars("dummy") if cols is None else cols
+    rebuilt = {}
+    for c in cols:
+        levels = sorted(cat[c].levels, key=cat[c].levels.get)
+        dcols = [f"{c}{config.DUMMY_SEP}{lv}" for lv in levels]
+        if not all(d in df.columns for d in dcols):
+            continue
+        block = df[dcols].astype("Float64")
+        valid = block.notna().all(axis=1) & (block.fillna(0).sum(axis=1) == 1)   # un solo 1
+        label = block.fillna(0).astype(float).idxmax(axis=1).str[len(c) + len(config.DUMMY_SEP):]
+        df[c] = label.where(valid)
+        incoherent = int((block.notna().all(axis=1) & ~valid).sum())
+        if incoherent:
+            warnings.warn(f"undummy {c}: {incoherent} righe con nessun 1 o piu' di un 1 -> NaN")
+        df = df.drop(columns=dcols)
+        rebuilt[c] = incoherent
+    return df, rebuilt
 
 
 def normalize_volumes_icv(df, icv_column="ICV", vol_columns=None):
@@ -656,6 +708,8 @@ def normalize_volumes_icv(df, icv_column="ICV", vol_columns=None):
     [nota Chiara #11] i volumi normalizzati prendono il nome '<vol>%ICV' (es.
     'Hippocampus%ICV'), coerente coi ranges e col vecchio output: cosi' non si
     confonde un volume in mm3 con uno gia' normalizzato. Restituisce (df, mappa_rinomini).
+    [D035] ICV resta in mm3 (covariata, altri metodi di correzione, controlli): prima
+    veniva normalizzata su se stessa (ICV%ICV = 100 sempre) e la colonna originale spariva.
     NB: NON somma sinistro+destro (get_volumes_total) - i volumi ADNIMERGE sono gia' totali.
     """
     df = df.copy()
@@ -665,8 +719,8 @@ def normalize_volumes_icv(df, icv_column="ICV", vol_columns=None):
         return df, {}
     icv = pd.to_numeric(df[icv_column], errors="coerce")
     renamed = {}
-    for c in list(vol_columns) + [icv_column]:
-        if c in df.columns:
+    for c in vol_columns:
+        if c in df.columns and c != icv_column:
             new = f"{c}%ICV"
             df[new] = pd.to_numeric(df[c], errors="coerce") / icv * 100.0
             df = df.drop(columns=c)
@@ -707,9 +761,9 @@ def run_cleaning2(df: pd.DataFrame, cfg: DatasetConfig = ADNIMERGE):
 
     created = []
     if cfg.make_dummies:
-        new, created = make_dummies(df, cfg.dummy_columns)
+        new, created = make_dummies(df)                    # variabili dal catalogo [D036]
         df = _log_step(log, "make_dummies", df, new,
-                       colonne_origine=[c for c in cfg.dummy_columns if c in df.columns])
+                       colonne_origine=[c for c in config.evolution_vars("dummy") if c in df.columns])
 
     # [nota Chiara #9] il drop-righe-per-volumi NON si fa piu' qui (rischia di
     # buttare righe con altri dati): si fa dopo il merge, con drop_rows_no_signal().

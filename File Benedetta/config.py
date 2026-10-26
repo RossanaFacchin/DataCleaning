@@ -56,6 +56,9 @@ MULTIVISIT_MIN_SUBJECTS = 10
 # Si applica SOLO alle variabili con date_precision='month' nel catalogo e SOLO ai valori
 # scritti come MM/YYYY: le date complete non vengono toccate.
 DOB_IMPUTED_DAY = 15
+# [D039] Date note solo come anno (date_precision='year', valori YYYY): data imputata a META'
+# anno, 1 luglio (mese, giorno) -> errore centrato, max ±6 mesi. Solo ai valori scritti YYYY.
+YEAR_IMPUTED_MONTH_DAY = (7, 1)
 # [D030] Decimali dell'eta' calcolata (notes_CP B.4).
 AGE_ROUND_DECIMALS = 1
 # [D019] Controllo di coerenza: se una variabile e' presa dal file (misurata) ma si potrebbe
@@ -105,6 +108,8 @@ ATN_AXES_CSF = {
 #     (automated_merge.py) arricchiscono i METADATI dei file mergiati. Sono dati
 #     tabulari, quindi restano un FILE letto dal config, non dict dentro il .py.
 #     [accorpa i vecchi normalization_settings/volume_values/cofattori_values.json]
+#     La direzione (increasing/inverse) e' anche nel catalogo come 'worsening'
+#     (increase/decrease); export_catalog.checks() segnala se i due non coincidono. [D040]
 # ---------------------------------------------------------------------------
 RANGES_FILE = "ranges.json"
 SETTINGS_SECTIONS = ("normalization", "volume", "cofattori")
@@ -149,7 +154,7 @@ def column_ranges(columns, name: str, method: str = None) -> dict:
 # ---------------------------------------------------------------------------
 # 3. RECODE  —  categorie -> ETICHETTE STANDARD (stringhe), non numeri.
 #    [nota Chiara #3] mappare a stringhe standard rende le dummy leggibili
-#    (DX_CN, GENDER_male) e non costringe a ri-convertire in numeri dopo.
+#    (DX/CN, GENDER/male) e non costringe a ri-convertire in numeri dopo.
 #    Chiavi = NOMI STANDARD (il recode gira DOPO il rename, vedi nota #4).
 # ---------------------------------------------------------------------------
 def _codes(mapping: dict) -> dict:
@@ -172,7 +177,7 @@ RECODE = {
                       "Never married": "never_married", "Unknown": np.nan},
         "ETHNICITY": {"Hisp/Latino": "hisp", "Not Hisp/Latino": "not_hisp", "Unknown": np.nan},
         "RACE":      {"White": "white", "Black": "black", "Asian": "asian",
-                      "Am Indian/Alaskan": "amind", "Hawaiian/Other PI": "hawaiian",
+                      "Am Indian/Alaskan": "american_indian", "Hawaiian/Other PI": "hawaiian_PI",
                       "More than one": "mixed", "Unknown": np.nan},
         "DX":        {"CN": "CN", "MCI": "MCI", "Dementia": "Dementia"},
     },
@@ -181,8 +186,8 @@ RECODE = {
         "MARRY":     _codes({1: "married", 2: "widowed", 3: "divorced", 4: "never_married",
                              5: np.nan, 6: "married"}),
         "ETHNICITY": _codes({1: "hisp", 2: "not_hisp", 3: np.nan}),
-        "RACE":      {**_codes({1: "amind", 2: "asian", 3: "hawaiian", 4: "black", 5: "white",
-                                6: "mixed", 7: np.nan, 8: "hawaiian", 9: "hawaiian"}),
+        "RACE":      {**_codes({1: "american_indian", 2: "asian", 3: "hawaiian", 4: "black", 5: "white",
+                                6: "mixed", 7: np.nan, 8: "hawaiian_PI", 9: "hawaiian_PI"}),
                       "/": "mixed"},
     },
 }
@@ -209,6 +214,8 @@ def recode_map(var: str, file_code: Optional[str] = None) -> dict:
 # ---------------------------------------------------------------------------
 CATALOG_FILE = "catalog.json"
 SCOPES = ("cleaning", "merge", "output")        # [D032] fin dove vive la variabile
+DATE_PRECISIONS = ("day", "month", "year")      # [D038, D039] presenza di date_precision = e' una data
+WORSENING = ("increase", "decrease")             # [D040] direzione di peggioramento (copiata da ranges.json)
 
 
 @dataclass(frozen=True)
@@ -216,10 +223,12 @@ class Var:
     domain: str                                  # ID, Visit, Demographic, Cognitive, Imaging, Biomarker...
     definition: str
     unit: Optional[str] = None                   # notazione UCUM (a = anni, mm3, pg/mL, {score})
+    worsening: Optional[str] = None              # increase = peggiora se aumenta, decrease = se diminuisce [D040]
     role: Optional[str] = None                   # predittore | normalizzazione | metodo | qualita | ...
     scope: str = "output"                        # cleaning | merge | output  [D032]
-    dtype: Optional[str] = None                  # 'date' -> convertita da parse_dates
-    date_precision: Optional[str] = None         # 'month' -> valori MM/YYYY, giorno imputato [D029]
+    # presente = e' una data (convertita da parse_dates): 'day' completa, 'month' solo MM/YYYY
+    # con giorno imputato, 'year' solo YYYY con data imputata a meta' anno [D029, D038, D039]
+    date_precision: Optional[str] = None
     aliases: tuple = ()                          # 'DATASET:FILE.colonna'  [D017]
     derived: tuple = ()                          # ({"from": [...], "by": "..."}, ...)  [D019]
     levels: Optional[dict] = None                # categoriche: {"etichetta": codice_intero}
@@ -230,6 +239,42 @@ class Var:
     standard_match: str = "none"                 # exact | broader | approximate | none
     note: str = ""
     log_ref: tuple = ()                          # ID in DECISIONI.md
+    evolution: tuple = ()                        # trasformazioni che generano variabili figlie [D036]
+    generated: bool = False                      # True = voce figlia creata dal caricamento, non scritta nel JSON
+
+
+# [D036] Evoluzioni: una variabile madre dichiara il TIPO di trasformazione; le figlie
+# (nome, definizione, collegamento) le genera load_catalog e sono voci del catalogo come le
+# altre, quindi compaiono nei metadati (es. "predittori presenti nel df").
+#   dummy   -> <VAR>/<livello> per ogni livello di 'levels'; dopo il merge, sostituisce la
+#              colonna madre ma e' REVERSIBILE (pipeline.undummy).
+#   pct_icv -> <VOL>%ICV (volume in % di ICV); sostituisce il volume in mm3, NON reversibile.
+EVOLUTIONS = ("dummy", "pct_icv")
+ICV_VARIABLE = "ICV"
+# [D037] separatore variabile/livello nel nome delle dummy: "/" invece di "_", perche' molti
+# nomi e livelli contengono gia' "_" (MARRY/never_married, ETHNICITY/not_hisp).
+DUMMY_SEP = "/"
+
+
+def _evolution_children(name: str, v: "Var") -> dict[str, "Var"]:
+    """Voci figlie di una variabile madre, secondo le sue 'evolution'."""
+    out = {}
+    base = dict(domain=v.domain, role=v.role, scope=v.scope, method_col=v.method_col,
+                log_ref=tuple(v.log_ref) + ("D036",), generated=True)
+    for kind in v.evolution:
+        if kind == "dummy":
+            for level in sorted(v.levels, key=v.levels.get):
+                out[f"{name}{DUMMY_SEP}{level}"] = Var(
+                    definition=f"Dummy 0/1 di {name}: 1 se {name} = '{level}'. ({v.definition})",
+                    derived=({"from": [name], "by": "dummy", "level": level},),
+                    note=f"Voce generata dall'evoluzione 'dummy' di {name}.", **base)
+        elif kind == "pct_icv":
+            out[f"{name}%ICV"] = Var(
+                definition=f"{v.definition} Espresso in percentuale del volume intracranico (ICV).",
+                unit="%", worsening=v.worsening,          # la % va nella stessa direzione del volume
+                derived=({"from": [name, ICV_VARIABLE], "by": "pct_icv"},),
+                note=f"Voce generata dall'evoluzione 'pct_icv' di {name}.", **base)
+    return out
 
 
 def parse_alias(alias: str) -> tuple[str, str, str]:
@@ -265,18 +310,39 @@ def load_catalog(path=None) -> dict[str, Var]:
     for name, attrs in raw.items():
         if name.startswith("_"):                 # _templates, _istruzioni: ignorati
             continue
+        # campi che iniziano con '_' = commenti (es. '_definizione' copiata da un template): ignorati
+        attrs = {k: v for k, v in attrs.items() if not k.startswith("_")}
         unknown = set(attrs) - allowed
         if unknown:
             errors.append(f"{name}: campi non previsti {sorted(unknown)}")
             continue
         attrs = dict(attrs)
+        if "generated" in attrs:
+            errors.append(f"{name}: 'generated' e' riservato alle voci create dal caricamento")
+            continue
         attrs["aliases"] = tuple(attrs.get("aliases") or ())
         attrs["derived"] = tuple(attrs.get("derived") or ())
         attrs["log_ref"] = tuple(attrs.get("log_ref") or ())
+        attrs["evolution"] = tuple(attrs.get("evolution") or ())
+        missing = [f for f in ("domain", "definition") if not attrs.get(f)]
+        if missing:
+            errors.append(f"{name}: mancano i campi obbligatori {missing}")
+            continue
         if not attrs["aliases"] and not attrs["derived"]:
             errors.append(f"{name}: serve almeno uno tra 'aliases' e 'derived'")
         if attrs.get("scope", "output") not in SCOPES:
             errors.append(f"{name}: scope '{attrs.get('scope')}' non valido {SCOPES}")
+        if attrs.get("date_precision") not in (None,) + DATE_PRECISIONS:
+            errors.append(f"{name}: date_precision '{attrs.get('date_precision')}' non valida {DATE_PRECISIONS}")
+        if attrs.get("worsening") not in (None,) + WORSENING:
+            errors.append(f"{name}: worsening '{attrs.get('worsening')}' non valido {WORSENING}")
+        for kind in attrs["evolution"]:
+            if kind not in EVOLUTIONS:
+                errors.append(f"{name}: evolution '{kind}' sconosciuta {EVOLUTIONS}")
+            elif kind == "dummy" and not attrs.get("levels"):
+                errors.append(f"{name}: evolution 'dummy' richiede 'levels'")
+            elif kind == "pct_icv" and attrs.get("unit") != "mm3":
+                errors.append(f"{name}: evolution 'pct_icv' richiede unit 'mm3'")
         for alias in attrs["aliases"]:
             try:
                 key = parse_alias(alias)
@@ -290,8 +356,15 @@ def load_catalog(path=None) -> dict[str, Var]:
             catalog[name] = Var(**attrs)
         except TypeError as e:
             errors.append(f"{name}: {e}")
+    if any("pct_icv" in v.evolution for v in catalog.values()) and ICV_VARIABLE not in catalog:
+        errors.append(f"evolution 'pct_icv' usata ma '{ICV_VARIABLE}' non e' nel catalogo")
     if errors:
         raise ValueError(f"{p.name} non valido:\n  " + "\n  ".join(errors))
+    # [D036] voci figlie delle evoluzioni; una voce scritta a mano nel JSON con lo stesso
+    # nome vince su quella generata (per definizioni o codici standard propri)
+    for name, v in list(catalog.items()):
+        for child, cv in _evolution_children(name, v).items():
+            catalog.setdefault(child, cv)
     return catalog
 
 
@@ -342,13 +415,32 @@ def derived_vars() -> dict[str, Var]:
 
 
 def date_vars() -> dict[str, Var]:
-    """Variabili di tipo data (dtype='date')."""
-    return {n: v for n, v in catalog().items() if v.dtype == "date"}
+    """Variabili di tipo data: quelle con date_precision ('day', 'month' o 'year') [D038, D039]."""
+    return {n: v for n, v in catalog().items() if v.date_precision}
 
 
 def scope_vars(scope: str) -> list[str]:
     """Nomi standard con un certo ciclo di vita [D032]."""
     return [n for n, v in catalog().items() if v.scope == scope]
+
+
+def evolution_vars(kind: str) -> list[str]:
+    """Variabili madri con una certa evoluzione (es. 'dummy', 'pct_icv') [D036]."""
+    return [n for n, v in catalog().items() if kind in v.evolution]
+
+
+def evolutions(var: str) -> list[str]:
+    """Variabili figlie di `var` (es. GENDER -> [GENDER/female, GENDER/male]) [D036]."""
+    return [n for n, v in catalog().items()
+            if v.derived and v.derived[0]["by"] in EVOLUTIONS and v.derived[0]["from"][0] == var]
+
+
+def parent_of(var: str) -> Optional[str]:
+    """Variabile madre di una figlia generata da un'evoluzione (None se non lo e')."""
+    v = catalog().get(var)
+    if v and v.derived and v.derived[0]["by"] in EVOLUTIONS:
+        return v.derived[0]["from"][0]
+    return None
 
 
 def encode(series, var: str):
@@ -390,7 +482,7 @@ class DatasetConfig:
     # [D027] codici numerici di "mancante" di questo file; None -> config.DEFAULT_MISSING_CODES.
     missing_codes: Optional[list] = None
     # (le date da convertire e la precisione mese/anno ora vengono dal catalogo:
-    #  dtype='date', date_precision='month' [D029])
+    #  date_precision='day' o 'month' [D029, D038])
     # [nota Chiara #1] scarta la riga se MANCA anche UNA sola di queste (any-none),
     # es. ID o data: e' diverso da essential_columns (che scarta se TUTTE mancano).
     required_all_present: list[str] = field(default_factory=list)
@@ -412,7 +504,7 @@ class DatasetConfig:
     # --- cleaning 2 / 3  (le decisioni che Rossana aveva scritto a mano) -------
     drop_sparse_columns: bool = False           # scarta colonne sotto SPARSE_KEEP_THRESHOLD
     make_dummies: bool = False                  # one-hot delle categoriche
-    dummy_columns: list[str] = field(default_factory=list)      # ex REF_LIST
+    # (quali variabili diventano dummy lo dice il catalogo: evolution 'dummy' [D036])
     remove_single_visit: bool = False           # scarta soggetti con 1 sola visita
     keep_even_single_visit: bool = False        # eccezione (file anagrafici/genetici: PTDEMOG/APOERES)
     volume_row_keys: list[str] = field(default_factory=list)    # scarta riga se TUTTE queste sono NaN
@@ -465,7 +557,6 @@ ADNIMERGE = DatasetConfig(
     # [D026] dummy DOPO il merge: prima del merge una sola colonna categorica (stringa)
     # rende semplice il controllo di coerenza tra file. La funzione resta per il post-merge.
     make_dummies=False,
-    dummy_columns=["GENDER", "MARRY", "ETHNICITY", "RACE", "DX"],   # nomi STANDARD, post-rename
     # [nota Chiara #9] niente drop-righe-per-volumi qui: rischia di buttare righe con
     # altri dati utili. Va fatto DOPO il merge (scarta se manca ogni valore vol/PET/CSF).
     # volume_row_keys=[...]  -> rimosso dal cleaning per singolo file.
@@ -729,7 +820,6 @@ PTDEMOG = DatasetConfig(
     # cleaning 2 / 3 -------------------------------------------------------
     drop_sparse_columns=False,
     make_dummies=False,                        # [D026] dummy dopo il merge
-    dummy_columns=["GENDER", "MARRY", "ETHNICITY", "RACE"],
     remove_single_visit=False,
     normalize_icv=False,
     # PTDOB NON e' qui: serve solo a calcolare l'eta' ed e' un quasi-identificativo.
@@ -996,10 +1086,10 @@ def columns_in(domain: str) -> list[str]:
     return [name for name, v in catalog().items() if v.domain == domain]
 
 
-def volume_columns(icv_column: str = "ICV") -> list[str]:
-    """Volumi da normalizzare su ICV: unita' mm3, ICV escluso (nomi standard stabili)."""
-    return [name for name, v in catalog().items()
-            if v.unit == "mm3" and name != icv_column]
+def volume_columns(icv_column: str = ICV_VARIABLE) -> list[str]:
+    """Volumi da normalizzare su ICV: quelli con evolution 'pct_icv' nel catalogo [D036].
+    (Prima: tutte le voci in mm3; ora la scelta e' dichiarata. ICV resta in mm3 [D035].)"""
+    return [n for n in evolution_vars("pct_icv") if n != icv_column]
 
 
 DATASETS = {d.file_code: d for d in (

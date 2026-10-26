@@ -121,7 +121,7 @@ Corollari:
 `load` → `drop_columns` (grezze, D016) → `replace_unknown` (codici del file, D027) →
 **`rename_variables` (per primo)** → `decensor` (opz.) → `drop_rows_by_value` (es. screen
 fail, D028) → `drop_required` (manca anche una) → `drop_if_all_none` (essential, poi
-also_required) → `parse_dates` (date_column + variabili `dtype: date` del catalogo;
+also_required) → `parse_dates` (date_column + variabili con `date_precision` nel catalogo;
 giorno 15 solo per `date_precision: month`, D029) → `dedup_visits` + `add_visit_month` →
 `derive_variables` (variabili `derived` del catalogo: AGE da PTDOB o da AGE_bl a 1
 decimale, rapporti; il misurato vince, D019/D030) → `recode` (in **etichette stringa
@@ -162,8 +162,8 @@ Sulla macchina di Chiara Python è quello di Anaconda: `~/anaconda3/python.exe`
 ## 6. Elementi chiave di `config.py` e `catalog.json`
 
 - **`catalog.json`** (D006, D017, D018): unica fonte di verità sulle variabili. Chiave =
-  nome standard; campi `domain`, `definition`, `unit` (UCUM), `role`, `scope`
-  (`cleaning`/`merge`/`output`), `dtype`, `date_precision`, `aliases`, `derived`, `levels`,
+  nome standard; campi `domain`, `definition`, `unit` (UCUM), `worsening` (direzione di peggioramento, D040), `role`, `scope`
+  (`cleaning`/`merge`/`output`), `date_precision` (presente = data: `day`/`month`/`year`), `aliases`, `derived`, `levels`,
   `method_col`, codici standard, `note`, `log_ref`. Letto e validato da `config.catalog()`
   (errore esplicito se qualcosa non torna). **Mai** rimettere variabili, alias o rename nel
   `.py`; mai inserire codici standard non verificati su una fonte ufficiale (D033).
@@ -175,6 +175,11 @@ Sulla macchina di Chiara Python è quello di Anaconda: `~/anaconda3/python.exe`
   (`{"from": [...], "by": "..."}`); `by` è una funzione di `pipeline.DERIVATIONS`
   (`age_from_dob`, `age_from_baseline`, `ratio`) o un passo dedicato. Il valore misurato
   (alias) vince sempre; per AGE c'è un controllo di coerenza ±0,5 anni.
+- **Evoluzioni** (D036): la madre dichiara `evolution: ["dummy"]` (servono `levels`) o
+  `["pct_icv"]` (volumi in mm3); le figlie `<VAR>_<livello>` e `<VOL>%ICV` sono **generate**
+  dal caricamento (`generated = true`, ereditano domain/role/scope) e non si scrivono nel JSON,
+  salvo per dare loro definizione o codici propri. Dummy: dopo il merge, reversibili
+  (`undummy`); %ICV: sostituisce il volume in mm3; ICV resta in mm3 (D035).
 - **POLICY**: segnaposto dei mancanti, prefissi censurati, soglie, giorno imputato
   (`DOB_IMPUTED_DAY`), decimali dell'età, tolleranze delle derivate. I mancanti sono su due
   livelli (D027): `MISSING_STRINGS` valgono sempre; i **codici numerici** (−4, −1, 9999) si

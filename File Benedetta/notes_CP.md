@@ -107,3 +107,15 @@ Controllare sul dizionario dati ADNI tutte le mappature di `config.RECODE`, sia 
 - Due rename del generatore di bozze, migrati tali e quali ma clinicamente dubbi: CDR `CDGLOBAL -> CDRSB` (CDR globale 0-3 non e' il Sum of Boxes 0-18) e APOERES `GENOTYPE -> APOE4` (genotipo vs numero di alleli e4). Vedi DECISIONI D017.
 - Codici standard: verificati solo MMSE (LOINC 72106-8) e MoCA (LOINC 72172-0). Completare a mano su Athena / loinc.org / AD-Mapper (D033).
 - Domini nuovi introdotti: History (PTADBEG, PTCOGBEG, PTADDX), QC, Metadata: confermare o rinominare.
+
+15. ~~proposta aperta: volumi %ICV come variabili derivate del catalogo~~ -> CHIUSA con DECISIONI D036 (evoluzioni)
+Oggi i volumi da normalizzare su ICV sono scelti in base all'unita' (tutte le voci del catalogo in mm3 tranne ICV: Ventricles, Hippocampus, WholeBrain, Entorhinal, Fusiform, MidTemp) e le colonne `<vol>%ICV` non hanno una voce propria nel catalogo: il collegamento al volume di origine e' ricostruito dal nome (export_catalog.py). Proposta: una voce `derived` per ogni volume da normalizzare (es. "Hippocampus%ICV", from [Hippocampus, ICV], by "pct_icv", unit "%"), cosi' la scelta e' dichiarata e ogni versione normalizzata ha definizione e codici propri. Da decidere anche se i volumi in mm3 restano accanto ai %ICV o escono. ICV resta comunque in mm3 (D035).
+
+16. compilare i 'role' nel catalogo
+Le variabili figlie (dummy, %ICV) ereditano il ruolo dalla madre: con role vuoto (MARRY, ETHNICITY, RACE, DX, Ventricles, WholeBrain, Entorhinal, Fusiform, MidTemp...) l'elenco dei predittori/cofattori ricavato dal catalogo e' incompleto. Decidere i ruoli (predittore, cofattore, outcome...).
+
+17. verificare la direzione di peggioramento (`worsening`, D040)
+Copiata tale e quale da ranges.json. Da controllare:
+- `WholeBrain`: non compilato. In ranges.json c'e' `Brain` = increasing ma `Brain%ICV` = inverse (si contraddicono; ci si aspetterebbe decrease per entrambi, atrofia).
+- `ICV`: copiato `decrease`, ma ICV serve a normalizzare e non e' un marcatore di malattia: forse va tolto.
+- `APS2`: non e' in ranges.json, quindi non compilato.

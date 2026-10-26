@@ -96,8 +96,6 @@ La chiave è il **nome standard** della variabile:
   "unit": "pg/mL",
   "role": "predittore",
   "scope": "output",
-  "dtype": null,
-  "date_precision": null,
   "aliases": ["ADNI:*.ABETA", "ADNI:EUROIMMUN.BETA_AMYLOID_1_42"],
   "derived": null,
   "levels": null,
@@ -116,18 +114,36 @@ La chiave è il **nome standard** della variabile:
 | `domain` | gruppo: ID, Visit, Demographic, Cognitive, Imaging, Biomarker, History, QC, Metadata… |
 | `definition` | cosa misura, quando, come; deve bastare a chi non apre il codice |
 | `unit` | unità in notazione UCUM (`a` = anni, `mm3`, `pg/mL`, `{score}`) |
+| `worsening` | direzione di peggioramento, per scale, volumi e biomarcatori (D040): `increase` = peggiora se aumenta (CDRSB, Ventricles), `decrease` = peggiora se diminuisce (MMSE, Hippocampus); le figlie %ICV la ereditano; copiata da `ranges.json`, che la tiene ancora; `export_catalog.py` segnala se i due non coincidono |
 | `role` | predittore, normalizzazione, metodo, qualita, metadato, identificativo… |
 | `scope` | fin dove vive la variabile: `cleaning` (tolta a fine cleaning 1), `merge` (fino al merge), `output` (D032) |
-| `dtype` / `date_precision` | `date` = da convertire in data; `month` = nota solo come mese/anno (D029) |
+| `date_precision` | presente solo per le date (D038): `day` = data completa; `month` = nota solo come mese/anno, giorno imputato al 15 (D029); `year` = nota solo come anno, data imputata al 1° luglio (D039); assente = non è una data |
 | `aliases` | colonne grezze da cui arriva (§4.2) |
 | `derived` | come si calcola (§4.3) |
 | `levels` | solo per le categoriche: etichetta → codice intero (§4.4) |
+| `evolution` | trasformazioni che generano variabili figlie: `dummy`, `pct_icv` (§4.5) |
+| `generated` | non si scrive: vale `true` per le figlie generate dal caricamento |
 | `method_col` | colonna che dice con quale metodo è misurata la riga |
 | `omop_concept_id`, `vocab_code`, `admapper_ref`, `standard_match` | codici standard: **solo se verificati** su una fonte ufficiale (D033) |
 | `note`, `log_ref` | note libere; ID delle decisioni collegate |
 
-In cima al file, sotto `_templates`, ci sono due modelli da copiare: **variabile estratta** da
-un file e **variabile calcolata**. Le chiavi che iniziano con `_` sono ignorate.
+In cima al file ci sono, uno accanto all'altro:
+- `_istruzioni`: le istruzioni generali del catalogo;
+- `_template_variabile_estratta`: il modello per una variabile che arriva da una colonna di un file;
+- `_template_variabile_calcolata`: il modello per una variabile che si calcola da altre variabili.
+
+In ogni modello ogni chiave ha come valore la propria spiegazione, che comincia con
+`OBBLIGATORIO.` o `Facoltativo.`; `_istruzioni` dice quando usare quel modello.
+
+`python export_catalog.py` mette queste due righe in testa a `catalog_table.csv`, così chi apre
+la tabella legge subito cosa significa ogni colonna.
+
+- **Campi obbligatori:** `domain`, `definition` e almeno uno tra `aliases` e `derived`.
+- **Tutti gli altri campi sono facoltativi:** si possono omettere invece di scriverli a `null`,
+  e il programma usa il valore di default (`scope` = `output`, `standard_match` = `none`, gli
+  altri vuoti).
+- **Le chiavi che iniziano con `_`** sono ignorate. A livello del file servono per istruzioni
+  e modelli; dentro una voce funzionano da commento, per esempio `"_nota_interna": "..."`.
 
 ### 4.2 Alias e rename
 
@@ -193,6 +209,33 @@ Il caso dell'età:
 Le categoriche restano **una colonna in stringa** fino al merge. Le dummy si creano dopo
 (D026): una colonna per ogni livello del catalogo, così tutti i file hanno le stesse dummy.
 
+### 4.5 Evoluzioni: dummy e `%ICV` (D036)
+
+Alcune variabili, dopo una trasformazione, diventano altre colonne. La variabile madre lo
+dichiara nel campo `evolution`, indicando il **tipo** di trasformazione:
+
+```json
+"GENDER":      { "levels": {"female": 0, "male": 1}, "evolution": ["dummy"], ... },
+"Hippocampus": { "unit": "mm3", "evolution": ["pct_icv"], ... }
+```
+
+Quando il catalogo viene caricato, le **voci figlie** vengono generate automaticamente e
+diventano voci del catalogo come le altre. Per questo compaiono nei metadati, per esempio
+nell'elenco dei predittori presenti in un file:
+
+| Evoluzione | Figlie generate | Cosa succede alla madre |
+|---|---|---|
+| `dummy` | `GENDER/female`, `GENDER/male` (una per livello, separatore `/`) | sostituita dopo il merge, ma **reversibile**: `pipeline.undummy` ricostruisce la colonna singola e segnala le righe incoerenti |
+| `pct_icv` | `Hippocampus%ICV` | sostituita, **non** si recupera; ICV resta in mm3 (D035) |
+
+Le figlie ereditano dominio, ruolo e scope della madre. Hanno una definizione automatica e un
+`derived` che punta alla madre; nel JSON non si scrivono, a meno di volerle dare una
+definizione o dei codici propri (in quel caso vince la voce scritta a mano). Funzioni utili:
+`config.evolutions("GENDER")`, `config.parent_of("GENDER/male")`.
+
+Il ruolo ereditato è quello della madre: se la madre ha `role` vuoto, anche le figlie lo
+hanno vuoto.
+
 ---
 
 ## 5. La configurazione di un file: `DatasetConfig`
@@ -244,7 +287,7 @@ diversi da una riga all'altra (D020, in standby).
 | `decensor` | `">1700"` → 1700 (biomarcatori, se attivo) | — |
 | `drop_rows_by_value` | scarta righe per valore (es. screen fail) | — |
 | `drop_required` / `drop_if_all_none` | scarta righe senza ID/data o senza misure essenziali | `drop_if_all_none` ×2 |
-| `parse_dates` | converte in data `date_column` e le variabili `dtype: date`; per le date mese/anno mette il giorno 15, **solo** ai valori MM/YYYY (D029) | `to_date_format` |
+| `parse_dates` | converte in data `date_column` e le variabili con `date_precision`; per le date mese/anno mette il giorno 15, **solo** ai valori MM/YYYY (D029) | `to_date_format` |
 | `dedup_visits` + `add_visit_month` | una riga per soggetto e data; `VISIT_MONTH` | `find_exam_code` |
 | `derive_variables` | calcola le derivate del catalogo (AGE, rapporti) | `add_calculated_age` |
 | `recode` | categorie → etichette standard | `categorize_*` |
@@ -259,8 +302,8 @@ diversi da una riga all'altra (D020, in standby).
 |---|---|
 | `drop_sparse_columns` | toglie le colonne con meno del 65% di valori validi (se attivo) |
 | `remove_single_visit_subjects` | toglie i soggetti con una sola visita (se attivo) |
-| `make_dummies` | dummy delle categoriche (oggi spento: si fa dopo il merge) |
-| `normalize_volumes_icv` | volumi in % di ICV, rinominati `<vol>%ICV` (se attivo) |
+| `make_dummies` | dummy delle variabili con `evolution: dummy` (oggi spento: si fa dopo il merge) |
+| `normalize_volumes_icv` | volumi con `evolution: pct_icv` in % di ICV, rinominati `<vol>%ICV`; ICV resta in mm3 (se attivo) |
 | `keep_only_columns` | tiene `keep_columns` più, in automatico, le derivate del catalogo, le dummy, i %ICV e le colonne metodo |
 
 **Merge e armonizzazione** (`merge_category`, `run_harmonization`) esistono ma sono **in
@@ -286,8 +329,8 @@ restano in locale e non si condividono.
 - **`python export_catalog.py`** → `catalog_table.csv`, il catalogo in forma di tabella da
   consultare (non modificarlo: la fonte è il JSON), più alcuni controlli stampati a video.
 - **`python export_catalog.py ADNIMERGE_cleaned_02.csv`** → `ADNIMERGE_cleaned_02_dizionario.csv`:
-  per ogni colonna del file pulito, la voce del catalogo (anche per dummy e `%ICV`) e l'elenco
-  delle colonne non riconducibili al catalogo.
+  per ogni colonna del file pulito, la voce del catalogo con ruolo, unità e variabile madre
+  (anche per dummy e `%ICV`) e l'elenco delle colonne non riconducibili al catalogo.
 - **`python generate_config_stubs.py [cartella]`** → `config_datasets_draft.py`: bozze di
   `DatasetConfig` per i CSV della cartella, con i rename già noti dal catalogo e la lista delle
   colonne da decidere.
@@ -296,7 +339,7 @@ restano in locale e non si condividono.
 
 ## 9. Ricette
 
-**Aggiungere una variabile.** Si copia `_templates.variabile_estratta` in `catalog.json`,
+**Aggiungere una variabile.** Si copia `_template_variabile_estratta` in `catalog.json`,
 con chiave = nome standard e alias verso la colonna grezza. Se è categorica servono anche
 `levels` e la mappa in `RECODE`.
 
@@ -304,7 +347,7 @@ con chiave = nome standard e alias verso la colonna grezza. Se è categorica ser
 `"ADNI:<file_code>.<colonna>"` alla voce standard del catalogo. Non si tocca né la
 `DatasetConfig` né la pipeline.
 
-**Aggiungere una variabile calcolata.** Si copia `_templates.variabile_calcolata`. Se il modo
+**Aggiungere una variabile calcolata.** Si copia `_template_variabile_calcolata`. Se il modo
 di calcolo non esiste ancora, si aggiunge una funzione in `pipeline.DERIVATIONS`: è l'unico
 caso in cui si tocca la pipeline.
 

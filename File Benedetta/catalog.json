@@ -1,71 +1,57 @@
 {
-  "_templates": {
-    "_istruzioni": "Chiave = nome standard. Le chiavi che iniziano con '_' sono ignorate dal loader. Alias: 'DATASET:FILE.colonna' (FILE = file_code del DatasetConfig, '*' = tutti i file); precedenza: file preciso > DATASET:* > *:* (o nome nudo). Una voce ha aliases, derived o entrambi.",
-    "variabile_estratta": {
-      "domain": "<Demographic|Cognitive|Imaging|Biomarker|...>",
-      "definition": "<cosa misura, quando, come: basta a un lettore esterno>",
-      "unit": "<UCUM es. pg/mL, mm3, a; null se categorica>",
-      "role": "<predittore|null|...>",
-      "scope": "output",
-      "dtype": null,
-      "date_precision": null,
-      "aliases": [
-        "ADNI:<FILE>.<COLONNA_GREZZA>"
-      ],
-      "derived": null,
-      "levels": "<solo categoriche: {\"etichetta\": codice_intero}>",
-      "method_col": "<colonna metodo, es. METHOD_CSF; null se non serve>",
-      "omop_concept_id": null,
-      "vocab_code": null,
-      "admapper_ref": null,
-      "standard_match": "none",
-      "note": "<info che prima erano commenti>",
-      "log_ref": [
-        "<D0NN>"
-      ]
-    },
-    "variabile_calcolata": {
-      "domain": "<dominio>",
-      "definition": "<cosa rappresenta e come si calcola>",
-      "unit": "<UCUM>",
-      "role": null,
-      "scope": "output",
-      "dtype": null,
-      "date_precision": null,
-      "aliases": "<facoltativo: se alcuni file la riportano gia'>",
-      "derived": [
-        {
-          "from": [
-            "<INPUT_STANDARD_1>",
-            "<INPUT_STANDARD_2>"
-          ],
-          "by": "<ratio|age_from_dob|age_from_baseline|nome passo pipeline>"
-        }
-      ],
-      "levels": null,
-      "method_col": null,
-      "omop_concept_id": null,
-      "vocab_code": null,
-      "admapper_ref": null,
-      "standard_match": "none",
-      "note": "<se il file la riporta gia', aggiungere anche aliases: il misurato vince>",
-      "log_ref": []
-    }
+  "_istruzioni": "Catalogo delle variabili: ogni chiave e' il NOME STANDARD di una variabile. Le chiavi che iniziano con '_' sono ignorate dal loader. Alias: 'DATASET:FILE.colonna' (FILE = file_code del DatasetConfig, '*' = tutti i file); precedenza: file preciso > DATASET:* > *:* (o nome nudo). Una voce ha aliases, derived o entrambi. 'evolution' dichiara le variabili figlie: 'dummy' -> <VAR>/<livello> (reversibile), 'pct_icv' -> <VOL>%ICV (sostituisce il volume in mm3); le figlie sono generate dal caricamento e non si scrivono, salvo voler dare loro definizione o codici propri. Per aggiungere una variabile si copia '_template_variabile_estratta' (arriva da una colonna di un file) o '_template_variabile_calcolata' (si calcola da altre variabili), si sostituisce la chiave con il nome standard e si compilano i campi: ogni valore del template spiega il campo e dice se e' OBBLIGATORIO o Facoltativo; i facoltativi si possono omettere.",
+  "_template_variabile_estratta": {
+    "_istruzioni": "Variabile presa da una colonna di un file grezzo e portata al nome standard con 'aliases'. Esempi: MMSE, AB42_CSF, GENDER. Obbligatori: domain, definition, aliases.",
+    "domain": "OBBLIGATORIO. Gruppo della variabile: ID, Cohort, Visit, Demographic, Genetic, Diagnosis, History, Cognitive, Imaging, Biomarker, QC, Metadata.",
+    "definition": "OBBLIGATORIO. Cosa misura la variabile, quando e come: deve bastare a un lettore esterno senza aprire il codice.",
+    "unit": "Facoltativo. Unità di misura in notazione UCUM: a (anni), mm3, pg/mL, %, {score} per i punteggi. Ometti se categorica o adimensionale.",
+    "worsening": "Facoltativo. Direzione di peggioramento: 'increase' = il valore che aumenta indica un peggioramento (es. CDRSB, Ventricles); 'decrease' = il valore che diminuisce indica un peggioramento (es. MMSE, Hippocampus). Per scale, volumi e biomarcatori; ometti per le altre variabili. Le figlie %ICV lo ereditano dalla madre. Copiato da ranges.json [D040].",
+    "role": "Facoltativo. Ruolo nell'analisi: predittore, cofattore, outcome, normalizzazione, identificativo, metodo, qualita, metadato. Le variabili figlie (dummy, %ICV) lo ereditano. Ometti se non entra nel modello.",
+    "scope": "Facoltativo. Fin dove vive la colonna. 'output' (default): arriva al dataset finale. 'merge': resta fino al merge e poi si toglie (es. update_stamp, HAS_QC_ERROR, servono a scegliere o scartare valori). 'cleaning': si toglie a fine cleaning 1 perché serve solo come input di calcolo (es. PTDOB per l'età).",
+    "date_precision": "Facoltativo. Presente SOLO se la variabile e' una data (la colonna viene convertita in data da parse_dates); ometti per numeri e testo. 'day' = data completa (giorno, mese, anno). 'month' = data nota solo come mese/anno (MM/YYYY): giorno imputato al 15 (POLICY.DOB_IMPUTED_DAY). 'year' = data nota solo come anno (YYYY): data imputata al 1 luglio (POLICY.YEAR_IMPUTED_MONTH_DAY). L'imputazione riguarda solo i valori scritti in quella forma; le date complete non vengono toccate.",
+    "aliases": "OBBLIGATORIO. Colonne grezze da cui arriva la variabile: ['DATASET:FILE.colonna'], FILE = file_code del DatasetConfig oppure '*' (tutti i file); il nome nudo vale per tutti i dataset. Se più alias rivendicano la stessa colonna vince il più specifico.",
+    "derived": "Facoltativo. Ometti per una variabile solo estratta. Se la variabile si può ANCHE calcolare (es. AGE), lista di modi di calcolo {\"from\": [...], \"by\": \"...\"} in ordine di preferenza: il valore del file vince, il calcolo serve se manca e per il controllo di coerenza.",
+    "levels": "Facoltativo. Solo per le categoriche: {\"etichetta\": codice_intero}. Le etichette sono quelle prodotte da RECODE; il codice serve per passare a numeri (config.encode / decode).",
+    "evolution": "Facoltativo. Variabili figlie da generare: [] (nessuna), ['dummy'] (una colonna 0/1 per livello, <VAR>/<livello>; serve levels; reversibile) o ['pct_icv'] (<VOL>%ICV, solo volumi in mm3; sostituisce il volume).",
+    "method_col": "Facoltativo. Nome della colonna che indica il metodo di misura della riga (es. METHOD_CSF, METHOD_PLASMA, FSVERSION). Ometti se non serve.",
+    "omop_concept_id": "Facoltativo. Concept_id OMOP (numero intero) dal vocabolario Athena (athena.ohdsi.org). Solo se VERIFICATO; altrimenti ometti.",
+    "vocab_code": "Facoltativo. Codice nel vocabolario di origine, con prefisso: 'LOINC:72106-8', 'SNOMED:...'. Solo se VERIFICATO su fonte ufficiale (loinc.org, tx.fhir.org).",
+    "admapper_ref": "Facoltativo. Termine di riferimento del dizionario AD-Mapper (es. 'Mini-Mental State Examination (MMSE)'), ponte verso altre coorti. Solo se verificato.",
+    "standard_match": "Facoltativo. Quanto la variabile corrisponde al codice standard: 'exact' (identica), 'broader' (il codice è più generale), 'approximate' (simile ma non uguale), 'none' (nessun codice o non verificato; default). Non riguarda la qualità del dato.",
+    "note": "Facoltativo. Informazioni utili che non stanno negli altri campi (prima erano commenti nel codice): eccezioni, cosa verificare, fonti.",
+    "log_ref": "Facoltativo. Lista degli ID delle decisioni in DECISIONI.md che riguardano la variabile (es. ['D019']): dove trovare il perché delle scelte.",
+    "generated": "NON scrivere. Vale true solo per le variabili figlie create automaticamente dalle evoluzioni (dummy, %ICV); il caricamento dà errore se compare in una voce scritta a mano."
+  },
+  "_template_variabile_calcolata": {
+    "_istruzioni": "Variabile che non e' nel file grezzo ma si calcola da altre variabili standard gia' nel catalogo. Esempi: AGE (da PTDOB o da AGE_bl), AB4240_PL (rapporto AB42/AB40). Obbligatori: domain, definition, derived. Se alcuni file la riportano gia', aggiungere anche 'aliases': il valore del file vince sul calcolato.",
+    "domain": "OBBLIGATORIO. Gruppo della variabile: ID, Cohort, Visit, Demographic, Genetic, Diagnosis, History, Cognitive, Imaging, Biomarker, QC, Metadata.",
+    "definition": "OBBLIGATORIO. Cosa rappresenta e COME si calcola (es. 'Rapporto beta-amiloide 42/40 nel plasma').",
+    "unit": "Facoltativo. Unità di misura in notazione UCUM: a (anni), mm3, pg/mL, %, {score} per i punteggi. Ometti se categorica o adimensionale.",
+    "worsening": "Facoltativo. Direzione di peggioramento: 'increase' = il valore che aumenta indica un peggioramento (es. CDRSB, Ventricles); 'decrease' = il valore che diminuisce indica un peggioramento (es. MMSE, Hippocampus). Per scale, volumi e biomarcatori; ometti per le altre variabili. Le figlie %ICV lo ereditano dalla madre. Copiato da ranges.json [D040].",
+    "role": "Facoltativo. Ruolo nell'analisi: predittore, cofattore, outcome, normalizzazione, identificativo, metodo, qualita, metadato. Le variabili figlie (dummy, %ICV) lo ereditano. Ometti se non entra nel modello.",
+    "scope": "Facoltativo. Fin dove vive la colonna. 'output' (default): arriva al dataset finale. 'merge': resta fino al merge e poi si toglie (es. update_stamp, HAS_QC_ERROR, servono a scegliere o scartare valori). 'cleaning': si toglie a fine cleaning 1 perché serve solo come input di calcolo (es. PTDOB per l'età).",
+    "date_precision": "Facoltativo. Presente SOLO se la variabile e' una data (la colonna viene convertita in data da parse_dates); ometti per numeri e testo. 'day' = data completa (giorno, mese, anno). 'month' = data nota solo come mese/anno (MM/YYYY): giorno imputato al 15 (POLICY.DOB_IMPUTED_DAY). 'year' = data nota solo come anno (YYYY): data imputata al 1 luglio (POLICY.YEAR_IMPUTED_MONTH_DAY). L'imputazione riguarda solo i valori scritti in quella forma; le date complete non vengono toccate.",
+    "aliases": "Facoltativo. Solo se qualche file riporta già la variabile: ['ADNI:<FILE>.<COLONNA>']. In quel caso il valore del file vince sul calcolato.",
+    "derived": "OBBLIGATORIO. Lista dei modi di calcolo in ordine di preferenza, ognuno {\"from\": [variabili standard di input], \"by\": funzione}. 'by' = ratio | age_from_dob | age_from_baseline (pipeline.DERIVATIONS) oppure un passo dedicato (add_visit_month, add_atn_profile). Es. {\"from\": [\"AB42_PL\", \"AB40_PL\"], \"by\": \"ratio\"}: si usa il primo modo con tutti gli input presenti.",
+    "levels": "Facoltativo. Solo per le categoriche: {\"etichetta\": codice_intero}. Le etichette sono quelle prodotte da RECODE; il codice serve per passare a numeri (config.encode / decode).",
+    "evolution": "Facoltativo. Variabili figlie da generare: [] (nessuna), ['dummy'] (una colonna 0/1 per livello, <VAR>/<livello>; serve levels; reversibile) o ['pct_icv'] (<VOL>%ICV, solo volumi in mm3; sostituisce il volume).",
+    "method_col": "Facoltativo. Nome della colonna che indica il metodo di misura della riga (es. METHOD_CSF, METHOD_PLASMA, FSVERSION). Ometti se non serve.",
+    "omop_concept_id": "Facoltativo. Concept_id OMOP (numero intero) dal vocabolario Athena (athena.ohdsi.org). Solo se VERIFICATO; altrimenti ometti.",
+    "vocab_code": "Facoltativo. Codice nel vocabolario di origine, con prefisso: 'LOINC:72106-8', 'SNOMED:...'. Solo se VERIFICATO su fonte ufficiale (loinc.org, tx.fhir.org).",
+    "admapper_ref": "Facoltativo. Termine di riferimento del dizionario AD-Mapper (es. 'Mini-Mental State Examination (MMSE)'), ponte verso altre coorti. Solo se verificato.",
+    "standard_match": "Facoltativo. Quanto la variabile corrisponde al codice standard: 'exact' (identica), 'broader' (il codice è più generale), 'approximate' (simile ma non uguale), 'none' (nessun codice o non verificato; default). Non riguarda la qualità del dato.",
+    "note": "Facoltativo. Informazioni utili che non stanno negli altri campi (prima erano commenti nel codice): eccezioni, cosa verificare, fonti.",
+    "log_ref": "Facoltativo. Lista degli ID delle decisioni in DECISIONI.md che riguardano la variabile (es. ['D019']): dove trovare il perché delle scelte.",
+    "generated": "NON scrivere. Vale true solo per le variabili figlie create automaticamente dalle evoluzioni (dummy, %ICV); il caricamento dà errore se compare in una voce scritta a mano."
   },
   "RID": {
     "domain": "ID",
     "definition": "Identificativo numerico del partecipante ADNI (Roster ID).",
-    "unit": null,
     "role": "identificativo",
     "scope": "output",
-    "dtype": null,
-    "date_precision": null,
     "aliases": [
       "ADNI:*.RID"
     ],
-    "derived": null,
-    "levels": null,
-    "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
@@ -73,20 +59,14 @@
     "note": "",
     "log_ref": []
   },
-  "PTID": {
-    "domain": "ID",
-    "definition": "Identificativo del partecipante nel formato sito_S_numero.",
-    "unit": null,
-    "role": "identificativo",
+  "ORIGPROT": {
+    "domain": "Cohort",
+    "definition": "Protocollo/fase ADNI in cui il paziente è stato arruolato per la prima volta (ADNI1, ADNIGO, ADNI2, ADNI3, ADNI4).",
+    "role": "protocol",
     "scope": "output",
-    "dtype": null,
-    "date_precision": null,
     "aliases": [
-      "ADNI:*.PTID"
+      "ADNI:*.ORIGPROT"
     ],
-    "derived": null,
-    "levels": null,
-    "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
@@ -96,12 +76,9 @@
   },
   "COLPROT": {
     "domain": "Cohort",
-    "definition": "Fase/protocollo ADNI a cui si riferisce il record (ADNI1, ADNIGO, ADNI2, ADNI3, ADNI4).",
-    "unit": null,
-    "role": null,
+    "definition": "Fase/protocollo ADNI a cui si riferisce il record di quella specifica visita (ADNI1, ADNIGO, ADNI2, ADNI3, ADNI4).",
+    "role": "protocol",
     "scope": "output",
-    "dtype": null,
-    "date_precision": null,
     "aliases": [
       "ADNI:*.COLPROT",
       "ADNI:ADAS.PHASE",
@@ -118,9 +95,6 @@
       "ADNI:UPENNBIOMK_ADNIDIAN_ES_2017.STUDY",
       "ADNI:UPENNBIOMK_ROCHE_ELECSYS.PHASE"
     ],
-    "derived": null,
-    "levels": null,
-    "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
@@ -131,18 +105,12 @@
   "VISCODE": {
     "domain": "Visit",
     "definition": "Codice della visita (es. bl, m06, m12, sc).",
-    "unit": null,
-    "role": null,
+    "role": "visit_reference",
     "scope": "output",
-    "dtype": null,
-    "date_precision": null,
     "aliases": [
       "ADNI:*.VISCODE",
       "ADNI:PTDEMOG.VISCODE2"
     ],
-    "derived": null,
-    "levels": null,
-    "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
@@ -153,18 +121,13 @@
   "EXAMDATE": {
     "domain": "Visit",
     "definition": "Data della visita/esame.",
-    "unit": null,
-    "role": null,
+    "role": "visit_reference",
     "scope": "output",
-    "dtype": "date",
-    "date_precision": null,
+    "date_precision": "day",
     "aliases": [
       "ADNI:*.EXAMDATE",
       "ADNI:PTDEMOG.VISDATE"
     ],
-    "derived": null,
-    "levels": null,
-    "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
@@ -175,10 +138,8 @@
   "GENDER": {
     "domain": "Demographic",
     "definition": "Sesso del partecipante come registrato nello studio.",
-    "unit": null,
-    "role": "predittore",
+    "role": "cofattore",
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.PTGENDER",
@@ -186,36 +147,33 @@
       "*:*.Gender",
       "ADNI:ADSP_PHC_BIOMARKER.PHC_Sex"
     ],
-    "derived": null,
     "levels": {
       "female": 0,
       "male": 1
     },
-    "method_col": null,
+    "evolution": [
+      "dummy"
+    ],
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
     "standard_match": "none",
     "note": "",
     "log_ref": [
-      "D002"
+      "D002",
+      "D036"
     ]
   },
   "EDUCATION": {
     "domain": "Demographic",
     "definition": "Anni di istruzione formale.",
     "unit": "a",
-    "role": "predittore",
+    "role": "cofattore",
     "scope": "output",
-    "dtype": null,
-    "date_precision": null,
     "aliases": [
       "ADNI:*.PTEDUCAT",
       "ADNI:ADSP_PHC_BIOMARKER.PHC_Education"
     ],
-    "derived": null,
-    "levels": null,
-    "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
@@ -226,11 +184,8 @@
   "MARRY": {
     "domain": "Demographic",
     "definition": "Stato civile.",
-    "unit": null,
-    "role": null,
+    "role": "cofattore",
     "scope": "output",
-    "dtype": null,
-    "date_precision": null,
     "aliases": [
       "ADNI:*.PTMARRY",
       "ADNI:ADNI_DIAN_COMPARISON.MARISTAT"
@@ -242,47 +197,49 @@
       "divorced": 2,
       "widowed": 3
     },
-    "method_col": null,
+    "evolution": [
+      "dummy"
+    ],
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
     "standard_match": "none",
     "note": "",
-    "log_ref": []
+    "log_ref": [
+      "D036"
+    ]
   },
   "ETHNICITY": {
     "domain": "Demographic",
     "definition": "Etnia ispanica/latina sì o no.",
-    "unit": null,
-    "role": null,
+    "role": "cofattore",
     "scope": "output",
-    "dtype": null,
-    "date_precision": null,
     "aliases": [
       "ADNI:*.PTETHCAT",
       "ADNI:ADNI_DIAN_COMPARISON.HISPANIC",
       "ADNI:ADSP_PHC_BIOMARKER.PHC_Ethnicity"
     ],
-    "derived": null,
     "levels": {
       "not_hisp": 0,
       "hisp": 1
     },
-    "method_col": null,
+    "evolution": [
+      "dummy"
+    ],
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
     "standard_match": "none",
     "note": "",
-    "log_ref": []
+    "log_ref": [
+      "D036"
+    ]
   },
   "RACE": {
     "domain": "Demographic",
     "definition": "Razza dichiarata; 'mixed' = più di una.",
-    "unit": null,
-    "role": null,
+    "role": "cofattore",
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.PTRACCAT"
@@ -296,21 +253,25 @@
       "black": 4,
       "white": 5
     },
+    "evolution": [
+      "dummy"
+    ],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
     "standard_match": "none",
     "note": "",
-    "log_ref": []
+    "log_ref": [
+      "D036"
+    ]
   },
   "APOE4": {
     "domain": "Genetic",
-    "definition": "Numero di alleli APOE e4 (0, 1, 2).",
+    "definition": "Numero di alleli APOE e4 (0, 1, 2). Più alleli e4 = rischio di AD maggiore (fattore di rischio, non cambia nel tempo).",
     "unit": null,
     "role": "predittore",
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.APOE4",
@@ -319,6 +280,7 @@
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -333,7 +295,6 @@
     "unit": null,
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.DX",
@@ -346,30 +307,31 @@
       "MCI": 1,
       "Dementia": 2
     },
+    "evolution": [
+      "dummy"
+    ],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
     "standard_match": "none",
     "note": "",
-    "log_ref": []
+    "log_ref": [
+      "D036"
+    ]
   },
   "MMSE": {
     "domain": "Cognitive",
-    "definition": "Mini-Mental State Examination, punteggio totale (0-30).",
+    "definition": "Mini-Mental State Examination, punteggio totale (0-30). range indicativi: 30 = sano, 20-26 = lieve, 19-10 = moderato, 9-0 = grave.",
     "unit": "{score}",
+    "worsening": "decrease",
     "role": "predittore",
     "scope": "output",
-    "dtype": null,
-    "date_precision": null,
     "aliases": [
       "ADNI:*.MMSE",
       "ADNI:ADNI_DIAN_COMPARISON.DIAN_MMSE",
       "ADNI:MMSE.MMSCORE"
     ],
-    "derived": null,
-    "levels": null,
-    "method_col": null,
     "omop_concept_id": null,
     "vocab_code": "LOINC:72106-8",
     "admapper_ref": null,
@@ -379,20 +341,37 @@
   },
   "CDRSB": {
     "domain": "Cognitive",
-    "definition": "Clinical Dementia Rating, somma dei punteggi dei 6 domini (Sum of Boxes, 0-18).",
+    "definition": "Clinical Dementia Rating, somma dei punteggi dei 6 domini (Sum of Boxes, 0-18). Range indicativi: 0,5–2,5 dubbia; 3–4 molto lieve; 4,5–9 lieve; 9,5–15,5 moderata; 16–18 grave.",
     "unit": "{score}",
+    "worsening": "increase",
     "role": "predittore",
     "scope": "output",
-    "dtype": null,
-    "date_precision": null,
     "aliases": [
       "ADNI:*.CDRSB",
-      "ADNI:ADNI_DIAN_COMPARISON.CDRSUM",
-      "ADNI:CDR.CDGLOBAL"
+      "ADNI:ADNI_DIAN_COMPARISON.CDRSUM"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "Nessun codice LOINC specifico per il Sum of Boxes trovato; 72088-8 e' la scala CDR complessiva, non il SOB. ATTENZIONE: in CDR l'alias CDGLOBAL (punteggio globale 0-3) e' mappato qui dal generatore: da verificare.",
+    "log_ref": []
+  },
+  "CDRGLOBAL": {
+    "domain": "Cognitive",
+    "definition": "Clinical Dementia Rating, punteggio globale calcolato con algoritmo a partire dai 6 domini con prevalenza della memoria (0 = normale, 0.5 = molto lieve/dubbia, 1 = lieve, 2 = moderata, 3 = grave).",
+    "unit": "{score}",
+    "worsening": "increase",
+    "role": "predittore",
+    "scope": "output",
+    "aliases": [
+      "ADNI:*.CDRGLOB",
+      "ADNI:ADNI_DIAN_COMPARISON.CDRGLOBAL"
+    ],
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
@@ -402,18 +381,33 @@
   },
   "ADAS13": {
     "domain": "Cognitive",
-    "definition": "ADAS-Cog a 13 item, punteggio totale (0-85).",
+    "definition": "Alzheimer's Disease Assessment Scale - Cognitive, versione a 13 item: ADAS11 più rievocazione differita e cancellazione di numeri (0-85, valori più alti indicano maggiore compromissione). Range indicativi: normale circa 0-14, MCI circa 14-25, AD oltre 25.",
     "unit": "{score}",
+    "worsening": "increase",
     "role": "predittore",
     "scope": "output",
-    "dtype": null,
-    "date_precision": null,
     "aliases": [
       "ADNI:*.ADAS13"
     ],
-    "derived": null,
-    "levels": null,
-    "method_col": null,
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "",
+    "log_ref": [
+      "D005"
+    ]
+  },
+  "ADAS11": {
+    "domain": "Cognitive",
+    "definition": "Alzheimer's Disease Assessment Scale - Cognitive, versione a 11 item, numero di errori (0-70, valori più alti indicano maggiore compromissione). Range indicativi: normale circa 0-10, MCI circa 10-18, AD oltre 18.",
+    "unit": "{score}",
+    "worsening": "increase",
+    "role": "predittore",
+    "scope": "output",
+    "aliases": [
+      "ADNI:*.ADAS11"
+    ],
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
@@ -425,102 +419,100 @@
   },
   "Ventricles": {
     "domain": "Imaging",
-    "definition": "Volume dei ventricoli (FreeSurfer, ADNIMERGE).",
+    "definition": "Volume dei ventricoli estratto da MRI.",
     "unit": "mm3",
-    "role": null,
+    "worsening": "increase",
+    "role": "predittore",
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.Ventricles"
     ],
-    "derived": null,
-    "levels": null,
+    "evolution": [
+      "pct_icv"
+    ],
     "method_col": "FSVERSION",
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
     "standard_match": "none",
     "note": "",
-    "log_ref": []
+    "log_ref": [
+      "D036"
+    ]
   },
   "Hippocampus": {
     "domain": "Imaging",
-    "definition": "Volume ippocampale (FreeSurfer, ADNIMERGE).",
+    "definition": "Volume ippocampale estratto da MRI.",
     "unit": "mm3",
+    "worsening": "decrease",
     "role": "predittore",
     "scope": "output",
-    "dtype": null,
-    "date_precision": null,
     "aliases": [
       "ADNI:*.Hippocampus"
     ],
-    "derived": null,
-    "levels": null,
+    "evolution": [
+      "pct_icv"
+    ],
     "method_col": "FSVERSION",
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
     "standard_match": "none",
     "note": "",
-    "log_ref": []
+    "log_ref": [
+      "D036"
+    ]
   },
   "WholeBrain": {
     "domain": "Imaging",
-    "definition": "Volume cerebrale totale (FreeSurfer, ADNIMERGE).",
+    "definition": "Volume cerebrale totale estratto da MRI.",
     "unit": "mm3",
-    "role": null,
+    "role": "predittore",
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.WholeBrain"
     ],
-    "derived": null,
-    "levels": null,
+    "evolution": [
+      "pct_icv"
+    ],
     "method_col": "FSVERSION",
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
     "standard_match": "none",
     "note": "",
-    "log_ref": []
+    "log_ref": [
+      "D036"
+    ]
   },
   "ICV": {
     "domain": "Imaging",
-    "definition": "Volume intracranico, usato per normalizzare i volumi.",
+    "definition": "Volume intracranico estratto da MRI, usato per normalizzare i volumi.",
     "unit": "mm3",
     "role": "normalizzazione",
     "scope": "output",
-    "dtype": null,
-    "date_precision": null,
     "aliases": [
       "ADNI:*.ICV"
     ],
-    "derived": null,
-    "levels": null,
     "method_col": "FSVERSION",
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
     "standard_match": "none",
-    "note": "",
+    "note": "worsening copiato da ranges.json (inverse) ma da verificare: ICV serve a normalizzare i volumi, non è un marcatore di malattia [D040].",
     "log_ref": []
   },
   "FLDSTRENG": {
     "domain": "Imaging",
     "definition": "Intensità del campo magnetico della RM (1.5T / 3T).",
-    "unit": null,
-    "role": null,
+    "unit": "Tesla",
+    "role": "quality",
     "scope": "output",
-    "dtype": null,
-    "date_precision": null,
     "aliases": [
       "ADNI:*.FLDSTRENG"
     ],
-    "derived": null,
-    "levels": null,
-    "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
@@ -531,17 +523,12 @@
   "FSVERSION": {
     "domain": "Imaging",
     "definition": "Versione di FreeSurfer usata per i volumi.",
-    "unit": null,
-    "role": null,
+    "role": "method",
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.FSVERSION"
     ],
-    "derived": null,
-    "levels": null,
-    "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
@@ -553,10 +540,9 @@
     "domain": "Biomarker",
     "definition": "Beta-amiloide 1-42 nel liquor.",
     "unit": "pg/mL",
+    "worsening": "decrease",
     "role": "predittore",
     "scope": "output",
-    "dtype": null,
-    "date_precision": null,
     "aliases": [
       "ADNI:*.ABETA",
       "ADNI:ADSP_PHC_BIOMARKER.ABETA",
@@ -582,7 +568,6 @@
       "ADNI:UPENN_2DUPLC_CRM.ABETA42CRM"
     ],
     "derived": null,
-    "levels": null,
     "method_col": "METHOD_CSF",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -597,9 +582,9 @@
     "domain": "Biomarker",
     "definition": "Tau totale nel liquor.",
     "unit": "pg/mL",
+    "worsening": "increase",
     "role": "predittore",
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.TAU",
@@ -617,6 +602,7 @@
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": "METHOD_CSF",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -631,9 +617,9 @@
     "domain": "Biomarker",
     "definition": "Tau fosforilata in treonina 181 nel liquor.",
     "unit": "pg/mL",
+    "worsening": "increase",
     "role": "predittore",
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.PTAU",
@@ -650,6 +636,7 @@
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": "METHOD_CSF",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -666,7 +653,6 @@
     "unit": "a",
     "role": "predittore",
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:ADNI_DIAN_COMPARISON.VISITAGE",
@@ -690,6 +676,7 @@
       }
     ],
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -707,13 +694,13 @@
     "unit": "a",
     "role": "predittore",
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:ADNIMERGE.AGE"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -730,13 +717,13 @@
     "unit": null,
     "role": null,
     "scope": "cleaning",
-    "dtype": "date",
-    "date_precision": null,
+    "date_precision": "day",
     "aliases": [
       "ADNI:*.EXAMDATE_bl"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -753,7 +740,6 @@
     "unit": "mo",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [],
     "derived": [
@@ -766,6 +752,7 @@
       }
     ],
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -780,13 +767,13 @@
     "unit": null,
     "role": null,
     "scope": "cleaning",
-    "dtype": "date",
     "date_precision": "month",
     "aliases": [
       "ADNI:PTDEMOG.PTDOB"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -804,13 +791,13 @@
     "unit": "a",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:PTDEMOG.PTADBEG"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -825,13 +812,13 @@
     "unit": "a",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:PTDEMOG.PTCOGBEG"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -846,13 +833,13 @@
     "unit": "a",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:PTDEMOG.PTADDX"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -867,13 +854,13 @@
     "unit": null,
     "role": "qualita",
     "scope": "merge",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.HAS_QC_ERROR"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -890,13 +877,13 @@
     "unit": null,
     "role": "metadato",
     "scope": "merge",
-    "dtype": "date",
-    "date_precision": null,
+    "date_precision": "day",
     "aliases": [
       "ADNI:*.update_stamp"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -913,7 +900,6 @@
     "unit": null,
     "role": "metodo",
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [],
     "derived": [
@@ -923,6 +909,7 @@
       }
     ],
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -939,7 +926,6 @@
     "unit": null,
     "role": "metodo",
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [],
     "derived": [
@@ -949,6 +935,7 @@
       }
     ],
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -959,42 +946,20 @@
       "D020"
     ]
   },
-  "ADAS11": {
-    "domain": "Cognitive",
-    "definition": "ADAS-Cog a 11 item, punteggio totale (0-70).",
-    "unit": "{score}",
-    "role": "predittore",
-    "scope": "output",
-    "dtype": null,
-    "date_precision": null,
-    "aliases": [
-      "ADNI:*.ADAS11"
-    ],
-    "derived": null,
-    "levels": null,
-    "method_col": null,
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "",
-    "log_ref": [
-      "D005"
-    ]
-  },
   "RAVLT_immediate": {
     "domain": "Cognitive",
     "definition": "RAVLT, somma del richiamo immediato nelle prove 1-5 (0-75).",
     "unit": "{score}",
+    "worsening": "decrease",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.RAVLT_immediate"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1007,9 +972,9 @@
     "domain": "Cognitive",
     "definition": "Functional Activities Questionnaire, punteggio totale (0-30).",
     "unit": "{score}",
+    "worsening": "increase",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.FAQ",
@@ -1017,6 +982,7 @@
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1029,15 +995,16 @@
     "domain": "Cognitive",
     "definition": "Montreal Cognitive Assessment, punteggio totale (0-30).",
     "unit": "{score}",
+    "worsening": "decrease",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.MOCA"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": "LOINC:72172-0",
@@ -1052,13 +1019,13 @@
     "unit": null,
     "role": "identificativo",
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.IMAGEUID"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1071,64 +1038,79 @@
     "domain": "Imaging",
     "definition": "Volume della corteccia entorinale (FreeSurfer, ADNIMERGE).",
     "unit": "mm3",
+    "worsening": "decrease",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.Entorhinal"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [
+      "pct_icv"
+    ],
     "method_col": "FSVERSION",
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
     "standard_match": "none",
     "note": "",
-    "log_ref": []
+    "log_ref": [
+      "D036"
+    ]
   },
   "Fusiform": {
     "domain": "Imaging",
     "definition": "Volume del giro fusiforme (FreeSurfer, ADNIMERGE).",
     "unit": "mm3",
+    "worsening": "decrease",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.Fusiform"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [
+      "pct_icv"
+    ],
     "method_col": "FSVERSION",
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
     "standard_match": "none",
     "note": "",
-    "log_ref": []
+    "log_ref": [
+      "D036"
+    ]
   },
   "MidTemp": {
     "domain": "Imaging",
     "definition": "Volume del giro temporale medio (FreeSurfer, ADNIMERGE).",
     "unit": "mm3",
+    "worsening": "decrease",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.MidTemp"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [
+      "pct_icv"
+    ],
     "method_col": "FSVERSION",
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
     "standard_match": "none",
     "note": "",
-    "log_ref": []
+    "log_ref": [
+      "D036"
+    ]
   },
   "ATN_PROFILE": {
     "domain": "Biomarker",
@@ -1136,7 +1118,6 @@
     "unit": null,
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [],
     "derived": [
@@ -1150,6 +1131,7 @@
       }
     ],
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1164,7 +1146,6 @@
     "unit": null,
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [],
     "derived": [
@@ -1174,6 +1155,7 @@
       }
     ],
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1188,7 +1170,6 @@
     "unit": null,
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [],
     "derived": [
@@ -1198,6 +1179,7 @@
       }
     ],
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1212,7 +1194,6 @@
     "unit": null,
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [],
     "derived": [
@@ -1222,6 +1203,7 @@
       }
     ],
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1234,9 +1216,9 @@
     "domain": "Biomarker",
     "definition": "Beta-amiloide 1-40 nel liquor.",
     "unit": null,
+    "worsening": "decrease",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:EUROIMMUN.BETA_AMYLOID_1_40",
@@ -1247,6 +1229,7 @@
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": "METHOD_CSF",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1259,9 +1242,9 @@
     "domain": "Biomarker",
     "definition": "Beta-amiloide 1-40 nel plasma.",
     "unit": null,
+    "worsening": "decrease",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:PLASMA_ABETA_PROJECT_ADX_VUMC.AB40",
@@ -1274,6 +1257,7 @@
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1286,9 +1270,9 @@
     "domain": "Biomarker",
     "definition": "Rapporto beta-amiloide 42/40 nel liquor.",
     "unit": null,
+    "worsening": "decrease",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:EUROIMMUN.BETA_AMYLOID_42_40",
@@ -1297,6 +1281,7 @@
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": "METHOD_CSF",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1309,9 +1294,9 @@
     "domain": "Biomarker",
     "definition": "Rapporto beta-amiloide 42/40 nel plasma.",
     "unit": null,
+    "worsening": "decrease",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:C2N_PRECIVITYAD2_PLASMA.AB42_AB40_C2N"
@@ -1326,6 +1311,7 @@
       }
     ],
     "levels": null,
+    "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1338,9 +1324,9 @@
     "domain": "Biomarker",
     "definition": "Beta-amiloide 1-42 nel plasma.",
     "unit": null,
+    "worsening": "decrease",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:PLASMA_ABETA_PROJECT_ADX_VUMC.AB42",
@@ -1353,6 +1339,7 @@
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1365,15 +1352,16 @@
     "domain": "Imaging",
     "definition": "Definizione in bozza (Claude, 20/10/2026): da rivedere.",
     "unit": null,
+    "worsening": "increase",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.CENTILOIDS"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1388,13 +1376,13 @@
     "unit": null,
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:C2N_PRECIVITYAD2_PLASMA.APOE_C2N"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1409,13 +1397,13 @@
     "unit": null,
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:C2N_PRECIVITYAD2_PLASMA.APS2_C2N"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1428,15 +1416,16 @@
     "domain": "Biomarker",
     "definition": "Proteina gliale fibrillare acida (GFAP) nel plasma.",
     "unit": null,
+    "worsening": "increase",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:PLASMA_ABETA_PROJECT_ADX_VUMC.GFAP"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1449,9 +1438,9 @@
     "domain": "Biomarker",
     "definition": "Catena leggera dei neurofilamenti (NfL) nel plasma.",
     "unit": null,
+    "worsening": "increase",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:PLASMA_ABETA_PROJECT_ADX_VUMC.PLASMA_NFL",
@@ -1463,6 +1452,7 @@
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1475,9 +1465,9 @@
     "domain": "Biomarker",
     "definition": "Tau fosforilata in treonina 181 nel plasma.",
     "unit": null,
+    "worsening": "increase",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:PLASMA_ABETA_PROJECT_ADX_VUMC.PTAU",
@@ -1486,6 +1476,7 @@
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1498,15 +1489,16 @@
     "domain": "Biomarker",
     "definition": "Tau fosforilata in treonina 217 nel plasma.",
     "unit": null,
+    "worsening": "increase",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:C2N_PRECIVITYAD2_PLASMA.pT217_C2N"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1519,15 +1511,16 @@
     "domain": "Biomarker",
     "definition": "Definizione in bozza (Claude, 20/10/2026): da rivedere.",
     "unit": null,
+    "worsening": "increase",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:C2N_PRECIVITYAD2_PLASMA.pT217_npT217_C2N"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1540,15 +1533,16 @@
     "domain": "Imaging",
     "definition": "Definizione in bozza (Claude, 20/10/2026): da rivedere.",
     "unit": null,
+    "worsening": "increase",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.SUMMARYSUVR"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1561,15 +1555,16 @@
     "domain": "Imaging",
     "definition": "Definizione in bozza (Claude, 20/10/2026): da rivedere.",
     "unit": null,
+    "worsening": "increase",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:*.META_TEMPORAL_SUVR"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1582,9 +1577,9 @@
     "domain": "Biomarker",
     "definition": "Tau totale nel plasma.",
     "unit": null,
+    "worsening": "increase",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:PLASMA_ABETA_PROJECT_ADX_VUMC.TAU",
@@ -1593,6 +1588,7 @@
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1605,15 +1601,16 @@
     "domain": "Biomarker",
     "definition": "Definizione in bozza (Claude, 20/10/2026): da rivedere.",
     "unit": null,
+    "worsening": "increase",
     "role": null,
     "scope": "output",
-    "dtype": null,
     "date_precision": null,
     "aliases": [
       "ADNI:C2N_PRECIVITYAD2_PLASMA.npT217_C2N"
     ],
     "derived": null,
     "levels": null,
+    "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
     "vocab_code": null,
