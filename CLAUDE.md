@@ -113,6 +113,18 @@ Corollari:
   validi: sono mappati sugli ID in `DECISIONI.md`.
 - Dipendenze minime: `pandas`, `numpy`, `matplotlib` (vedi `requirements.txt`).
 
+### 4.5 Semplicità
+- Il codice deve restare **semplice, lineare e comprensibile** a una prima lettura.
+- **Prediligere le funzioni esistenti**: se una funzione fa già la cosa (es.
+  `recompute_age`, ex `add_calculated_age`), la si estende con il minimo indispensabile
+  invece di sostituirla con un meccanismo nuovo.
+- Soluzioni dirette prima di quelle generiche: niente motori, registri di funzioni,
+  dispatcher o livelli di astrazione "per il futuro" se oggi servono per uno o due casi.
+- Non generare elementi che poi non servono: campi di log, dizionari di dettaglio,
+  opzioni, template o colonne che nessuno legge o usa.
+- Se una decisione sembra richiedere codice complesso, **fermarsi e proporre a Chiara**
+  una versione semplice e una completa, con il costo di ciascuna, prima di scriverlo.
+
 ---
 
 ## 5. Le fasi della pipeline (stato attuale)

@@ -14,7 +14,7 @@ dentro le celle arrivano da config.py.
     drop_if_all_none  x2                  drop_if_all_none()   [essential + also_required]
     to_date_format                        parse_dates()
     find_exam_code                        dedup_visits() + add_visit_month()
-    add_calculated_age                    derive_variables()   [AGE e rapporti: 'derived' in catalog.json]
+    add_calculated_age                    recompute_age()      [+ add_derived_ratios(), config.RATIOS]
     binarization_gender / categorize_*    recode()             [mappe in config.RECODE, per sorgente]
     FLDSTRENG/FSVERSION .str.extract      clean_fs_fields()
     new_variable_names (legge l'Excel)    rename_variables()   [alias in catalog.json]
@@ -265,94 +265,62 @@ def add_visit_month(df, id_col, date_col):
 
 
 # ---------------------------------------------------------------------------
-# VARIABILI DERIVATE  [D019, D030]  —  il catalogo dice COSA si calcola e DA COSA
-#   (campo 'derived': modi di calcolo in ordine di preferenza); qui c'e' il COME.
-#   'by' = nome di una funzione di DERIVATIONS. Le derivate con un 'by' che e' un
-#   passo della pipeline (add_visit_month, add_atn_profile, add_constant_columns)
-#   sono calcolate da quel passo, non da qui.
+# VARIABILI CALCOLATE  [D019, D030, D041]  —  eta' e rapporti.
+#   Regola comune: si calcola solo se le colonne di input ci sono e la variabile non e'
+#   gia' nel file (il misurato vince). Se le colonne ci sono ma in alcune righe mancano
+#   i valori -> warning + RID nel run log (locale, escluso da git).
 # ---------------------------------------------------------------------------
 def _years_between(later, earlier):
     return (pd.to_datetime(later, errors="coerce") - pd.to_datetime(earlier, errors="coerce")).dt.days / 365.25
 
 
-def age_from_dob(df, dob, visit):
-    """AGE = (data visita - data di nascita) in anni (caso PTDEMOG, dalla collega). PTDOB e'
-    gia' una data: se nota solo come mese/anno ha il giorno imputato a meta' mese [D029]."""
-    return _years_between(df[visit], df[dob]).round(config.AGE_ROUND_DECIMALS)
+def _rids(df, mask, id_col):
+    """RID delle righe in `mask` (solo per il run log locale)."""
+    return sorted(df.loc[mask, id_col].dropna().unique().tolist()) if id_col in df.columns else None
 
 
-def age_from_baseline(df, age_bl, visit, visit_bl):
-    """AGE = AGE_bl + tempo trascorso dalla visita di baseline (caso ADNIMERGE, ex
-    add_calculated_age). Si arrotonda solo il valore FINALE [D030]."""
-    age = pd.to_numeric(df[age_bl], errors="coerce") + _years_between(df[visit], df[visit_bl])
-    return age.round(config.AGE_ROUND_DECIMALS)
-
-
-def ratio(df, num, den):
-    """Rapporto numeratore/denominatore (es. AB42/AB40)."""
-    return pd.to_numeric(df[num], errors="coerce") / pd.to_numeric(df[den], errors="coerce")
-
-
-DERIVATIONS = {"age_from_dob": age_from_dob, "age_from_baseline": age_from_baseline, "ratio": ratio}
-
-
-def derive_variables(df, id_col="RID"):
-    """Calcola le variabili 'derived' del catalogo che hanno un modo di calcolo in DERIVATIONS.
-    Restituisce (df, info) con, per ogni variabile, cosa e' successo [D019]:
-
-      - gia' nel file (dato MISURATO): non si ricalcola, il misurato vince. Se gli input di un
-        modo di calcolo ci sono, si calcola comunque per CONFRONTO e si registrano le righe
-        oltre config.DERIVED_CHECK_TOLERANCE (solo per le variabili li' elencate);
-      - assente: si usa il primo modo di calcolo con tutti gli input presenti. Le righe rimaste
-        senza valore vanno a log con, per soggetto, quali input mancano;
-      - assente e non calcolabile, ma con almeno un input presente: si registra cosa manca.
-    I RID finiscono solo nel run log locale (escluso da git).
-    """
+def recompute_age(df, id_col="RID", visit="EXAMDATE", dob="PTDOB",
+                  age_bl="AGE_bl", visit_bl="EXAMDATE_bl", age_col="AGE"):
+    """AGE alla data della visita (ex add_calculated_age) [D019, D030]:
+      - dalla data di nascita, se c'e' PTDOB (caso PTDEMOG, dalla collega);
+      - altrimenti AGE_bl + tempo trascorso dal baseline (caso ADNIMERGE).
+    Se AGE e' gia' nel file o mancano le colonne di input, non si fa nulla. Si arrotonda
+    solo il valore finale (config.AGE_ROUND_DECIMALS). Restituisce (df, info)."""
+    if age_col in df.columns or visit not in df.columns:
+        return df, {}
+    if dob in df.columns:
+        age, inputs = _years_between(df[visit], df[dob]), [visit, dob]
+    elif age_bl in df.columns and visit_bl in df.columns:
+        age = pd.to_numeric(df[age_bl], errors="coerce") + _years_between(df[visit], df[visit_bl])
+        inputs = [visit, age_bl, visit_bl]
+    else:
+        return df, {}
     df = df.copy()
-    info = {}
-    for name, var in config.derived_vars().items():
-        recipes = [r for r in var.derived if r["by"] in DERIVATIONS]
-        if not recipes:
-            continue                                   # calcolata da un passo dedicato
-        usable = [r for r in recipes if all(c in df.columns for c in r["from"])]
-        if name in df.columns:                         # MISURATA: vince il file
-            entry = {"origine": "dal_file"}
-            tol = config.DERIVED_CHECK_TOLERANCE.get(name)
-            if usable and tol is not None:
-                r = usable[0]
-                computed = DERIVATIONS[r["by"]](df, *r["from"])
-                diff = (pd.to_numeric(df[name], errors="coerce") - computed).abs()
-                bad = diff > tol
-                entry["controllo"] = {
-                    "modo": r["by"], "tolleranza": tol, "righe_confrontate": int(diff.notna().sum()),
-                    "righe_oltre_tolleranza": int(bad.sum()),
-                    "soggetti_oltre_tolleranza": int(df.loc[bad, id_col].nunique()) if id_col in df else None,
-                    "RID_oltre_tolleranza": sorted(df.loc[bad, id_col].dropna().unique().tolist())
-                                            if id_col in df else None,
-                }
-                if bad.any():
-                    warnings.warn(f"{name}: {int(bad.sum())} righe con differenza > {tol} tra valore "
-                                  f"del file e valore calcolato ({r['by']})")
-            info[name] = entry
+    df[age_col] = age.round(config.AGE_ROUND_DECIMALS)
+    nan = df[age_col].isna()
+    if nan.any():
+        warnings.warn(f"{age_col}: {int(nan.sum())} righe ({len(_rids(df, nan, id_col) or [])} soggetti) "
+                      f"non calcolabili per valori mancanti in {inputs}")
+    return df, {"calcolata_da": inputs, "righe_senza_valore": int(nan.sum()),
+                "RID_senza_valore": _rids(df, nan, id_col)}
+
+
+def add_derived_ratios(df, ratios, id_col="RID"):
+    """Rapporti {nome: (num, den)} in nomi standard (es. AB42/AB40), da config.RATIOS.
+    Si calcola solo se numeratore e denominatore ci sono e il rapporto non e' gia' nel file.
+    A log solo le righe con UNO dei due valori mancante: se mancano entrambi la visita non
+    ha quel pannello, non e' un'anomalia. Restituisce (df, info)."""
+    df, info = df.copy(), {}
+    for name, (num, den) in ratios.items():
+        if name in df.columns or num not in df.columns or den not in df.columns:
             continue
-        if not usable:                                 # non calcolabile
-            missing = {r["by"]: [c for c in r["from"] if c not in df.columns] for r in recipes}
-            if any(len(m) < len(r["from"]) for r, m in zip(recipes, missing.values())):
-                info[name] = {"origine": "non_calcolabile", "colonne_mancanti_per_modo": missing}
-            continue
-        r = usable[0]
-        df[name] = DERIVATIONS[r["by"]](df, *r["from"])
-        nan = df[name].isna()
-        entry = {"origine": "calcolata", "modo": r["by"], "da": r["from"],
-                 "righe_senza_valore": int(nan.sum())}
-        if nan.any() and id_col in df.columns:
-            per_rid = {}
-            for rid, row in df.loc[nan, [id_col] + r["from"]].iterrows():
-                key = str(row[id_col])
-                per_rid.setdefault(key, set()).update(c for c in r["from"] if pd.isna(row[c]))
-            entry["soggetti_senza_valore"] = len(per_rid)
-            entry["input_mancanti_per_RID"] = {k: sorted(v) for k, v in per_rid.items()}
-        info[name] = entry
+        n, d = pd.to_numeric(df[num], errors="coerce"), pd.to_numeric(df[den], errors="coerce")
+        df[name] = n / d
+        half = n.isna() != d.isna()
+        if half.any():
+            warnings.warn(f"{name}: {int(half.sum())} righe con solo uno tra {num} e {den}")
+        info[name] = {"da": [num, den], "righe_un_solo_input": int(half.sum()),
+                      "RID_un_solo_input": _rids(df, half, id_col)}
     return df, info
 
 
@@ -580,10 +548,11 @@ def run_cleaning1(cfg: DatasetConfig = ADNIMERGE):
         missing = [c for c in (cfg.id_column, cfg.date_column) if c not in df.columns]
         _log_skip(log, "dedup_visits + add_visit_month", f"mancano le colonne chiave {missing}")
 
-    # derivate del catalogo: AGE (da PTDOB o da AGE_bl), rapporti...  [D019, D030]
-    # (ex add_calculated_age + derived_ratios; niente flag: si calcola se manca e si puo')
-    new, derived = derive_variables(df, cfg.id_column)
-    df = _log_step(log, "derive_variables", df, new, **derived)
+    # eta' e rapporti: si calcolano se mancano e gli input ci sono  [D019, D030, D041]
+    new, info = recompute_age(df, cfg.id_column, cfg.date_column)
+    df = _log_step(log, "recompute_age", df, new, **info)
+    new, info = add_derived_ratios(df, config.RATIOS, cfg.id_column)
+    df = _log_step(log, "add_derived_ratios", df, new, **info)
 
     df = _log_step(log, "recode", df, recode(df, cfg.recode_columns, cfg.file_code),  # (#3)
                    colonne=[c for c in cfg.recode_columns if c in df.columns],

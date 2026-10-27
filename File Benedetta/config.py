@@ -61,10 +61,9 @@ DOB_IMPUTED_DAY = 15
 YEAR_IMPUTED_MONTH_DAY = (7, 1)
 # [D030] Decimali dell'eta' calcolata (notes_CP B.4).
 AGE_ROUND_DECIMALS = 1
-# [D019] Controllo di coerenza: se una variabile e' presa dal file (misurata) ma si potrebbe
-# anche calcolare, si confrontano i due valori; oltre questa differenza la riga va a log.
-# AGE: ±0,5 anni (6 mesi). Variabili non elencate: nessun controllo.
-DERIVED_CHECK_TOLERANCE = {"AGE": 0.5}
+# [D041] Rapporti calcolati da pipeline.add_derived_ratios: {nome: (numeratore, denominatore)},
+# nomi standard. Si calcolano in ogni file che ha entrambi gli input e non ha gia' il rapporto.
+RATIOS = {"AB4240_PL": ("AB42_PL", "AB40_PL")}
 
 
 # ---------------------------------------------------------------------------

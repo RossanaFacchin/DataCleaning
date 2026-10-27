@@ -25,7 +25,8 @@ ci son 2 funzioni per rimuovere soggetti e righe (single subject ecc...) in clea
 ### A.5 Merge
 rivedere la strategia di merge --> spunto analsi Rossana
 
-
+### A.6 ATN profile
+Utile avere ATN, Apositive, Tpositive, Npositive? forse percheè ci sono file che lo calcolano separatamente e poi si tengono separaati? da verificare come facevamo e cosa c'è gia qua.
 
 ## B. Cose da cambiare/proposte
 ### B.1 anticipare RENAME

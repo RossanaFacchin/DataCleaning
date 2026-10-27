@@ -29,8 +29,9 @@ import pandas as pd
 
 import config
 
-# 'by' accettati nel campo derived: funzioni del motore delle derivate + passi dedicati
-KNOWN_STEPS = {"add_visit_month", "add_atn_profile", "add_constant_columns"} | set(config.EVOLUTIONS)
+# 'by' accettati nel campo derived (solo descrittivo [D041]): passi della pipeline che calcolano
+KNOWN_STEPS = {"recompute_age", "add_derived_ratios", "add_visit_month", "add_atn_profile",
+               "add_constant_columns"} | set(config.EVOLUTIONS)
 
 
 def template_rows() -> list[dict]:
@@ -69,15 +70,13 @@ def catalog_table() -> pd.DataFrame:
 
 def checks() -> list[str]:
     """Controlli per l'occhio umano (il loader ha gia' bloccato gli errori veri)."""
-    import pipeline                                   # import senza I/O
-    known = set(pipeline.DERIVATIONS) | KNOWN_STEPS
     out = []
     for col, items in config.alias_overrides():
         out.append(f"[alias su piu' livelli] {col}: " + "; ".join(f"{a} -> {s}" for a, s in items))
     cat = config.catalog()
     for name, v in cat.items():
         for r in v.derived:
-            if r["by"] not in known:
+            if r["by"] not in KNOWN_STEPS:
                 out.append(f"[derived] {name}: modo di calcolo '{r['by']}' sconosciuto")
             for inp in r["from"]:
                 if inp not in cat:
