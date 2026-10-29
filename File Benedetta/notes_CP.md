@@ -19,6 +19,8 @@ Come mai le colonne che non ci servono vengono rimosse solo in Cleaning_2 e non 
 def profile(df, cohort_col="COLPROT") -> pd.DataFrame:
 riga 440 --> valutare e discutere quali altre info possono essere utili, tipo numero di visite per sogg con quel valore vero, ... Aggiungere il calcolo di profile anche dopo clenaing2
 
+**Aggiornamento 28/10/2026:** aggiunta `_visits_per_subject(df, id_col)` in `pipeline.py` → distribuzione `{n_visite: n_soggetti}`. Scritta nei run log come `visite_per_soggetto` a fine cleaning 1 e a fine cleaning 2 (dopo `dedup_visits`, quando 1 riga = 1 visita). Non in `profile()` (è per colonna). **Da fare:** riusarla nel futuro file di esplorazione dei file nuovi (lettura del file intero, non del campione di `generate_config_stubs.py`). Resta aperta la parte "visite per soggetto *con quel valore vero*" (per variabile).
+
 ### A.4 line removal
 ci son 2 funzioni per rimuovere soggetti e righe (single subject ecc...) in cleaning 2. Un idea sarebbe fare 1 sola fase di pulizia pre merge e qua non mettere nemmeno questa possibilità e togliere il flag true e false dalle info del file. E mettere questi removal direttamente post merge.
 
@@ -37,10 +39,14 @@ Cambiamento discutibile.
 Non so se spostare completamente l'elminazione delle colonne non utili, tipo variabili che non studiamo, subito dopo il loader, oppure fare uno split, eliminare subito le variabili che possono causare problemi (VISCODE quando c'è VISCODE2). E alla fine della pulizia pre merge eliminare le colonne che ci servivano per calcolare cose come l'età. E magari riutilizzare la stessa finzione dopo il merge per eliminare variabili di qualità o time stamp utili per decidere quale valore tenere nel caso di duplicati. 
 --> idea 1 funzione che elimina ma usata 3 volte: quando sai esattamente che colonne assolutamente vuoi eliminare (subito), quando sai quali colonne vuoi tenre x2 pre e post merge.
 
+**Aggiornamento 29/10/2026 → D044:** introdotta `load_columns` (lista bianca di nomi grezzi, subito dopo il load) per ADNIMERGE e PTDEMOG; `keep_columns` e `drop_columns` commentate in quei due file (output identico). **Da fare:** `load_columns` per gli altri 31 file (servono i CSV grezzi), poi decidere se rimuovere del tutto `drop_columns`/`keep_columns`.
+
 ### B.3 proposta ottimizzazione def drop_if_all_none(df, cols):
 (riga 79 di pipeline) Viene chiamata due volte, una per le colonne essenziali e una per quelle anche richieste. Ma potremmo fare una piccola modifica aggiungendo un clco for all'interno della funzione e fornire una lista di liste al posto di cols (esempio: cols = [["APOE4", "MMSE", "Ventricles", "Hippocampus", "AGE"],["DX"], ["EXAMDATE", "VISCODE"]])
 In questo modo possono essere proposte diverse combinazione di colonne essenziali, da sole o in combinazione.
 Da valutare se il costo computazionale di usare un for è eccessivo.
+
+**Aggiornamento 29/10/2026 → D045:** fatto. `row_filters` (lista di gruppi) sostituisce required_all_present, essential_columns e also_required; `dedup_columns` separata per la scelta tra duplicati. Output identico. **Da decidere:** in ADNIMERGE il gruppo `APOE4, MMSE, Ventricles, Hippocampus, AGE_bl` non scarta nulla (APOE4 e AGE_bl sono del soggetto): sostituirlo con sole misure di visita? Aggiungere il gruppo temporale `["VISCODE", "EXAMDATE"]`?
 
 ### B.4 def recompute_age
 (riga 122, pipeline) va adattata alle diverse info che i dataset hanno per calcolare l'età. Nel branch di Rossana ci sono già dei miglioramnti. 
@@ -58,6 +64,8 @@ Aspetti da verificare:
 - Cosa succede se ci sono 2 var nello stesso DF che vengono rinominate nello stesso modo? (special cases o eliminazione del duplicato es VISCODE se c'è VISCODE2)
 - Come trattare volumi e dummies (magari possiamo aggiungere subito le variabili modificate come aggiuntive standard, ma no alias iniziali.)
 
+### B.7 CATALOG - aggiornamento 
+json da aggiornare con info man manod che si rispolverano i file e quindi le variabili. Diciamo dobbiamo raccoglierci ciò che studiamo delle variabili.
 
 ## C. Cosa aggiungere
 ### C.1 automatic range 

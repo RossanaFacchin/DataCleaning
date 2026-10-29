@@ -4,6 +4,7 @@
 # log di esecuzione: possono contenere RID (Data Use Agreement ADNI) [D015]
 /File Benedetta/*_runlog.json
 /File Benedetta/*_mergelog.json
+/File Benedetta/logs/
 /*.xlsx
 __pycache__
 adni_catalog_metodologia.html

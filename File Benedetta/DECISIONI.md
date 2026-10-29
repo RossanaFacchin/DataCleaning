@@ -61,6 +61,11 @@ registra qui e in `notes_CP.md` si lascia il rimando all'ID.
 | D038 | 26/10/2026 | Struttura | `dtype` eliminato: è una data chi ha `date_precision` (`day`/`month`); modelli del catalogo separati | Implementata |
 | D039 | 26/10/2026 | Dati | `date_precision: year`: date note solo come anno, imputate al 1° luglio | Implementata |
 | D040 | 26/10/2026 | Struttura | Campo `worsening` nel catalogo: direzione di peggioramento (`increase`/`decrease`) | Implementata |
+| D041 | — | Struttura | *Citata nel codice (rapporti in `config.RATIOS`, `derived` solo descrittivo) ma voce mai scritta: da completare* | — |
+| D042 | 29/10/2026 | Struttura | Storico dei log: runlog e mergelog in `logs/` con data e ora nel nome | Implementata |
+| D043 | 29/10/2026 | Struttura | `evolution` solo per `dummy`/`pct_icv`: rapporti e APOE4 si dichiarano con `derived` sulla figlia | Implementata |
+| D044 | 29/10/2026 | Struttura | `load_columns`: lista bianca di colonne grezze subito dopo il load; avvisi su colonne fuori catalogo e filtri di riga | Implementata (ADNIMERGE, PTDEMOG) |
+| D045 | 29/10/2026 | Struttura | `row_filters` (gruppi "almeno uno") sostituisce i tre campi dei filtri di riga; `dedup_columns` separata | Implementata |
 
 \* Data indicativa: decisioni prese prima, già presenti nel codice a quella data (dopo la quale
 il codice non è cambiato in modo significativo).
@@ -527,3 +532,81 @@ il codice non è cambiato in modo significativo).
   normalizzazione, non un marcatore; `APS2` non è in `ranges.json`. Vedi `notes_CP.md` punto 17.
 - **Impatto:** 31 variabili compilate (17 `increase`, 14 `decrease`) più 5 figlie %ICV;
   nessuna discordanza con `ranges.json`; output della pipeline invariati (solo metadati).
+
+### D042 · Storico dei log di esecuzione
+- **Area:** Struttura · **Stato:** Implementata
+- **Problema:** `<FILE>_runlog.json` e `<CATEGORIA>_mergelog.json` avevano nome fisso e ogni run
+  sovrascriveva il precedente: non si potevano confrontare due esecuzioni (es. prima/dopo una
+  modifica al catalogo).
+- **Decisione:** `run_all` salva i log in `config.LOG_DIR` (`logs/`) con data e ora nel nome
+  (`<nome>_AAAAMMGG-HHMM.json`, funzione `_log_path`); tutti i log dello stesso run hanno lo stesso
+  timestamp. Cartella in `.gitignore` (contiene RID). Nessuna cancellazione automatica.
+  Nello stesso giro i run log registrano anche `visite_per_soggetto` (distribuzione
+  `{n_visite: n_soggetti}`, `_visits_per_subject`) a fine cleaning 1 e cleaning 2 (`notes_CP.md` A.3).
+- **Alternative scartate:** nome fisso (nessuno storico); rotazione/pulizia automatica (codice in
+  più non necessario oggi).
+- **Da tenere presente:** i CSV in uscita restano sovrascritti; la cartella è sincronizzata da
+  OneDrive come i CSV, quindi le copie di file con RID aumentano.
+- **Impatto:** dati in uscita invariati; cambia solo dove e con che nome si salvano i log.
+
+### D043 · `evolution` vs `derived`: rapporti e APOE4
+- **Area:** Struttura · **Stato:** Implementata
+- **Problema:** nel catalogo alcune madri dichiaravano `evolution: ["ratios"]` (CSF/plasma) o
+  `["APOE4"]` (APOE), valori non supportati: il validatore bloccava il run.
+- **Decisione:** `evolution` resta riservata alle trasformazioni meccaniche con figlie generate dal
+  loader (`dummy`, `pct_icv`, D036). Le variabili calcolate con significato proprio (rapporti,
+  APOE4) sono voci vere del catalogo con `derived` sulla figlia; per i rapporti serve anche la riga
+  in `config.RATIOS`. Rimossi `ratios`/`APOE4` da `evolution`. Corretto `AB4240_CSF` (`derived`
+  puntava ad AB42_PL/AB40_PL invece che ai valori CSF) e aggiunto `AB4240_CSF` a `config.RATIOS`.
+  APOE4 si ricava dal genotipo APOE, non il contrario.
+- **Alternative scartate:** nuova evoluzione `ratios` (un rapporto ha due madri e una definizione
+  propria, non è una trasformazione meccanica).
+- **Da decidere (Chiara):** alias di APOE e APOE4 (oggi `APOERES.GENOTYPE` è su APOE4); passo di
+  calcolo di APOE4 dal genotipo (oggi `"by": "to be completed"`).
+- **Impatto:** il rapporto AB42/AB40 nel liquor viene ora calcolato nei file CSF che hanno AB42 e
+  AB40 ma non il rapporto misurato (colonna in più dove prima mancava). Conteggi da verificare al
+  primo run con il catalogo valido.
+
+### D044 · Lista bianca iniziale di colonne grezze (`load_columns`)
+- **Area:** Struttura · **Stato:** Implementata per ADNIMERGE e PTDEMOG
+- **Problema:** ADNIMERGE ha 116 colonne (50 `*_bl`) e la pipeline le trascinava tutte fino a
+  `keep_columns` in cleaning 2; la selezione delle colonne era divisa tra `drop_columns` (grezze,
+  inizio), `scope` (catalogo) e `keep_columns` (standard, fine). `notes_CP.md` B.2.
+- **Decisione:** nuovo campo `DatasetConfig.load_columns` con **nomi grezzi** (si incollano da
+  `df.columns`); subito dopo il load si tengono solo quelle (riusa `keep_only_columns`), passo
+  registrato nel log. Avvisi: colonne elencate ma assenti dal file; colonne caricate senza voce nel
+  catalogo (restano col nome grezzo). Per tutti i file, nuovo avviso se una colonna dei filtri di
+  riga (`required_all_present`, `essential_columns`, `also_required`) manca dopo il rename: i filtri
+  la ignoravano in silenzio, allargandosi. In ADNIMERGE e PTDEMOG `keep_columns` e `drop_columns`
+  sono commentate (non rimosse); le colonne escluse restano scritte come commento.
+- **Alternative scartate:** lista nera estesa con `drop_columns` (lunga; le colonne nuove di una
+  release passano inosservate); lista bianca dal catalogo (un alias `ADNI:*` caricherebbe la
+  variabile da ogni file, senza scelta per file; obbliga a compilare il catalogo prima di lavorare).
+- **Eccezione a §4.2:** come `drop_columns` (D016), usa nomi grezzi perché agisce prima del rename.
+- **Da decidere (Chiara):** gruppi di ADNIMERGE lasciati commentati (PET, CSF, Ecog, altre scale,
+  WholeBrain); rimozione definitiva di `keep_columns`/`drop_columns` dopo aver scritto
+  `load_columns` per gli altri 31 file.
+- **Impatto:** ADNIMERGE 117 → 31 colonne a fine cleaning 1, PTDEMOG 84 → 17; output di cleaning 2
+  **identico** al precedente (stesse righe 11.458 / 5.396, soggetti 2.409 / 4.292, colonne e valori).
+  Alias di APOE impostato a `ADNI:*.APOE` (D043): catalogo di nuovo valido.
+
+### D045 · Filtri di riga come lista di gruppi (`row_filters`) e `dedup_columns`
+- **Area:** Struttura · **Stato:** Implementata
+- **Problema:** tre campi con nomi simili e logiche diverse (`required_all_present` = scarta se ne
+  manca una; `essential_columns` e `also_required` = scarta se mancano tutte), facili da confondere.
+  `essential_columns` serviva anche a `dedup_visits` per scegliere il duplicato più completo.
+  `notes_CP.md` B.3.
+- **Decisione:** un solo campo `row_filters`, lista di gruppi: per ogni gruppo la riga si scarta se
+  mancano **tutti** i valori (`drop_if_all_none`, un passo di log per gruppo). Un gruppo di una
+  colonna equivale a una colonna obbligatoria, quindi copre anche `required_all_present`. Nuovo
+  campo `dedup_columns` per la scelta tra visite duplicate, tenuto separato perché è più delicato:
+  servono variabili di visita, non del soggetto. Rimossi i tre campi e `drop_required` (non più
+  usata). Conversione a comportamento identico: `dedup_columns` = vecchia `essential_columns`.
+- **Alternative scartate:** usare la lista di `load_columns` anche per i duplicati (contiene
+  variabili del soggetto e amministrative, che non distinguono le righe).
+- **Da decidere (Chiara):** in ADNIMERGE il gruppo `APOE4, MMSE, Ventricles, Hippocampus, AGE_bl`
+  scarta 0 righe, perché APOE4 e AGE_bl sono costanti del soggetto e presenti su ogni riga; lo
+  stesso vale per `dedup_columns`. Proposta: solo misure di visita. Eventuale gruppo temporale
+  `["VISCODE", "EXAMDATE"]`.
+- **Impatto:** output identico (ADNIMERGE 11.458 righe / 2.409 soggetti; PTDEMOG 5.396 / 4.292).
+  Righe rimosse per gruppo: ADNIMERGE RID 0, essenziali 0, DX 4.963; PTDEMOG anagrafiche 18, PTDOB 171.

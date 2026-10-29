@@ -63,7 +63,8 @@ YEAR_IMPUTED_MONTH_DAY = (7, 1)
 AGE_ROUND_DECIMALS = 1
 # [D041] Rapporti calcolati da pipeline.add_derived_ratios: {nome: (numeratore, denominatore)},
 # nomi standard. Si calcolano in ogni file che ha entrambi gli input e non ha gia' il rapporto.
-RATIOS = {"AB4240_PL": ("AB42_PL", "AB40_PL")}
+RATIOS = {"AB4240_PL": ("AB42_PL", "AB40_PL"),
+          "AB4240_CSF": ("AB42_CSF", "AB40_CSF")}
 
 
 # ---------------------------------------------------------------------------
@@ -458,6 +459,12 @@ def decode(series, var: str):
 # 5. DATASET  —  la "scheda d'identita'" del file, fedele al blocco ADNIMERGE
 #    di adni_cleaning1.ipynb (celle 222-224) + il blocco cleaning 2/3.
 # ---------------------------------------------------------------------------
+# [D042] Cartella dello storico dei log: ogni run salva qui runlog e mergelog con data e ora
+# nel nome (<nome>_AAAAMMGG-HHMM.json), senza sovrascrivere i precedenti. Contengono RID:
+# cartella esclusa da git.
+LOG_DIR = "logs"
+
+
 @dataclass
 class DatasetConfig:
     file_code: str                      # = FILE negli alias 'DATASET:FILE.colonna' del catalogo
@@ -472,6 +479,10 @@ class DatasetConfig:
     category: Optional[str] = None      # 'plasma'|'csf'|'pet'|'volumes'|'scale'|'cofactor'
 
     # --- cleaning 1 ---
+    # [D044] lista bianca iniziale, NOMI GREZZI (si incolla da df.columns): appena caricato il
+    # file si tengono solo queste colonne. Vanno incluse anche quelle che servono ai calcoli
+    # (es. EXAMDATE_bl, PTDOB) e ai filtri di riga. None = tutte le colonne del file.
+    load_columns: Optional[list[str]] = None
     # [D016] colonne GREZZE tolte appena caricato il file, prima del rename: es. VISCODE nei
     # file che hanno anche VISCODE2 (che viene rinominata VISCODE).
     drop_columns: list[str] = field(default_factory=list)
@@ -482,11 +493,15 @@ class DatasetConfig:
     missing_codes: Optional[list] = None
     # (le date da convertire e la precisione mese/anno ora vengono dal catalogo:
     #  date_precision='day' o 'month' [D029, D038])
-    # [nota Chiara #1] scarta la riga se MANCA anche UNA sola di queste (any-none),
-    # es. ID o data: e' diverso da essential_columns (che scarta se TUTTE mancano).
-    required_all_present: list[str] = field(default_factory=list)
-    essential_columns: list[str] = field(default_factory=list)   # tieni riga se >=1 valorizzata (NOMI STANDARD)
-    also_required: list[str] = field(default_factory=list)       # 2° filtro (AND): richiedi questa (NOMI STANDARD)
+    # [D045] filtri di riga, NOMI STANDARD: lista di gruppi; per ogni gruppo la riga resta se ha
+    # ALMENO UNO dei valori, e si scarta se mancano tutti. Un gruppo di una sola colonna =
+    # colonna obbligatoria (es. ["RID"]). Sostituisce required_all_present, essential_columns
+    # e also_required.
+    row_filters: list[list[str]] = field(default_factory=list)
+    # [D045] tra visite duplicate (stesso soggetto e data) si tiene la riga con piu' valori in
+    # queste colonne. Meglio variabili DI VISITA: quelle del soggetto (APOE4, eta' al baseline)
+    # sono uguali su tutte le righe e non distinguono i duplicati.
+    dedup_columns: list[str] = field(default_factory=list)
     recode_columns: list[str] = field(default_factory=list)      # colonne da passare a RECODE (NOMI STANDARD)
     # (il rename per-file e' ora un alias 'ADNI:<file_code>.<colonna>' in catalog.json [D017];
     #  i rapporti e l'eta' sono variabili 'derived' del catalogo, calcolate quando servono [D019])
@@ -540,13 +555,42 @@ ADNIMERGE = DatasetConfig(
     viscode_reference="VISCODE",
 
     # cleaning 1 -----------------------------------------------------------
+    # [D044] colonne GREZZE da tenere (116 nel file). Le righe commentate sono escluse: per
+    # includerle basta togliere il '#'. Le 49 colonne *_bl (copie del baseline) sono escluse
+    # tranne EXAMDATE_bl, che serve a recompute_age (poi tolta da scope 'cleaning', D032).
+    load_columns=[
+        "RID", "COLPROT", "VISCODE", "EXAMDATE", "EXAMDATE_bl",
+        "AGE", "PTGENDER", "PTEDUCAT", "PTETHCAT", "PTRACCAT", "PTMARRY", "APOE4", "DX",
+        "CDRSB", "ADAS11", "ADAS13", "MMSE", "RAVLT_immediate", "FAQ", "MOCA",
+        "FLDSTRENG", "FSVERSION", "IMAGEUID",
+        "Ventricles", "Hippocampus", "Entorhinal", "Fusiform", "MidTemp", "ICV",
+        "update_stamp",
+        # --- da decidere (Chiara) ---
+        # "WholeBrain",
+        # "FDG", "PIB", "AV45", "FBB",                                   # PET
+        # "ABETA", "TAU", "PTAU",                                        # CSF
+        # "ADASQ4", "RAVLT_learning", "RAVLT_forgetting", "RAVLT_perc_forgetting",
+        # "LDELTOTAL", "DIGITSCOR", "TRABSCOR", "mPACCdigit", "mPACCtrailsB",
+        # "EcogPtMem", "EcogPtLang", "EcogPtVisspat", "EcogPtPlan", "EcogPtOrgan",
+        # "EcogPtDivatt", "EcogPtTotal", "EcogSPMem", "EcogSPLang", "EcogSPVisspat",
+        # "EcogSPPlan", "EcogSPOrgan", "EcogSPDivatt", "EcogSPTotal",
+        # --- amministrative / ridondanti ---
+        # "ORIGPROT", "PTID", "SITE", "Month", "M", "LDELTOTAL_BL",
+    ],
     # [D027] tabella gia' derivata, usa NA veri: nessun codice numerico di mancante.
     # (-4/-1 in RAVLT_learning/forgetting sono differenze di punteggio vere)
     missing_codes=[],
-    required_all_present=["RID"],              # [#1] scarta la riga se manca l'ID
-    # AGE grezza di ADNIMERGE e' l'eta' al baseline: dopo il rename si chiama AGE_bl [D019]
-    essential_columns=["APOE4", "MMSE", "Ventricles", "Hippocampus", "AGE_bl"],
-    also_required=["DX"],
+    # [D045] stessi filtri di prima (ex required_all_present / essential_columns / also_required).
+    # AGE grezza di ADNIMERGE e' l'eta' al baseline: dopo il rename si chiama AGE_bl [D019].
+    # NB: APOE4 e AGE_bl sono del soggetto, presenti su ogni riga -> il 2° gruppo oggi non
+    # scarta nulla. Da decidere (Chiara): solo misure di visita, es. MMSE, CDRSB, ADAS13, volumi.
+    row_filters=[
+        ["RID"],                                                                                                    # [#1] scarta se manca l'ID
+        ["VISCODE", "EXAMDATE"],
+        ["CDRSB", "ADAS11", "ADAS13", "MMSE", "RAVLT_immediate", "FAQ", "MOCA","Ventricles", "Hippocampus", "Entorhinal", "Fusiform", "MidTemp"],
+        ["ICV"]
+    ],
+    dedup_columns=["CDRSB", "ADAS11", "ADAS13", "MMSE", "RAVLT_immediate", "FAQ", "MOCA","Ventricles", "Hippocampus", "Entorhinal", "Fusiform", "MidTemp"],
     recode_columns=["GENDER", "MARRY", "ETHNICITY", "RACE", "DX"],   # NOMI STANDARD (rename-first)
     clean_fs_fields=True,
     # compute_atn resta False: nel notebook l'ATN e' solo per i file CSF, non ADNIMERGE
@@ -569,14 +613,15 @@ ADNIMERGE = DatasetConfig(
     # whitelist finale (le "colonne di Chiara"), in NOMI STANDARD post-rename.
     # Le dummy generate e le colonne calcolate (VISIT_MONTH, AGE_bl) vengono
     # tenute automaticamente dalla pipeline: NON si elencano qui a mano.
-    keep_columns=[
-        "RID", "COLPROT", "VISCODE", "EXAMDATE", "AGE", "AGE_bl",
-        "GENDER", "MARRY", "ETHNICITY", "RACE", "DX",      # [D026] categoriche (non piu' dummy)
-        "EDUCATION", "APOE4", "CDRSB", "ADAS11", "ADAS13", "MMSE",
-        "RAVLT_immediate", "FAQ", "MOCA", "FLDSTRENG", "FSVERSION", "IMAGEUID",
-        "Ventricles", "Hippocampus", "Entorhinal", "Fusiform", "MidTemp", "ICV",
-        "update_stamp",
-    ],
+    # [D044] keep_columns commentata: con load_columns la selezione si fa all'inizio.
+    # keep_columns=[
+    #     "RID", "COLPROT", "VISCODE", "EXAMDATE", "AGE", "AGE_bl",
+    #     "GENDER", "MARRY", "ETHNICITY", "RACE", "DX",      # [D026] categoriche (non piu' dummy)
+    #     "EDUCATION", "APOE4", "CDRSB", "ADAS11", "ADAS13", "MMSE",
+    #     "RAVLT_immediate", "FAQ", "MOCA", "FLDSTRENG", "FSVERSION", "IMAGEUID",
+    #     "Ventricles", "Hippocampus", "Entorhinal", "Fusiform", "MidTemp", "ICV",
+    #     "update_stamp",
+    # ],
 )
 
 
@@ -595,7 +640,8 @@ PLASMA_ADX_VUMC = DatasetConfig(
     source="PLASMA_ABETA_PROJECT_ADX_VUMC_11Aug2025.csv",
     category="plasma",
     date_column="EXAMDATE",
-    essential_columns=["NFL_PL", "AB42_PL", "GFAP"],       # NOMI STANDARD (rename-first)
+    row_filters=[["NFL_PL", "AB42_PL", "GFAP"]],          # NOMI STANDARD (rename-first) [D045]
+    dedup_columns=["NFL_PL", "AB42_PL", "GFAP"],
     # rename -> alias 'ADNI:<file_code>.<colonna>' in catalog.json [D017]
     # METODO: distinto da C2N. CONFERMA l'assay reale: se questo pannello e' il Simoa
     # 4-plex usa "simoa"/"quanterix" (ma allora e' lo STESSO metodo NfL di Blennow ->
@@ -614,7 +660,8 @@ PLASMA_NFL = DatasetConfig(
     source="ADNI_BLENNOWPLASMANFLLONG_10_03_18_11Aug2025.csv",
     category="plasma",
     date_column="EXAMDATE",
-    essential_columns=["NFL_PL"],                          # NOME STANDARD (rename-first)
+    row_filters=[["NFL_PL"]],                             # NOME STANDARD (rename-first) [D045]
+    dedup_columns=["NFL_PL"],
     # rename -> alias 'ADNI:<file_code>.<colonna>' in catalog.json [D017]
     constant_columns={"METHOD_PLASMA": "simoa"},
     keep_columns=["RID", "VISCODE", "EXAMDATE", "NFL_PL", "METHOD_PLASMA", "update_stamp"],
@@ -626,7 +673,8 @@ PLASMA_C2N = DatasetConfig(
     source="C2N_PRECIVITYAD2_PLASMA_11Aug2025.csv",
     category="plasma",
     date_column="EXAMDATE",
-    essential_columns=["PT217_PL", "AB42_PL"],             # NOMI STANDARD (rename-first)
+    row_filters=[["PT217_PL", "AB42_PL"]],                # NOMI STANDARD (rename-first) [D045]
+    dedup_columns=["PT217_PL", "AB42_PL"],
     # rename -> alias 'ADNI:<file_code>.<colonna>' in catalog.json [D017]
     constant_columns={"METHOD_PLASMA": "massospectrometry"},   # C2N = spettrometria di massa
     keep_columns=["RID", "VISCODE", "EXAMDATE",
@@ -804,15 +852,33 @@ PTDEMOG = DatasetConfig(
     viscode_reference="VISCODE",               # = VISCODE2 grezzo, rinominato (piu' aggiornato)
 
     # cleaning 1 -----------------------------------------------------------
-    drop_columns=["VISCODE"],                  # [D016] tolto: si usa VISCODE2, rinominato VISCODE
+    # [D044] colonne GREZZE da tenere (84 nel file). VISCODE escluso: si usa VISCODE2, rinominato
+    # VISCODE (sostituisce drop_columns, D016). PTDOB serve per l'eta' (poi tolta, D032).
+    load_columns=[
+        "PHASE", "PTID", "RID", "VISCODE2", "VISDATE",
+        "PTGENDER", "PTDOB", "PTMARRY", "PTEDUCAT", "PTETHCAT", "PTRACCAT",
+        "PTADBEG", "PTCOGBEG", "PTADDX", "HAS_QC_ERROR", "update_stamp",
+        # --- escluse ---
+        # "VISCODE", "PTSOURCE", "PTDOBYY", "PTHAND", "PTWORKHS", "PTWORK", "PTNOTRT", "PTRTYR",
+        # "PTHOME", "PTTLANG", "PTPLANG", "PTIDENT", "PTORIENT", "PTORIENTOT", "PTENGSPK",
+        # "PTNLANG", "PTENGSPKAGE", "PTCLANG", "PTLANGSP", "PTLANGWR", "PTSPTIM", "PTSPOTTIM",
+        # PTLANGPR1..6, PTLANGSP1..6, PTLANGRD1..6, PTLANGWR1..6, PTLANGUN1..6, "PTLANGTTL",
+        # "PTETHCATH", "PTASIAN", "PTOPI", "PTBORN", "PTBIRPL", "PTIMMAGE", "PTIMMWHY",
+        # "PTBIRPR", "PTBIRGR", "ID", "SITEID", "USERDATE", "USERDATE2",
+        # "DD_CRF_VERSION_LABEL", "LANGUAGE_CODE",
+    ],
+    # drop_columns=["VISCODE"],                # [D016] [D044] commentata: VISCODE non e' in load_columns
     # rename -> alias 'ADNI:<file_code>.<colonna>' in catalog.json [D017]
     drop_rows={"VISCODE": ["f"]},              # [D028] screen fail
     # [D027] qui -4 e 9999 sono codici; -1 compare in PTEDUCAT e PTADBEG, ed e' un codice
     missing_codes=[-4, "-4", -1, "-1", 9999, 9999.0],
     # PTDOB (MM/YYYY) e update_stamp sono date per il catalogo; PTDOB ha date_precision
     # 'month' -> giorno 15 [D029]. AGE si calcola da PTDOB perche' il file non la riporta [D019].
-    essential_columns=["GENDER", "MARRY", "ETHNICITY", "RACE"],
-    also_required=["PTDOB"],                   # senza data di nascita non si calcola l'eta'
+    row_filters=[
+        ["GENDER", "MARRY", "ETHNICITY", "RACE"],
+        ["PTDOB"],                             # senza data di nascita non si calcola l'eta'
+    ],
+    dedup_columns=["GENDER", "MARRY", "ETHNICITY", "RACE"],
     recode_columns=["GENDER", "MARRY", "ETHNICITY", "RACE"],
     clean_fs_fields=False,
 
@@ -822,11 +888,12 @@ PTDEMOG = DatasetConfig(
     remove_single_visit=False,
     normalize_icv=False,
     # PTDOB NON e' qui: serve solo a calcolare l'eta' ed e' un quasi-identificativo.
-    keep_columns=[
-        "COLPROT", "PTID", "RID", "VISCODE", "EXAMDATE",
-        "GENDER", "MARRY", "EDUCATION", "ETHNICITY", "RACE", "AGE",
-        "PTADBEG", "PTCOGBEG", "PTADDX", "HAS_QC_ERROR", "update_stamp",
-    ],
+    # [D044] keep_columns commentata: con load_columns la selezione si fa all'inizio.
+    # keep_columns=[
+    #     "COLPROT", "PTID", "RID", "VISCODE", "EXAMDATE",
+    #     "GENDER", "MARRY", "EDUCATION", "ETHNICITY", "RACE", "AGE",
+    #     "PTADBEG", "PTCOGBEG", "PTADDX", "HAS_QC_ERROR", "update_stamp",
+    # ],
 )
 
 # ======================================================================

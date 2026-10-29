@@ -61,7 +61,7 @@ nella cartella; gli altri vengono saltati con un avviso. Per ogni file scrive:
 | `<FILE>_cleaned_01.csv` | dopo cleaning 1 |
 | `<FILE>_cleaned_02.csv` | dopo cleaning 2 |
 | `<FILE>_report.csv`, `<FILE>_report_02.csv` | statistiche di qualità per colonna (`profile()`) |
-| `<FILE>_runlog.json` | log di esecuzione passo per passo (§7) |
+| `logs/<FILE>_runlog_<AAAAMMGG-HHMM>.json` | log di esecuzione passo per passo, uno per run (§7, D042) |
 
 Esempio di riferimento, ADNIMERGE: **11.458 righe e 2.409 soggetti** dopo cleaning 1.
 
@@ -247,14 +247,14 @@ PTDEMOG = DatasetConfig(
     file_code="PTDEMOG",                    # = FILE negli alias del catalogo
     source="PTDEMOG_21Apr2026.csv",         # SEMPRE il file grezzo
     category="cofactor",                    # gruppo per il merge
-    drop_columns=["VISCODE"],               # grezze tolte subito: si usa VISCODE2 (D016)
+    load_columns=["PHASE", "RID", "VISCODE2", ...],   # colonne GREZZE da tenere subito (D044)
     drop_rows={"VISCODE": ["f"]},           # righe scartate per valore: screen fail (D028)
     missing_codes=[-4, "-4", -1, "-1", 9999, 9999.0],   # codici di "mancante" del file (D027)
-    essential_columns=["GENDER", "MARRY", "ETHNICITY", "RACE"],  # tieni la riga se >=1 c'e'
-    also_required=["PTDOB"],                # ...e in piu' questa deve esserci
+    row_filters=[["GENDER", "MARRY", "ETHNICITY", "RACE"],   # per gruppo: tieni la riga se
+                 ["PTDOB"]],                                # >=1 valore c'e' (D045)
+    dedup_columns=["GENDER", "MARRY", "ETHNICITY", "RACE"],  # scelta tra visite duplicate
     recode_columns=["GENDER", "MARRY", "ETHNICITY", "RACE"],
     make_dummies=False,                     # dummy dopo il merge (D026)
-    keep_columns=[...],                     # colonne da tenere in cleaning 2 (nomi standard)
 )
 ```
 
@@ -281,12 +281,13 @@ diversi da una riga all'altra (D020, in standby).
 | Passo | Cosa fa | Ex notebook |
 |---|---|---|
 | `load` | legge il CSV grezzo | download dal datalake |
-| `drop_columns` | toglie le colonne grezze indesiderate | — |
+| `load_columns` | tiene solo le colonne grezze elencate (lista bianca); avvisa se mancano dal file o dal catalogo (D044) | — |
+| `drop_columns` | toglie le colonne grezze indesiderate (file senza `load_columns`) | — |
 | `replace_unknown` | segnaposto di mancante → NaN (testi sempre, codici per file) | `replace_unknown_values` |
 | `rename_variables` | nomi grezzi → nomi standard con gli alias del catalogo | `new_variable_names` |
 | `decensor` | `">1700"` → 1700 (biomarcatori, se attivo) | — |
 | `drop_rows_by_value` | scarta righe per valore (es. screen fail) | — |
-| `drop_required` / `drop_if_all_none` | scarta righe senza ID/data o senza misure essenziali | `drop_if_all_none` ×2 |
+| `drop_if_all_none` (un passo per gruppo di `row_filters`) | scarta la riga se mancano tutti i valori del gruppo; un gruppo di una colonna = colonna obbligatoria (D045) | `drop_if_all_none` ×2 |
 | `parse_dates` | converte in data `date_column` e le variabili con `date_precision`; per le date mese/anno mette il giorno 15, **solo** ai valori MM/YYYY (D029) | `to_date_format` |
 | `dedup_visits` + `add_visit_month` | una riga per soggetto e data; `VISIT_MONTH` | `find_exam_code` |
 | `derive_variables` | calcola le derivate del catalogo (AGE, rapporti) | `add_calculated_age` |
@@ -315,7 +316,7 @@ standby**: la strategia di merge è ancora da decidere (`notes_CP.md` §D.9).
 
 | Cosa | Dove | Risponde a |
 |---|---|---|
-| Run log | `<FILE>_runlog.json` | *cosa è successo* in questa esecuzione: per ogni passo righe e colonne prima/dopo, mappa di rename, codici convertiti per colonna, valori non ricodificati, derivate calcolate o non calcolabili, controlli di coerenza; data e commit git |
+| Run log | `logs/<FILE>_runlog_<AAAAMMGG-HHMM>.json` (storico, D042) | *cosa è successo* in questa esecuzione: per ogni passo righe e colonne prima/dopo, mappa di rename, codici convertiti per colonna, valori non ricodificati, derivate calcolate o non calcolabili, controlli di coerenza; data e commit git |
 | Report | `<FILE>_report*.csv` | com'è fatto il dataset: tipo, range, validi/mancanti, soggetti, coorti scoperte |
 | Registro decisioni | `DECISIONI.md` | *perché* si fa così |
 

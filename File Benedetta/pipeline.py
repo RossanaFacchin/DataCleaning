@@ -11,7 +11,7 @@ dentro le celle arrivano da config.py.
     -- cleaning 1 --
     client.download_file(...)             load()               [datalake -> CSV]
     replace_unknown_values                replace_unknown()
-    drop_if_all_none  x2                  drop_if_all_none()   [essential + also_required]
+    drop_if_all_none  x2                  drop_if_all_none()   [un passo per gruppo di row_filters, D045]
     to_date_format                        parse_dates()
     find_exam_code                        dedup_visits() + add_visit_month()
     add_calculated_age                    recompute_age()      [+ add_derived_ratios(), config.RATIOS]
@@ -88,7 +88,19 @@ def _log_skip(log, step, reason):
 
 
 def _n_subjects(df, id_col):
+    """Numero di soggetti distinti (valori unici di `id_col`, es. RID) per il log.
+    None se la colonna identificativa non c'e'."""
     return int(df[id_col].nunique()) if id_col in df.columns else None
+
+
+def _visits_per_subject(df, id_col):
+    """Distribuzione del numero di visite per soggetto: {n_visite: n_soggetti},
+    es. {1: 120, 2: 340, 3: 510}. None se la colonna identificativa non c'e'.
+    NB: conta le righe, che equivalgono a visite solo dopo dedup_visits."""
+    if id_col not in df.columns:
+        return None
+    counts = df.groupby(id_col).size().value_counts().sort_index()
+    return {int(k): int(v) for k, v in counts.items()}
 
 
 def _git_commit():
@@ -116,9 +128,17 @@ def _json_default(o):
 def save_log(log, path):
     """Scrive un log in JSON. NB: i run log possono contenere RID -> restano locali
     (esclusi da git), mai condivisi: vincolo del Data Use Agreement ADNI."""
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(log, f, indent=2, ensure_ascii=False, default=_json_default)
     print(f"  log salvato: {path}")
+
+
+def _log_path(name, stamp):
+    """[D042] Percorso nello storico dei log: 'ADNIMERGE_runlog.json' ->
+    'logs/ADNIMERGE_runlog_20261029-1432.json'. Stesso `stamp` per tutti i log di un run."""
+    p = Path(name)
+    return Path(config.LOG_DIR) / f"{p.stem}_{stamp}{p.suffix}"
 
 
 # ===========================================================================
@@ -167,13 +187,6 @@ def drop_rows_by_value(df, rules):
         removed[col] = int(mask.sum())
         df = df[~mask]
     return df.copy(), removed
-
-
-def drop_required(df, cols):
-    """[nota Chiara #1] Scarta la riga se MANCA anche UNA sola di queste colonne
-    (any-none), es. ID o data. Diverso da drop_if_all_none (che scarta se TUTTE NaN)."""
-    present = [c for c in cols if c in df.columns]
-    return df.dropna(subset=present, how="any") if present else df
 
 
 def decensor(df, cols):
@@ -246,9 +259,10 @@ def parse_dates(df, cols, month_precision=(), year_precision=()):
     return df
 
 
-def dedup_visits(df, id_col, date_col, essential):
-    """Elimina le visite duplicate (stesso paziente, stessa data) tenendo la riga piu' completa."""
-    present = [c for c in essential if c in df.columns]
+def dedup_visits(df, id_col, date_col, cols):
+    """Elimina le visite duplicate (stesso paziente, stessa data) tenendo la riga piu' completa
+    nelle colonne `cols` (DatasetConfig.dedup_columns [D045])."""
+    present = [c for c in cols if c in df.columns]
     df = df.copy()
     df["_completeness"] = df[present].notna().sum(axis=1) if present else 0
     return (df.sort_values([id_col, date_col, "_completeness"])
@@ -483,6 +497,18 @@ def run_cleaning1(cfg: DatasetConfig = ADNIMERGE):
     log["shape_iniziale"] = df.shape
     log["soggetti_iniziali"] = _n_subjects(df, cfg.id_column)
 
+    if cfg.load_columns is not None:                              # [D044] lista bianca grezza
+        new, removed, absent = keep_only_columns(df, cfg.load_columns)
+        known = set(cfg.effective_rename()) | set(config.catalog())
+        outside = [c for c in new.columns if c not in known]
+        df = _log_step(log, "load_columns", df, new,
+                       richieste_ma_assenti=absent, senza_voce_nel_catalogo=outside)
+        if absent:
+            warnings.warn(f"{cfg.file_code}: load_columns richiede colonne assenti: {absent}")
+        if outside:
+            warnings.warn(f"{cfg.file_code}: colonne caricate senza voce nel catalogo "
+                          f"(restano col nome grezzo): {outside}")
+
     if cfg.drop_columns:                                          # [D016] prima del rename
         new, removed, absent = drop_columns(df, cfg.drop_columns)
         df = _log_step(log, "drop_columns", df, new, richieste_ma_assenti=absent)
@@ -510,14 +536,14 @@ def run_cleaning1(cfg: DatasetConfig = ADNIMERGE):
                        righe_tolte_per_colonna=removed,
                        soggetti_persi=(n_subj - _n_subjects(new, cfg.id_column))
                        if n_subj is not None else None)
-    df = _log_step(log, "drop_required", df, drop_required(df, cfg.required_all_present),
-                   colonne=cfg.required_all_present)             # [#1] scarta se manca ID/data
-    df = _log_step(log, "drop_if_all_none (essential_columns)", df,
-                   drop_if_all_none(df, cfg.essential_columns),  # scarta se TUTTE le essenziali NaN
-                   colonne=cfg.essential_columns)
-    df = _log_step(log, "drop_if_all_none (also_required)", df,
-                   drop_if_all_none(df, cfg.also_required),      # 2° filtro (es. DX obbligatoria)
-                   colonne=cfg.also_required)
+    # [D044] i filtri di riga ignorano le colonne assenti: lo si dice invece di tacerlo
+    absent = [c for group in cfg.row_filters for c in group if c not in df.columns]
+    if absent:
+        log["colonne_filtri_assenti"] = absent
+        warnings.warn(f"{cfg.file_code}: colonne dei filtri di riga assenti (filtro piu' "
+                      f"largo del previsto): {absent}")
+    for group in cfg.row_filters:                                # [D045] scarta se TUTTE NaN
+        df = _log_step(log, f"row_filters {group}", df, drop_if_all_none(df, group))
     # date: date_column + tutte le variabili 'date' del catalogo presenti; la precisione
     # mese/anno viene dal catalogo (date_precision='month') [D029]
     dates = config.date_vars()
@@ -541,7 +567,7 @@ def run_cleaning1(cfg: DatasetConfig = ADNIMERGE):
     has_keys = (cfg.date_column in df.columns) and (cfg.id_column in df.columns)
     if has_keys:
         df = _log_step(log, "dedup_visits", df,
-                       dedup_visits(df, cfg.id_column, cfg.date_column, cfg.essential_columns))
+                       dedup_visits(df, cfg.id_column, cfg.date_column, cfg.dedup_columns))
         df = _log_step(log, "add_visit_month", df,             # find_exam_code -> VISIT_MONTH
                        add_visit_month(df, cfg.id_column, cfg.date_column))
     else:
@@ -576,6 +602,7 @@ def run_cleaning1(cfg: DatasetConfig = ADNIMERGE):
 
     log["shape_finale"] = df.shape
     log["soggetti_finali"] = _n_subjects(df, cfg.id_column)
+    log["visite_per_soggetto"] = _visits_per_subject(df, cfg.id_column)
     return df, log
 
 
@@ -755,6 +782,7 @@ def run_cleaning2(df: pd.DataFrame, cfg: DatasetConfig = ADNIMERGE):
 
     log["shape_finale"] = df.shape
     log["soggetti_finali"] = _n_subjects(df, cfg.id_column)
+    log["visite_per_soggetto"] = _visits_per_subject(df, cfg.id_column)
     return df, log
 
 
@@ -1051,13 +1079,16 @@ def run_all(datasets=None, do_merge=True, verbose=True):
       cosi' puoi tenere registrati file che oggi non hai sottomano);
     - mergia solo le categorie che hanno una regola in config.CATEGORY_MERGE.
     Per ogni file salva anche il run log (cfg.runlog_file) con i passi di cleaning 1 e 2 [D015];
-    per ogni categoria mergiata salva <CATEGORIA>_mergelog.json.
+    per ogni categoria mergiata salva <CATEGORIA>_mergelog.json. Entrambi in config.LOG_DIR
+    con data e ora nel nome, senza sovrascrivere i run precedenti [D042].
     Restituisce un riepilogo (dict) di cosa e' stato pulito / saltato / mergiato.
     """
     datasets = datasets or config.DATASETS
     config.catalog()                                 # catalogo letto e validato subito: se e' rotto, ci si ferma qui
     cleaned_by_category, summary = {}, {"cleaned": [], "skipped": [], "merged": []}
-    run_info = {"eseguito_il": datetime.now().isoformat(timespec="seconds"),
+    now = datetime.now()
+    stamp = now.strftime("%Y%m%d-%H%M")                  # [D042] nel nome dei log del run
+    run_info = {"eseguito_il": now.isoformat(timespec="seconds"),
                 "commit_git": _git_commit()}
 
     for code, cfg in datasets.items():
@@ -1075,7 +1106,7 @@ def run_all(datasets=None, do_merge=True, verbose=True):
         profile(df2, cfg.cohort_column).to_csv(cfg.report_file.replace("_report", "_report_02"), index=False)
         save_log({**run_info, "file_code": code, "source": cfg.source,
                   "output": [cfg.output_cleaned1, cfg.output_cleaned2],
-                  "cleaning1": log1, "cleaning2": log2}, cfg.runlog_file)
+                  "cleaning1": log1, "cleaning2": log2}, _log_path(cfg.runlog_file, stamp))
         summary["cleaned"].append((code, df2.shape))
         if cfg.category:
             cleaned_by_category.setdefault(cfg.category, {})[code] = df2
@@ -1091,7 +1122,7 @@ def run_all(datasets=None, do_merge=True, verbose=True):
                     json.dump(mlog["harmonize"], f, indent=2)
             save_log({**run_info, "categoria": category, "file": list(dfs),
                       "shape_finale": merged.shape, "collapse": mlog.get("collapse")},
-                     f"{category.upper()}_mergelog.json")
+                     _log_path(f"{category.upper()}_mergelog.json", stamp))
             summary["merged"].append((category, merged.shape, list(dfs)))
             if verbose and mlog.get("collapse"):
                 print(f"[{category}] collapse: {mlog['collapse']}")

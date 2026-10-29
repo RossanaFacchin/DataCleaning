@@ -130,10 +130,9 @@ Corollari:
 ## 5. Le fasi della pipeline (stato attuale)
 
 **Cleaning 1** — `run_cleaning1(cfg)`, singolo file:
-`load` → `drop_columns` (grezze, D016) → `replace_unknown` (codici del file, D027) →
+`load` → `load_columns` (lista bianca grezza, D044) → `drop_columns` (grezze, D016) → `replace_unknown` (codici del file, D027) →
 **`rename_variables` (per primo)** → `decensor` (opz.) → `drop_rows_by_value` (es. screen
-fail, D028) → `drop_required` (manca anche una) → `drop_if_all_none` (essential, poi
-also_required) → `parse_dates` (date_column + variabili con `date_precision` nel catalogo;
+fail, D028) → `drop_if_all_none` per ogni gruppo di `row_filters` (D045) → `parse_dates` (date_column + variabili con `date_precision` nel catalogo;
 giorno 15 solo per `date_precision: month`, D029) → `dedup_visits` + `add_visit_month` →
 `derive_variables` (variabili `derived` del catalogo: AGE da PTDOB o da AGE_bl a 1
 decimale, rapporti; il misurato vince, D019/D030) → `recode` (in **etichette stringa
@@ -158,9 +157,9 @@ l'artefatto `harmonization_fit_<categoria>.json`.
 
 **Report** — `profile()` dopo cleaning 1 e dopo cleaning 2.
 
-**Log di esecuzione** — `<FILE>_runlog.json` per ogni file (passi di cleaning 1 e 2: righe
+**Log di esecuzione** — in `File Benedetta/logs/`, con data e ora nel nome (storico, D042): `<FILE>_runlog_<AAAAMMGG-HHMM>.json` per ogni file (passi di cleaning 1 e 2: righe
 e colonne prima/dopo, mappa di rename, valori non ricodificati, passi saltati, data e
-commit git) e `<CATEGORIA>_mergelog.json` per il merge. Contengono o potranno contenere
+commit git) e `<CATEGORIA>_mergelog_<AAAAMMGG-HHMM>.json` per il merge. Contengono o potranno contenere
 RID: sono in `.gitignore` e non vanno condivisi. Il *perché* delle scelte sta invece in
 `DECISIONI.md`.
 
@@ -269,6 +268,6 @@ Sulla macchina di Chiara Python è quello di Anaconda: `~/anaconda3/python.exe`
   Da decidere se archiviare quelle in root.
 - Strategia di merge da rivedere (outer join, suffissi di metodo, match con buffer,
   log delle distanze): vedi `notes_CP.md` §D.9.
-- Altre proposte in sospeso (`drop_if_all_none` con lista di liste, rimozione
-  colonne anticipata): vedi `notes_CP.md` §A–D. (Arrotondamento età: D030; metadati
-  dopo dummy/volumi: dizionario dati di `export_catalog.py`.)
+- Altre proposte in sospeso: vedi `notes_CP.md` §A–D. (Filtri di riga a gruppi: D045; lista bianca
+  iniziale `load_columns`: D044, da estendere agli altri 31 file prima di togliere `keep_columns`;
+  arrotondamento età: D030; metadati dopo dummy/volumi: dizionario dati di `export_catalog.py`.)

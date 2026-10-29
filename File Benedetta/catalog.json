@@ -10,7 +10,7 @@
     "scope": "Facoltativo. Fin dove vive la colonna. 'output' (default): arriva al dataset finale. 'merge': resta fino al merge e poi si toglie (es. update_stamp, HAS_QC_ERROR, servono a scegliere o scartare valori). 'cleaning': si toglie a fine cleaning 1 perché serve solo come input di calcolo (es. PTDOB per l'età).",
     "date_precision": "Facoltativo. Presente SOLO se la variabile e' una data (la colonna viene convertita in data da parse_dates); ometti per numeri e testo. 'day' = data completa (giorno, mese, anno). 'month' = data nota solo come mese/anno (MM/YYYY): giorno imputato al 15 (POLICY.DOB_IMPUTED_DAY). 'year' = data nota solo come anno (YYYY): data imputata al 1 luglio (POLICY.YEAR_IMPUTED_MONTH_DAY). L'imputazione riguarda solo i valori scritti in quella forma; le date complete non vengono toccate.",
     "aliases": "OBBLIGATORIO. Colonne grezze da cui arriva la variabile: ['DATASET:FILE.colonna'], FILE = file_code del DatasetConfig oppure '*' (tutti i file); il nome nudo vale per tutti i dataset. Se più alias rivendicano la stessa colonna vince il più specifico.",
-    "derived": "Facoltativo, solo informativo. Se la variabile si può ANCHE calcolare (es. AGE), {"from": [...], "by": "passo della pipeline"}. Il calcolo lo fa la pipeline, non il catalogo; se il valore è già nel file, vince il file.",
+    "derived": "Facoltativo, solo informativo. Se la variabile si può ANCHE calcolare (es. AGE), {'from': [...], 'by': 'passo della pipeline'}. Il calcolo lo fa la pipeline, non il catalogo; se il valore è già nel file, vince il file.",
     "levels": "Facoltativo. Solo per le categoriche: {\"etichetta\": codice_intero}. Le etichette sono quelle prodotte da RECODE; il codice serve per passare a numeri (config.encode / decode).",
     "evolution": "Facoltativo. Variabili figlie da generare: [] (nessuna), ['dummy'] (una colonna 0/1 per livello, <VAR>/<livello>; serve levels; reversibile) o ['pct_icv'] (<VOL>%ICV, solo volumi in mm3; sostituisce il volume).",
     "method_col": "Facoltativo. Nome della colonna che indica il metodo di misura della riga (es. METHOD_CSF, METHOD_PLASMA, FSVERSION). Ometti se non serve.",
@@ -32,7 +32,7 @@
     "scope": "Facoltativo. Fin dove vive la colonna. 'output' (default): arriva al dataset finale. 'merge': resta fino al merge e poi si toglie (es. update_stamp, HAS_QC_ERROR, servono a scegliere o scartare valori). 'cleaning': si toglie a fine cleaning 1 perché serve solo come input di calcolo (es. PTDOB per l'età).",
     "date_precision": "Facoltativo. Presente SOLO se la variabile e' una data (la colonna viene convertita in data da parse_dates); ometti per numeri e testo. 'day' = data completa (giorno, mese, anno). 'month' = data nota solo come mese/anno (MM/YYYY): giorno imputato al 15 (POLICY.DOB_IMPUTED_DAY). 'year' = data nota solo come anno (YYYY): data imputata al 1 luglio (POLICY.YEAR_IMPUTED_MONTH_DAY). L'imputazione riguarda solo i valori scritti in quella forma; le date complete non vengono toccate.",
     "aliases": "Facoltativo. Solo se qualche file riporta già la variabile: ['ADNI:<FILE>.<COLONNA>']. In quel caso il valore del file vince sul calcolato.",
-    "derived": "OBBLIGATORIO, solo informativo: da quali variabili si calcola e con quale passo. {"from": [variabili standard di input], "by": passo}. 'by' = recompute_age | add_derived_ratios | add_visit_month | add_atn_profile | add_constant_columns. Per un rapporto nuovo va aggiunta anche la riga in config.RATIOS.",
+    "derived": "OBBLIGATORIO, solo informativo: da quali variabili si calcola e con quale passo. {'from': [variabili standard di input], 'by': passo}. 'by' = recompute_age | add_derived_ratios | add_visit_month | add_atn_profile | add_constant_columns. Per un rapporto nuovo va aggiunta anche la riga in config.RATIOS.",
     "levels": "Facoltativo. Solo per le categoriche: {\"etichetta\": codice_intero}. Le etichette sono quelle prodotte da RECODE; il codice serve per passare a numeri (config.encode / decode).",
     "evolution": "Facoltativo. Variabili figlie da generare: [] (nessuna), ['dummy'] (una colonna 0/1 per livello, <VAR>/<livello>; serve levels; reversibile) o ['pct_icv'] (<VOL>%ICV, solo volumi in mm3; sostituisce il volume).",
     "method_col": "Facoltativo. Nome della colonna che indica il metodo di misura della riga (es. METHOD_CSF, METHOD_PLASMA, FSVERSION). Ometti se non serve.",
@@ -212,7 +212,7 @@
     "domain": "Demographic",
     "definition": "Età in anni alla visita di baseline: non varia tra le visite.",
     "unit": "a",
-    "role": "predittore",
+    "role": null,
     "scope": "output",
     "aliases": [
       "ADNI:ADNIMERGE.AGE"
@@ -393,10 +393,27 @@
       "ADNI:ADNI_DIAN_COMPARISON.DIAN_APOE",
       "ADNI:APOERES.GENOTYPE"
     ],
-    "derived": null,
-    "levels": null,
+    "derived": [
+      {
+        "from": ["APOE"],
+        "by": "to be completed"
+      }
+    ],
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "A volte presente già come conteggio degli alleli in altri casi è da clacolare a partire dal genotipo (APOE).",
+    "log_ref": []
+  },
+  "APOE": {
+    "domain": "Genetic",
+    "definition": "Genotipo/proteotipo APOE.",
+    "unit": null,
+    "role": "cofattore",
+    "scope": "output",
+    "aliases": ["ADNI:*.APOE"],
     "evolution": [],
-    "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
@@ -580,6 +597,59 @@
       "D005"
     ]
   },
+  "RAVLT_immediate": {
+    "domain": "Cognitive",
+    "definition": "RAVLT, somma del richiamo immediato nelle prove 1-5 (0-75).",
+    "unit": "{score}",
+    "worsening": "decrease",
+    "role": "predittore",
+    "scope": "output",
+    "aliases": [
+      "ADNI:*.RAVLT_immediate"
+    ],
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "",
+    "log_ref": []
+  },
+  "FAQ": {
+    "domain": "Cognitive",
+    "definition": "Functional Activities Questionnaire, punteggio totale (0-30).",
+    "unit": "{score}",
+    "worsening": "increase",
+    "role": "predittore",
+    "scope": "output",
+    "date_precision": null,
+    "aliases": [
+      "ADNI:*.FAQ",
+      "ADNI:FAQ.FAQTOTAL"
+    ],
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "",
+    "log_ref": []
+  },
+  "MOCA": {
+    "domain": "Cognitive",
+    "definition": "Montreal Cognitive Assessment, punteggio totale (0-30).",
+    "unit": "{score}",
+    "worsening": "decrease",
+    "role": "predittore",
+    "scope": "output",
+    "aliases": [
+      "ADNI:*.MOCA"
+    ],
+    "omop_concept_id": null,
+    "vocab_code": "LOINC:72172-0",
+    "admapper_ref": null,
+    "standard_match": "exact",
+    "note": "LOINC 72172-0 'Total score [MoCA]' verificato su tx.fhir.org (LOINC 2.82) il 20/10/2026.",
+    "log_ref": []
+  },
   "ICV": {
     "domain": "Imaging",
     "definition": "Volume intracranico estratto da MRI, usato per normalizzare i volumi.",
@@ -665,6 +735,80 @@
       "D036"
     ]
   },
+  "Entorhinal": {
+    "domain": "Imaging",
+    "definition": "Volume della corteccia entorinale (FreeSurfer, ADNIMERGE).",
+    "unit": "mm3",
+    "worsening": "decrease",
+    "role": "predittore",
+    "scope": "output",
+    "date_precision": null,
+    "aliases": [
+      "ADNI:*.Entorhinal"
+    ],
+    "derived": null,
+    "levels": null,
+    "evolution": [
+      "pct_icv"
+    ],
+    "method_col": "FSVERSION",
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "",
+    "log_ref": [
+      "D036"
+    ]
+  },
+  "Fusiform": {
+    "domain": "Imaging",
+    "definition": "Volume del giro fusiforme (FreeSurfer, ADNIMERGE).",
+    "unit": "mm3",
+    "worsening": "decrease",
+    "role": "predittore",
+    "scope": "output",
+    "date_precision": null,
+    "aliases": [
+      "ADNI:*.Fusiform"
+    ],
+    "derived": null,
+    "levels": null,
+    "evolution": [
+      "pct_icv"
+    ],
+    "method_col": "FSVERSION",
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "",
+    "log_ref": [
+      "D036"
+    ]
+  },
+  "MidTemp": {
+    "domain": "Imaging",
+    "definition": "Volume del giro temporale medio (FreeSurfer, ADNIMERGE).",
+    "unit": "mm3",
+    "worsening": "decrease",
+    "role": "predittore",
+    "scope": "output",
+    "aliases": [
+      "ADNI:*.MidTemp"
+    ],
+    "evolution": [
+      "pct_icv"
+    ],
+    "method_col": "FSVERSION",
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "",
+    "log_ref": [
+      "D036"
+    ]
+  },
   "FLDSTRENG": {
     "domain": "Imaging",
     "definition": "Intensità del campo magnetico della RM (1.5T / 3T).",
@@ -688,6 +832,21 @@
     "scope": "output",
     "aliases": [
       "ADNI:*.FSVERSION"
+    ],
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "",
+    "log_ref": []
+  },
+  "IMAGEUID": {
+    "domain": "Imaging",
+    "definition": "Identificativo dell'immagine RM da cui sono calcolati i volumi.",
+    "role": "identificativo",
+    "scope": "output",
+    "aliases": [
+      "ADNI:*.IMAGEUID"
     ],
     "omop_concept_id": null,
     "vocab_code": null,
@@ -727,6 +886,7 @@
       "ADNI:UPENN_2DUPLC_CRM.ABETA42",
       "ADNI:UPENN_2DUPLC_CRM.ABETA42CRM"
     ],
+    "evolution": [],
     "method_col": "METHOD_CSF",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -736,6 +896,59 @@
     "log_ref": [
       "D003"
     ]
+  },  
+  "AB40_CSF": {
+    "domain": "Biomarker",
+    "definition": "Beta-amiloide 1-40 nel liquor.",
+    "unit": "pg/mL",
+    "worsening": "decrease",
+    "role": "predittore",
+    "scope": "output",
+    "aliases": [
+      "ADNI:EUROIMMUN.BETA_AMYLOID_1_40",
+      "ADNI:FUJIREBIOABETA.ABETA40",
+      "ADNI:MESOSCALE.ABETA40",
+      "ADNI:UPENNBIOMK_ADNIDIAN_ES_2017.AB40",
+      "ADNI:UPENN_2DUPLC_CRM.ABETA40"
+    ],
+    "evolution": [],
+    "method_col": "METHOD_CSF",
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "Voce creata dalla migrazione dei rename (EUROIMMUN, FUJIREBIOABETA, MESOSCALE, UPENNBIOMK_ADNIDIAN_ES_2017, UPENN_2DUPLC_CRM). Completare.",
+    "log_ref": []
+  },
+  "AB4240_CSF": {
+    "domain": "Biomarker",
+    "definition": "Rapporto beta-amiloide 42/40 nel liquor.",
+    "unit": null,
+    "worsening": "decrease",
+    "role": "predittore",
+    "scope": "output",
+    "date_precision": null,
+    "aliases": [
+      "ADNI:EUROIMMUN.BETA_AMYLOID_42_40",
+      "ADNI:FUJIREBIOABETA.ABETA42_40",
+      "ADNI:UPENNBIOMK_ADNIDIAN_ES_2017.A4240"
+    ],
+    "derived": [
+      {
+        "from": [
+          "AB42_CSF",
+          "AB40_CSF"
+        ],
+        "by": "add_derived_ratios"
+      }
+    ],
+    "method_col": "METHOD_CSF",
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "Voce creata dalla migrazione dei rename (EUROIMMUN, FUJIREBIOABETA, UPENNBIOMK_ADNIDIAN_ES_2017). Completare.",
+    "log_ref": []
   },
   "TTAU_CSF": {
     "domain": "Biomarker",
@@ -758,6 +971,7 @@
       "ADNI:UPENNBIOMK_ROCHE_ELECSYS.TAU",
       "ADNI:UPENN_2DUPLC_CRM.TAU"
     ],
+    "evolution": [],
     "method_col": "METHOD_CSF",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -788,6 +1002,7 @@
       "ADNI:UPENNBIOMK_ROCHE_ELECSYS.PTAU",
       "ADNI:UPENN_2DUPLC_CRM.PTAU"
     ],
+    "evolution": [],
     "method_col": "METHOD_CSF",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -798,59 +1013,11 @@
       "D003"
     ]
   },
-  "HAS_QC_ERROR": {
-    "domain": "QC",
-    "definition": "Flag di errore di controllo qualità sul record (0/1).",
-    "unit": null,
-    "role": "qualita",
-    "scope": "merge",
-    "date_precision": null,
-    "aliases": [
-      "ADNI:*.HAS_QC_ERROR"
-    ],
-    "derived": null,
-    "levels": null,
-    "evolution": [],
-    "method_col": null,
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "",
-    "log_ref": [
-      "D032"
-    ]
-  },
-  "update_stamp": {
-    "domain": "Metadata",
-    "definition": "Data e ora dell'ultimo aggiornamento del record.",
-    "unit": null,
-    "role": "metadato",
-    "scope": "merge",
-    "date_precision": "day",
-    "aliases": [
-      "ADNI:*.update_stamp"
-    ],
-    "derived": null,
-    "levels": null,
-    "evolution": [],
-    "method_col": null,
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "Utile al merge per scegliere il valore aggiornato più di recente.",
-    "log_ref": [
-      "D032"
-    ]
-  },
   "METHOD_CSF": {
     "domain": "Metadata",
     "definition": "Metodo/saggio con cui sono misurati i biomarcatori CSF della riga.",
-    "unit": null,
     "role": "metodo",
     "scope": "output",
-    "date_precision": null,
     "aliases": [],
     "derived": [
       {
@@ -858,9 +1025,6 @@
         "by": "add_constant_columns"
       }
     ],
-    "levels": null,
-    "evolution": [],
-    "method_col": null,
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
@@ -869,333 +1033,14 @@
     "log_ref": [
       "D020"
     ]
-  },
-  "METHOD_PLASMA": {
-    "domain": "Metadata",
-    "definition": "Metodo/saggio con cui sono misurati i biomarcatori plasmatici della riga.",
-    "unit": null,
-    "role": "metodo",
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [],
-    "derived": [
-      {
-        "from": [],
-        "by": "add_constant_columns"
-      }
-    ],
-    "levels": null,
-    "evolution": [],
-    "method_col": null,
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "Colonna di riga, nel singolo file riempita da constant_columns.",
-    "log_ref": [
-      "D020"
-    ]
-  },
-  "RAVLT_immediate": {
-    "domain": "Cognitive",
-    "definition": "RAVLT, somma del richiamo immediato nelle prove 1-5 (0-75).",
-    "unit": "{score}",
-    "worsening": "decrease",
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [
-      "ADNI:*.RAVLT_immediate"
-    ],
-    "derived": null,
-    "levels": null,
-    "evolution": [],
-    "method_col": null,
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "",
-    "log_ref": []
-  },
-  "FAQ": {
-    "domain": "Cognitive",
-    "definition": "Functional Activities Questionnaire, punteggio totale (0-30).",
-    "unit": "{score}",
-    "worsening": "increase",
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [
-      "ADNI:*.FAQ",
-      "ADNI:FAQ.FAQTOTAL"
-    ],
-    "derived": null,
-    "levels": null,
-    "evolution": [],
-    "method_col": null,
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "",
-    "log_ref": []
-  },
-  "MOCA": {
-    "domain": "Cognitive",
-    "definition": "Montreal Cognitive Assessment, punteggio totale (0-30).",
-    "unit": "{score}",
-    "worsening": "decrease",
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [
-      "ADNI:*.MOCA"
-    ],
-    "derived": null,
-    "levels": null,
-    "evolution": [],
-    "method_col": null,
-    "omop_concept_id": null,
-    "vocab_code": "LOINC:72172-0",
-    "admapper_ref": null,
-    "standard_match": "exact",
-    "note": "LOINC 72172-0 'Total score [MoCA]' verificato su tx.fhir.org (LOINC 2.82) il 20/10/2026.",
-    "log_ref": []
-  },
-  "IMAGEUID": {
-    "domain": "Imaging",
-    "definition": "Identificativo dell'immagine RM da cui sono calcolati i volumi.",
-    "unit": null,
-    "role": "identificativo",
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [
-      "ADNI:*.IMAGEUID"
-    ],
-    "derived": null,
-    "levels": null,
-    "evolution": [],
-    "method_col": null,
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "",
-    "log_ref": []
-  },
-  "Entorhinal": {
-    "domain": "Imaging",
-    "definition": "Volume della corteccia entorinale (FreeSurfer, ADNIMERGE).",
-    "unit": "mm3",
-    "worsening": "decrease",
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [
-      "ADNI:*.Entorhinal"
-    ],
-    "derived": null,
-    "levels": null,
-    "evolution": [
-      "pct_icv"
-    ],
-    "method_col": "FSVERSION",
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "",
-    "log_ref": [
-      "D036"
-    ]
-  },
-  "Fusiform": {
-    "domain": "Imaging",
-    "definition": "Volume del giro fusiforme (FreeSurfer, ADNIMERGE).",
-    "unit": "mm3",
-    "worsening": "decrease",
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [
-      "ADNI:*.Fusiform"
-    ],
-    "derived": null,
-    "levels": null,
-    "evolution": [
-      "pct_icv"
-    ],
-    "method_col": "FSVERSION",
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "",
-    "log_ref": [
-      "D036"
-    ]
-  },
-  "MidTemp": {
-    "domain": "Imaging",
-    "definition": "Volume del giro temporale medio (FreeSurfer, ADNIMERGE).",
-    "unit": "mm3",
-    "worsening": "decrease",
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [
-      "ADNI:*.MidTemp"
-    ],
-    "derived": null,
-    "levels": null,
-    "evolution": [
-      "pct_icv"
-    ],
-    "method_col": "FSVERSION",
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "",
-    "log_ref": [
-      "D036"
-    ]
-  },
-  "ATN_PROFILE": {
-    "domain": "Biomarker",
-    "definition": "Profilo ATN (es. A+T-N+) dalle soglie di cutoffs.json.",
-    "unit": null,
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [],
-    "derived": [
-      {
-        "from": [
-          "Apositive",
-          "Tpositive",
-          "Npositive"
-        ],
-        "by": "add_atn_profile"
-      }
-    ],
-    "levels": null,
-    "evolution": [],
-    "method_col": null,
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "Calcolata dal passo add_atn_profile (solo file con compute_atn=True).",
-    "log_ref": []
-  },
-  "Apositive": {
-    "domain": "Biomarker",
-    "definition": "Positività per l'asse A (amiloide) secondo cutoffs.json (0/1).",
-    "unit": null,
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [],
-    "derived": [
-      {
-        "from": [],
-        "by": "add_atn_profile"
-      }
-    ],
-    "levels": null,
-    "evolution": [],
-    "method_col": null,
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "Calcolata dal passo add_atn_profile.",
-    "log_ref": []
-  },
-  "Tpositive": {
-    "domain": "Biomarker",
-    "definition": "Positività per l'asse T (tau) secondo cutoffs.json (0/1).",
-    "unit": null,
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [],
-    "derived": [
-      {
-        "from": [],
-        "by": "add_atn_profile"
-      }
-    ],
-    "levels": null,
-    "evolution": [],
-    "method_col": null,
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "Calcolata dal passo add_atn_profile.",
-    "log_ref": []
-  },
-  "Npositive": {
-    "domain": "Biomarker",
-    "definition": "Positività per l'asse N (neurodegenerazione) secondo cutoffs.json (0/1).",
-    "unit": null,
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [],
-    "derived": [
-      {
-        "from": [],
-        "by": "add_atn_profile"
-      }
-    ],
-    "levels": null,
-    "evolution": [],
-    "method_col": null,
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "Calcolata dal passo add_atn_profile.",
-    "log_ref": []
-  },
-  "AB40_CSF": {
-    "domain": "Biomarker",
-    "definition": "Beta-amiloide 1-40 nel liquor.",
-    "unit": null,
-    "worsening": "decrease",
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [
-      "ADNI:EUROIMMUN.BETA_AMYLOID_1_40",
-      "ADNI:FUJIREBIOABETA.ABETA40",
-      "ADNI:MESOSCALE.ABETA40",
-      "ADNI:UPENNBIOMK_ADNIDIAN_ES_2017.AB40",
-      "ADNI:UPENN_2DUPLC_CRM.ABETA40"
-    ],
-    "derived": null,
-    "levels": null,
-    "evolution": [],
-    "method_col": "METHOD_CSF",
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "Voce creata dalla migrazione dei rename (EUROIMMUN, FUJIREBIOABETA, MESOSCALE, UPENNBIOMK_ADNIDIAN_ES_2017, UPENN_2DUPLC_CRM). Completare.",
-    "log_ref": []
   },
   "AB40_PL": {
     "domain": "Biomarker",
     "definition": "Beta-amiloide 1-40 nel plasma.",
-    "unit": null,
+    "unit": "pg/mL",
     "worsening": "decrease",
-    "role": null,
+    "role": "predittore",
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:PLASMA_ABETA_PROJECT_ADX_VUMC.AB40",
       "ADNI:PLASMA_ABETA_PROJECT_ADX_VUMC.ABETA40",
@@ -1205,8 +1050,6 @@
       "ADNI:C2N_PRECIVITYAD2_PLASMA.AB40",
       "ADNI:C2N_PRECIVITYAD2_PLASMA.AB40_C2N"
     ],
-    "derived": null,
-    "levels": null,
     "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
@@ -1216,38 +1059,13 @@
     "note": "Voce creata dalla migrazione dei rename (C2N_PRECIVITYAD2_PLASMA, PLASMA_ABETA_PROJECT_ADX_VUMC, categoria plasma). Completare.",
     "log_ref": []
   },
-  "AB4240_CSF": {
-    "domain": "Biomarker",
-    "definition": "Rapporto beta-amiloide 42/40 nel liquor.",
-    "unit": null,
-    "worsening": "decrease",
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [
-      "ADNI:EUROIMMUN.BETA_AMYLOID_42_40",
-      "ADNI:FUJIREBIOABETA.ABETA42_40",
-      "ADNI:UPENNBIOMK_ADNIDIAN_ES_2017.A4240"
-    ],
-    "derived": null,
-    "levels": null,
-    "evolution": [],
-    "method_col": "METHOD_CSF",
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "Voce creata dalla migrazione dei rename (EUROIMMUN, FUJIREBIOABETA, UPENNBIOMK_ADNIDIAN_ES_2017). Completare.",
-    "log_ref": []
-  },
   "AB4240_PL": {
     "domain": "Biomarker",
     "definition": "Rapporto beta-amiloide 42/40 nel plasma.",
     "unit": null,
     "worsening": "decrease",
-    "role": null,
+    "role": "predittore",
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:C2N_PRECIVITYAD2_PLASMA.AB42_AB40_C2N"
     ],
@@ -1260,8 +1078,6 @@
         "by": "add_derived_ratios"
       }
     ],
-    "levels": null,
-    "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1275,7 +1091,7 @@
     "definition": "Beta-amiloide 1-42 nel plasma.",
     "unit": null,
     "worsening": "decrease",
-    "role": null,
+    "role": "predittore",
     "scope": "output",
     "date_precision": null,
     "aliases": [
@@ -1287,8 +1103,6 @@
       "ADNI:C2N_PRECIVITYAD2_PLASMA.AB42",
       "ADNI:C2N_PRECIVITYAD2_PLASMA.AB42_C2N"
     ],
-    "derived": null,
-    "levels": null,
     "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
@@ -1298,98 +1112,12 @@
     "note": "Voce creata dalla migrazione dei rename (C2N_PRECIVITYAD2_PLASMA, PLASMA_ABETA_PROJECT_ADX_VUMC, categoria plasma). Completare.",
     "log_ref": []
   },
-  "AMY_CENTILOIDS": {
-    "domain": "Imaging",
-    "definition": "Definizione in bozza (Claude, 20/10/2026): da rivedere.",
-    "unit": null,
-    "worsening": "increase",
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [
-      "ADNI:*.CENTILOIDS"
-    ],
-    "derived": null,
-    "levels": null,
-    "evolution": [],
-    "method_col": null,
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "Alias dalla categoria pet: nessun file pet ancora configurato. Voce creata dalla migrazione dei rename (categoria pet). Completare.",
-    "log_ref": []
-  },
-  "APOE": {
-    "domain": "Genetic",
-    "definition": "Genotipo/proteotipo APOE riportato da C2N.",
-    "unit": null,
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [
-      "ADNI:C2N_PRECIVITYAD2_PLASMA.APOE_C2N"
-    ],
-    "derived": null,
-    "levels": null,
-    "evolution": [],
-    "method_col": null,
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "Voce creata dalla migrazione dei rename (C2N_PRECIVITYAD2_PLASMA). Completare.",
-    "log_ref": []
-  },
-  "APS2": {
-    "domain": "Biomarker",
-    "definition": "Amyloid Probability Score 2 (C2N PrecivityAD2).",
-    "unit": null,
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [
-      "ADNI:C2N_PRECIVITYAD2_PLASMA.APS2_C2N"
-    ],
-    "derived": null,
-    "levels": null,
-    "evolution": [],
-    "method_col": "METHOD_PLASMA",
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "Voce creata dalla migrazione dei rename (C2N_PRECIVITYAD2_PLASMA). Completare.",
-    "log_ref": []
-  },
-  "GFAP": {
-    "domain": "Biomarker",
-    "definition": "Proteina gliale fibrillare acida (GFAP) nel plasma.",
-    "unit": null,
-    "worsening": "increase",
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [
-      "ADNI:PLASMA_ABETA_PROJECT_ADX_VUMC.GFAP"
-    ],
-    "derived": null,
-    "levels": null,
-    "evolution": [],
-    "method_col": null,
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "Voce creata dalla migrazione dei rename (PLASMA_ABETA_PROJECT_ADX_VUMC). Completare.",
-    "log_ref": []
-  },
   "NFL_PL": {
     "domain": "Biomarker",
     "definition": "Catena leggera dei neurofilamenti (NfL) nel plasma.",
     "unit": null,
     "worsening": "increase",
-    "role": null,
+    "role": "predittore",
     "scope": "output",
     "date_precision": null,
     "aliases": [
@@ -1400,9 +1128,6 @@
       "ADNI:C2N_PRECIVITYAD2_PLASMA.NF_LIGHT",
       "ADNI:C2N_PRECIVITYAD2_PLASMA.PLASMA_NFL"
     ],
-    "derived": null,
-    "levels": null,
-    "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
     "vocab_code": null,
@@ -1416,16 +1141,13 @@
     "definition": "Tau fosforilata in treonina 181 nel plasma.",
     "unit": null,
     "worsening": "increase",
-    "role": null,
+    "role": "predittore",
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:PLASMA_ABETA_PROJECT_ADX_VUMC.PTAU",
       "ADNI:BLENNOWPLASMANFL.PTAU",
       "ADNI:C2N_PRECIVITYAD2_PLASMA.PTAU"
     ],
-    "derived": null,
-    "levels": null,
     "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
@@ -1440,14 +1162,11 @@
     "definition": "Tau fosforilata in treonina 217 nel plasma.",
     "unit": null,
     "worsening": "increase",
-    "role": null,
+    "role": "predittore",
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:C2N_PRECIVITYAD2_PLASMA.pT217_C2N"
     ],
-    "derived": null,
-    "levels": null,
     "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
@@ -1459,12 +1178,11 @@
   },
   "PT217_nPT217_PL": {
     "domain": "Biomarker",
-    "definition": "Definizione in bozza (Claude, 20/10/2026): da rivedere.",
+    "definition": "Percentuale di pTau217 fosforilata nel plasma: rapporto pT217/npT217 (misurato dal laboratorio, C2N PrecivityAD2). Definizione in bozza (Claude, 28/10/2026): da rivedere.",
     "unit": null,
     "worsening": "increase",
-    "role": null,
+    "role": "predittore",
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:C2N_PRECIVITYAD2_PLASMA.pT217_npT217_C2N"
     ],
@@ -1479,65 +1197,19 @@
     "note": "Voce creata dalla migrazione dei rename (C2N_PRECIVITYAD2_PLASMA). Completare.",
     "log_ref": []
   },
-  "SUMMARY_SUVR": {
-    "domain": "Imaging",
-    "definition": "Definizione in bozza (Claude, 20/10/2026): da rivedere.",
-    "unit": null,
-    "worsening": "increase",
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [
-      "ADNI:*.SUMMARYSUVR"
-    ],
-    "derived": null,
-    "levels": null,
-    "evolution": [],
-    "method_col": null,
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "Alias dalla categoria pet: nessun file pet ancora configurato. Voce creata dalla migrazione dei rename (categoria pet). Completare.",
-    "log_ref": []
-  },
-  "TAU_METAROI": {
-    "domain": "Imaging",
-    "definition": "Definizione in bozza (Claude, 20/10/2026): da rivedere.",
-    "unit": null,
-    "worsening": "increase",
-    "role": null,
-    "scope": "output",
-    "date_precision": null,
-    "aliases": [
-      "ADNI:*.META_TEMPORAL_SUVR"
-    ],
-    "derived": null,
-    "levels": null,
-    "evolution": [],
-    "method_col": null,
-    "omop_concept_id": null,
-    "vocab_code": null,
-    "admapper_ref": null,
-    "standard_match": "none",
-    "note": "Alias dalla categoria pet: nessun file pet ancora configurato. Voce creata dalla migrazione dei rename (categoria pet). Completare.",
-    "log_ref": []
-  },
+  
   "TTAU_PL": {
     "domain": "Biomarker",
     "definition": "Tau totale nel plasma.",
     "unit": null,
     "worsening": "increase",
-    "role": null,
+    "role": "predittore",
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:PLASMA_ABETA_PROJECT_ADX_VUMC.TAU",
       "ADNI:BLENNOWPLASMANFL.TAU",
       "ADNI:C2N_PRECIVITYAD2_PLASMA.TAU"
     ],
-    "derived": null,
-    "levels": null,
     "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
@@ -1552,21 +1224,251 @@
     "definition": "Definizione in bozza (Claude, 20/10/2026): da rivedere.",
     "unit": null,
     "worsening": "increase",
-    "role": null,
+    "role": "predittore",
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:C2N_PRECIVITYAD2_PLASMA.npT217_C2N"
     ],
-    "derived": null,
-    "levels": null,
     "evolution": [],
     "method_col": "METHOD_PLASMA",
     "omop_concept_id": null,
     "vocab_code": null,
     "admapper_ref": null,
     "standard_match": "none",
-    "note": "Voce creata dalla migrazione dei rename (C2N_PRECIVITYAD2_PLASMA). Completare.",
+    "note": "Completare.",
+    "log_ref": []
+  },
+  "APS2": {
+    "domain": "Biomarker",
+    "definition": "Amyloid Probability Score 2 (C2N PrecivityAD2).",
+    "unit": null,
+    "role": null,
+    "scope": "output",
+    "aliases": [
+      "ADNI:C2N_PRECIVITYAD2_PLASMA.APS2_C2N"
+    ],
+    "method_col": "METHOD_PLASMA",
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "Completare.",
+    "log_ref": []
+  },
+  "METHOD_PLASMA": {
+    "domain": "Metadata",
+    "definition": "Metodo/saggio con cui sono misurati i biomarcatori plasmatici della riga.",
+    "role": "metodo",
+    "scope": "output",
+    "aliases": [],
+    "derived": [
+      {
+        "from": [],
+        "by": "add_constant_columns"
+      }
+    ],
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "Colonna di riga, nel singolo file riempita da constant_columns.",
+    "log_ref": [
+      "D020"
+    ]
+  },
+  "AMY_CENTILOIDS": {
+    "domain": "Imaging",
+    "definition": "Definizione in bozza (Claude, 20/10/2026): da rivedere.",
+    "unit": null,
+    "worsening": "increase",
+    "role": "predittore",
+    "scope": "output",
+    "aliases": [
+      "ADNI:*.CENTILOIDS"
+    ],
+    "method_col": "METHOD_PET",
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "Completare.",
+    "log_ref": []
+  },
+  "GFAP": {
+    "domain": "Biomarker",
+    "definition": "Proteina gliale fibrillare acida (GFAP) nel plasma.",
+    "unit": null,
+    "worsening": "increase",
+    "role": null,
+    "scope": "output",
+    "aliases": [
+      "ADNI:PLASMA_ABETA_PROJECT_ADX_VUMC.GFAP"
+    ],
+    "method_col": null,
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "Completare.",
+    "log_ref": []
+  },
+  "SUMMARY_SUVR": {
+    "domain": "Imaging",
+    "definition": "Definizione in bozza (Claude, 20/10/2026): da rivedere.",
+    "unit": null,
+    "worsening": "increase",
+    "role": null,
+    "scope": "output",
+    "aliases": [
+      "ADNI:*.SUMMARYSUVR"
+    ],
+    "method_col": null,
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "Completare.",
+    "log_ref": []
+  },
+  "TAU_METAROI": {
+    "domain": "Imaging",
+    "definition": "Definizione in bozza (Claude, 20/10/2026): da rivedere.",
+    "unit": null,
+    "worsening": "increase",
+    "role": null,
+    "scope": "output",
+    "date_precision": null,
+    "aliases": [
+      "ADNI:*.META_TEMPORAL_SUVR"
+    ],
+    "method_col": null,
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "Completare.",
+    "log_ref": []
+  },
+  "HAS_QC_ERROR": {
+    "domain": "QC",
+    "definition": "Flag di errore di controllo qualità sul record (0/1).",
+    "unit": null,
+    "role": "qualita",
+    "scope": "merge",
+    "date_precision": null,
+    "aliases": [
+      "ADNI:*.HAS_QC_ERROR"
+    ],
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "",
+    "log_ref": [
+      "D032"
+    ]
+  },
+  "update_stamp": {
+    "domain": "QC",
+    "definition": "Data e ora dell'ultimo aggiornamento del record.",
+    "unit": null,
+    "role": "qualita",
+    "scope": "merge",
+    "date_precision": "day",
+    "aliases": [
+      "ADNI:*.update_stamp"
+    ],
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "Utile al merge per scegliere il valore aggiornato più di recente.",
+    "log_ref": [
+      "D032"
+    ]
+  },
+  "ATN_PROFILE": {
+    "domain": "Biomarker",
+    "definition": "Profilo ATN (es. A+T-N+) dalle soglie di cutoffs.json.",
+    "role": "predittore",
+    "scope": "output",
+    "aliases": [],
+    "derived": [
+      {
+        "from": [
+          "Apositive",
+          "Tpositive",
+          "Npositive"
+        ],
+        "by": "add_atn_profile"
+      }
+    ],
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "Calcolata dal passo add_atn_profile (solo file con compute_atn=True).",
+    "log_ref": []
+  },
+  "Apositive": {
+    "domain": "Biomarker",
+    "definition": "Positività per l'asse A (amiloide) secondo cutoffs.json (0/1).",
+    "unit": null,
+    "role": null,
+    "scope": "output",
+    "aliases": [],
+    "derived": [
+      {
+        "from": [],
+        "by": "add_atn_profile"
+      }
+    ],
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "Calcolata dal passo add_atn_profile.",
+    "log_ref": []
+  },
+  "Tpositive": {
+    "domain": "Biomarker",
+    "definition": "Positività per l'asse T (tau) secondo cutoffs.json (0/1).",
+    "unit": null,
+    "role": null,
+    "scope": "output",
+    "aliases": [],
+    "derived": [
+      {
+        "from": [],
+        "by": "add_atn_profile"
+      }
+    ],
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "Calcolata dal passo add_atn_profile.",
+    "log_ref": []
+  },
+  "Npositive": {
+    "domain": "Biomarker",
+    "definition": "Positività per l'asse N (neurodegenerazione) secondo cutoffs.json (0/1).",
+    "unit": null,
+    "role": null,
+    "scope": "output",
+    "aliases": [],
+    "derived": [
+      {
+        "from": [],
+        "by": "add_atn_profile"
+      }
+    ],
+    "omop_concept_id": null,
+    "vocab_code": null,
+    "admapper_ref": null,
+    "standard_match": "none",
+    "note": "Calcolata dal passo add_atn_profile.",
     "log_ref": []
   }
 }
+  

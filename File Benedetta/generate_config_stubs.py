@@ -180,7 +180,7 @@ def stub_for(path: Path, reverse: dict):
     if st_cols:
         L.append(f"    # + {len(st_cols)} colonne ST* FreeSurfer da mappare col dizionario ADNI")
     L.append(f'    # constant_columns={{"METHOD_<CAT>": "<assay>"}},   # se biomarcatore: METTI il metodo')
-    L.append(f"    # essential_columns=[...],  # keep_columns=[...]   # <-- scegli (nomi STANDARD)")
+    L.append(f"    # load_columns=[...] (GREZZI)  # row_filters=[[...]]  # dedup_columns=[...]  # <-- scegli")
     L.append(f")")
     L.append("")
     _date_pref = ["EXAMDATE", "SCANDATE", "DRAW_DATE", "DRAWDATE", "USERDATE", "PROCESSDATE"]
