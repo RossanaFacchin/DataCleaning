@@ -52,6 +52,8 @@ Da valutare se il costo computazionale di usare un for è eccessivo.
 (riga 122, pipeline) va adattata alle diverse info che i dataset hanno per calcolare l'età. Nel branch di Rossana ci sono già dei miglioramnti. 
 Direi di **arrotondare** l'età al primo valore decimale.
 
+**Aggiornamento 27/10/2026 → D041:** fatto. `recompute_age` (da PTDOB o da AGE_bl, 1 decimale) e `add_derived_ratios` (`config.RATIOS`) al posto del motore generico; tolto il controllo ±0,5 anni. Punti aperti al punto D.18.
+
 ### B.5 def recode(df, cols):
 (riga 130, pipeline) valutare di mappare non numericamente ma con stringhe standard poi utili per dummies per non ritrasformarle in numeri o dummies leggibili.
 
@@ -128,3 +130,8 @@ Copiata tale e quale da ranges.json. Da controllare:
 - `WholeBrain`: non compilato. In ranges.json c'e' `Brain` = increasing ma `Brain%ICV` = inverse (si contraddicono; ci si aspetterebbe decrease per entrambi, atrofia).
 - `ICV`: copiato `decrease`, ma ICV serve a normalizzare e non e' un marcatore di malattia: forse va tolto.
 - `APS2`: non e' in ranges.json, quindi non compilato.
+
+18. variabili calcolate: due punti aperti (D041)
+- Fonte unica dei rapporti: oggi un rapporto sta sia nel catalogo (`derived`, solo descrittivo) sia in `config.RATIOS` (operativo), e nessun controllo le confronta. Lasciare così, aggiungere un controllo in `export_catalog.py`, o ricavare `RATIOS` dal catalogo?
+- Riempimento per colonna o per riga: se un file ha la colonna misurata (es. `AB4240_CSF`, `AGE`) ma vuota in alcune righe, quelle righe restano vuote anche se gli input ci sono. Riempirle col calcolato? Se sì, come distinguere misurati e calcolati nella stessa colonna?
+- Da tenere presente: denominatore 0 → `inf` senza avviso; il controllo ±0,5 anni sull'età è stato tolto.

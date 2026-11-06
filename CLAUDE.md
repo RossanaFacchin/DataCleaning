@@ -134,8 +134,8 @@ Corollari:
 **`rename_variables` (per primo)** → `decensor` (opz.) → `drop_rows_by_value` (es. screen
 fail, D028) → `drop_if_all_none` per ogni gruppo di `row_filters` (D045) → `parse_dates` (date_column + variabili con `date_precision` nel catalogo;
 giorno 15 solo per `date_precision: month`, D029) → `dedup_visits` + `add_visit_month` →
-`derive_variables` (variabili `derived` del catalogo: AGE da PTDOB o da AGE_bl a 1
-decimale, rapporti; il misurato vince, D019/D030) → `recode` (in **etichette stringa
+`recompute_age` (AGE da PTDOB o da AGE_bl, 1 decimale) + `add_derived_ratios` (rapporti di
+`config.RATIOS`); il misurato vince, D019/D030/D041 → `recode` (in **etichette stringa
 standard**, per sorgente) → `clean_fs_fields` (opz.) → `add_constant_columns`
 (metodo/assay) → `add_atn_profile` (opz.) → `drop_scope_columns` (variabili con
 `scope: cleaning`, es. PTDOB, D032)
@@ -182,17 +182,18 @@ Sulla macchina di Chiara Python è quello di Anaconda: `~/anaconda3/python.exe`
   o `*`; il nome nudo vale `*:*`. Vince il più specifico: file preciso > `ADNI:*` > `*:*`.
   Stesso alias allo stesso livello per due variabili = errore. Per rinominare una colonna di
   un file nuovo si aggiunge un alias al catalogo, non un campo nel `DatasetConfig`.
-- **Derivate** (D019): `derived` = modi di calcolo in ordine di preferenza
-  (`{"from": [...], "by": "..."}`); `by` è una funzione di `pipeline.DERIVATIONS`
-  (`age_from_dob`, `age_from_baseline`, `ratio`) o un passo dedicato. Il valore misurato
-  (alias) vince sempre; per AGE c'è un controllo di coerenza ±0,5 anni.
+- **Derivate** (D019, D041): `derived` (`{"from": [...], "by": "<passo>"}`) è **solo
+  descrittivo**: dice da cosa e con quale passo si calcola, ma non guida il calcolo. Lo fanno
+  `recompute_age` (ordine PTDOB → AGE_bl scritto nella funzione) e `add_derived_ratios`, che
+  legge `config.RATIOS`: un rapporto nuovo va scritto **in entrambi** (catalogo e `RATIOS`).
+  Il valore misurato vince per colonna intera. Nessun controllo di coerenza ±0,5 anni (tolto).
 - **Evoluzioni** (D036): la madre dichiara `evolution: ["dummy"]` (servono `levels`) o
   `["pct_icv"]` (volumi in mm3); le figlie `<VAR>_<livello>` e `<VOL>%ICV` sono **generate**
   dal caricamento (`generated = true`, ereditano domain/role/scope) e non si scrivono nel JSON,
   salvo per dare loro definizione o codici propri. Dummy: dopo il merge, reversibili
   (`undummy`); %ICV: sostituisce il volume in mm3; ICV resta in mm3 (D035).
 - **POLICY**: segnaposto dei mancanti, prefissi censurati, soglie, giorno imputato
-  (`DOB_IMPUTED_DAY`), decimali dell'età, tolleranze delle derivate. I mancanti sono su due
+  (`DOB_IMPUTED_DAY`), decimali dell'età, rapporti (`RATIOS`). I mancanti sono su due
   livelli (D027): `MISSING_STRINGS` valgono sempre; i **codici numerici** (−4, −1, 9999) si
   dichiarano per file in `DatasetConfig.missing_codes`, perché in alcune colonne sono valori
   veri (es. RAVLT in ADNIMERGE). Mai aggiungere un codice numerico globale senza controllare

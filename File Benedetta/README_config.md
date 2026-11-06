@@ -167,28 +167,33 @@ collisione non risolta dà un warning e viene registrata nel log.
 
 ### 4.3 Variabili derivate
 
-`derived` è una lista di modi di calcolo, in ordine di preferenza:
+`derived` è **solo descrittivo** (D041): dice da quali variabili e con quale passo della
+pipeline si calcola la variabile, ma non guida il calcolo.
 
 ```json
 "AGE": {
   "aliases": ["ADNI:ADNI_DIAN_COMPARISON.VISITAGE"],
   "derived": [
-    {"from": ["PTDOB", "EXAMDATE"], "by": "age_from_dob"},
-    {"from": ["AGE_bl", "EXAMDATE", "EXAMDATE_bl"], "by": "age_from_baseline"}
+    {"from": ["PTDOB", "AGE_bl", "EXAMDATE", "EXAMDATE_bl"], "by": "recompute_age"}
   ]
 }
 ```
 
-Regole (D019):
+Regole (D019, D041):
 
-- **Il dato misurato vince.** Se il file ha già la variabile tramite un alias, non si
-  ricalcola. Se gli input ci sono, si calcola comunque per **confronto**: per AGE, le righe
-  con differenza oltre ±0,5 anni finiscono nel log con un warning.
-- **Si calcola quando manca**, con il primo modo che ha tutti gli input. Le righe rimaste senza
-  valore vengono registrate nel log, per soggetto, con l'input mancante.
-- `by` è una funzione di `pipeline.DERIVATIONS` (`age_from_dob`, `age_from_baseline`,
-  `ratio`) oppure il nome di un passo dedicato (`add_visit_month`, `add_atn_profile`,
-  `add_constant_columns`).
+- **Il dato misurato vince, per colonna intera.** Se il file ha già la variabile tramite un
+  alias, non si calcola nulla, nemmeno nelle righe vuote. Non c'è più il confronto ±0,5 anni
+  tra età del file ed età calcolata.
+- **Si calcola quando manca** e ci sono le colonne di input:
+  - `recompute_age`: da `PTDOB` se c'è, altrimenti `AGE_bl` + tempo dal baseline (ordine
+    scritto nella funzione); righe senza età nel log, con i RID;
+  - `add_derived_ratios`: i rapporti di `config.RATIOS`; nel log le righe con uno solo dei
+    due input.
+- `by` è il nome di un passo della pipeline (`recompute_age`, `add_derived_ratios`,
+  `add_visit_month`, `add_atn_profile`, `add_constant_columns`); `export_catalog.py` segnala
+  quelli sconosciuti.
+- **Un rapporto nuovo va scritto in due posti**: voce nel catalogo e riga in `config.RATIOS`.
+  Nessun controllo le confronta (punto aperto di D041).
 
 Il caso dell'età:
 - in ADNIMERGE la colonna AGE è l'età **al baseline** → alias di `AGE_bl`; `AGE` alla visita si
@@ -290,7 +295,7 @@ diversi da una riga all'altra (D020, in standby).
 | `drop_if_all_none` (un passo per gruppo di `row_filters`) | scarta la riga se mancano tutti i valori del gruppo; un gruppo di una colonna = colonna obbligatoria (D045) | `drop_if_all_none` ×2 |
 | `parse_dates` | converte in data `date_column` e le variabili con `date_precision`; per le date mese/anno mette il giorno 15, **solo** ai valori MM/YYYY (D029) | `to_date_format` |
 | `dedup_visits` + `add_visit_month` | una riga per soggetto e data; `VISIT_MONTH` | `find_exam_code` |
-| `derive_variables` | calcola le derivate del catalogo (AGE, rapporti) | `add_calculated_age` |
+| `recompute_age` + `add_derived_ratios` | AGE alla visita; rapporti di `config.RATIOS` (D041) | `add_calculated_age` |
 | `recode` | categorie → etichette standard | `categorize_*` |
 | `clean_fs_fields` | normalizza FLDSTRENG / FSVERSION (se attivo) | — |
 | `add_constant_columns` | colonne metodo | — |
@@ -348,9 +353,9 @@ con chiave = nome standard e alias verso la colonna grezza. Se è categorica ser
 `"ADNI:<file_code>.<colonna>"` alla voce standard del catalogo. Non si tocca né la
 `DatasetConfig` né la pipeline.
 
-**Aggiungere una variabile calcolata.** Si copia `_template_variabile_calcolata`. Se il modo
-di calcolo non esiste ancora, si aggiunge una funzione in `pipeline.DERIVATIONS`: è l'unico
-caso in cui si tocca la pipeline.
+**Aggiungere una variabile calcolata.** Si copia `_template_variabile_calcolata`. Se è un
+rapporto, si aggiunge anche la riga in `config.RATIOS` (senza, non viene calcolato e nessuno
+avvisa). Se è un calcolo di tipo nuovo, serve un passo nuovo in `pipeline.py` (D041).
 
 **Aggiungere un file.**
 1. `generate_config_stubs.py` per avere la bozza.

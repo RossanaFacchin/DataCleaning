@@ -177,7 +177,7 @@ def replace_unknown(df, values=None):
 def drop_rows_by_value(df, rules):
     """[D028] Scarta le righe in cui una colonna (NOME STANDARD) ha uno dei valori indicati,
     es. {"VISCODE": ["f"]} = screen fail. Colonna assente -> regola ignorata.
-    Restituisce (df, {colonna: righe_tolte})."""
+    Restituisce (df, {colonna: righe_tolte}). Attualmente usato solo per VISCODE, ma il dizionario puo' contenere piu' opzioni."""
     removed = {}
     for col, values in rules.items():
         if col not in df.columns:
@@ -536,6 +536,7 @@ def run_cleaning1(cfg: DatasetConfig = ADNIMERGE):
                        righe_tolte_per_colonna=removed,
                        soggetti_persi=(n_subj - _n_subjects(new, cfg.id_column))
                        if n_subj is not None else None)
+    
     # [D044] i filtri di riga ignorano le colonne assenti: lo si dice invece di tacerlo
     absent = [c for group in cfg.row_filters for c in group if c not in df.columns]
     if absent:
@@ -544,6 +545,7 @@ def run_cleaning1(cfg: DatasetConfig = ADNIMERGE):
                       f"largo del previsto): {absent}")
     for group in cfg.row_filters:                                # [D045] scarta se TUTTE NaN
         df = _log_step(log, f"row_filters {group}", df, drop_if_all_none(df, group))
+    
     # date: date_column + tutte le variabili 'date' del catalogo presenti; la precisione
     # mese/anno viene dal catalogo (date_precision='month') [D029]
     dates = config.date_vars()

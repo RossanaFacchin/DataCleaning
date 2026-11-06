@@ -39,7 +39,7 @@ registra qui e in `notes_CP.md` si lascia il rimando all'ID.
 | D016 | 19/10/2026 | Dati | Drop dichiarato prima del rename (`drop_columns`), niente priorità tra alias | Implementata (20/10/2026) |
 | D017 | 19/10/2026 | Struttura | Sintassi e precedenza degli alias `DATASET:FILE.colonna` | Implementata (20/10/2026) |
 | D018 | 19/10/2026 | Struttura | Schema di `catalog.json`: estratte, derivate, levels, template | Implementata (20/10/2026) |
-| D019 | 20/10/2026 | Dati | AGE: alias + derivata, il misurato vince, controlli e log | Implementata (20/10/2026) |
+| D019 | 20/10/2026 | Dati | AGE: alias + derivata, il misurato vince, controlli e log | Implementata (20/10/2026); motore e controllo ±0,5 *superati da D041* |
 | D020 | 19/10/2026 | Dati | Colonna metodo per categoria: resta `METHOD_<CAT>` per riga, proposta `<CAT>_METHOD` in standby | Rinviata |
 | D021 | 19/10/2026 | Struttura | Armonizzazione fuori perimetro: ora solo pulizia | Rinviata |
 | D022 | 19/10/2026 | Dati | Nessun livello di riferimento per le dummy (per ora) | Già applicata |
@@ -61,7 +61,7 @@ registra qui e in `notes_CP.md` si lascia il rimando all'ID.
 | D038 | 26/10/2026 | Struttura | `dtype` eliminato: è una data chi ha `date_precision` (`day`/`month`); modelli del catalogo separati | Implementata |
 | D039 | 26/10/2026 | Dati | `date_precision: year`: date note solo come anno, imputate al 1° luglio | Implementata |
 | D040 | 26/10/2026 | Struttura | Campo `worsening` nel catalogo: direzione di peggioramento (`increase`/`decrease`) | Implementata |
-| D041 | — | Struttura | *Citata nel codice (rapporti in `config.RATIOS`, `derived` solo descrittivo) ma voce mai scritta: da completare* | — |
+| D041 | 27/10/2026 | Struttura | Derivate senza motore: `recompute_age` + `add_derived_ratios` (`config.RATIOS`); `derived` solo descrittivo; tolto il controllo ±0,5 anni | Implementata (voce scritta il 06/11/2026; due punti aperti) |
 | D042 | 29/10/2026 | Struttura | Storico dei log: runlog e mergelog in `logs/` con data e ora nel nome | Implementata |
 | D043 | 29/10/2026 | Struttura | `evolution` solo per `dummy`/`pct_icv`: rapporti e APOE4 si dichiarano con `derived` sulla figlia | Implementata |
 | D044 | 29/10/2026 | Struttura | `load_columns`: lista bianca di colonne grezze subito dopo il load; avvisi su colonne fuori catalogo e filtri di riga | Implementata (ADNIMERGE, PTDEMOG) |
@@ -273,6 +273,9 @@ il codice non è cambiato in modo significativo).
     (righe con input mancanti, con elenco dei RID solo nel run log locale).
 - **Attenzione:** se un file riporta l'età in anni interi troncati, differenze fino a 1 anno sono
   normali; si valuterà dal primo log.
+- **Superata in parte da D041 (27/10/2026):** restano l'alias `AGE_bl`, "il misurato vince", la
+  rimozione del flag e il log delle righe senza valore. Non valgono più: il controllo di coerenza
+  ±0,5 anni (`DERIVED_CHECK_TOLERANCE` tolta) e la scelta del modo di calcolo dal campo `derived`.
 
 ### D020 · Colonna metodo per categoria
 - **Area:** Dati · **Stato:** Rinviata (20/10/2026)
@@ -401,7 +404,7 @@ il codice non è cambiato in modo significativo).
   pet configurato) sono a livello `ADNI:*`. Dalla migrazione sono emersi due rename del generatore
   clinicamente dubbi, portati tali e quali e da verificare: CDR `CDGLOBAL → CDRSB` (il CDR globale
   0-3 non è il Sum of Boxes 0-18) e APOERES `GENOTYPE → APOE4` (genotipo vs numero di alleli e4).
-- **D019:** motore `derive_variables` in `pipeline.py`. AGE ha due modi di calcolo (da PTDOB, da
+- **D019:** *(motore e controllo ±0,5 superati da D041)* motore `derive_variables` in `pipeline.py`. AGE ha due modi di calcolo (da PTDOB, da
   AGE_bl); `AB4240_PL` è un rapporto derivato (ex `derived_ratios`). Il misurato vince; controllo
   di coerenza ±0,5 anni per AGE; log per soggetto degli input mancanti. Rimossi i campi
   `recompute_age`, `derived_ratios`, `rename`, `extra_date_columns`, `month_precision_dates`.
@@ -532,6 +535,45 @@ il codice non è cambiato in modo significativo).
   normalizzazione, non un marcatore; `APS2` non è in `ranges.json`. Vedi `notes_CP.md` punto 17.
 - **Impatto:** 31 variabili compilate (17 `increase`, 14 `decrease`) più 5 figlie %ICV;
   nessuna discordanza con `ranges.json`; output della pipeline invariati (solo metadati).
+
+### D041 · Variabili calcolate senza motore generico
+- **Area:** Struttura · **Stato:** Implementata il 27/10/2026 (commit `b7aa2ac`); voce scritta
+  il 06/11/2026 · **Supera in parte:** D019
+- **Problema:** il motore generico di D019 (`derive_variables` con il registro `DERIVATIONS`:
+  `age_from_dob`, `age_from_baseline`, `ratio`) serviva per due soli casi, età e AB42/AB40, ed era
+  difficile da leggere (CLAUDE.md §4.5, "niente motori per uno o due casi").
+- **Decisione:**
+  - due funzioni dirette in `pipeline.py`, chiamate in `run_cleaning1` dopo `dedup_visits`:
+    - `recompute_age` (ex `add_calculated_age`): età da `PTDOB` se c'è, altrimenti `AGE_bl` + tempo
+      dal baseline; arrotondata a `AGE_ROUND_DECIMALS` (D030). L'ordine PTDOB → AGE_bl è scritto
+      nella funzione;
+    - `add_derived_ratios`: rapporti elencati in `config.RATIOS` (`{nome: (numeratore,
+      denominatore)}`, oggi `AB4240_PL` e `AB4240_CSF`, D043);
+  - **il misurato vince per colonna**: se la variabile è già nel file non si calcola nulla; si
+    calcola solo se mancano e ci sono le colonne di input;
+  - log: righe senza età (con RID nel run log locale); per i rapporti solo le righe con **uno solo**
+    dei due input (se mancano entrambi la visita non ha quel pannello);
+  - il campo `derived` del catalogo diventa **solo descrittivo** (da cosa e con quale passo si
+    calcola); `export_catalog.py` controlla che `by` sia un passo noto e che gli input siano nel
+    catalogo;
+  - tolta `DERIVED_CHECK_TOLERANCE`: niente più controllo di coerenza ±0,5 anni tra età del file e
+    età calcolata ("finché non serve").
+- **Alternative scartate:** tenere il motore generico (più codice di quanto servisse per due casi).
+- **Da decidere (Chiara):**
+  1. *Fonte unica dei rapporti.* Oggi un rapporto è dichiarato due volte: `derived` nel catalogo
+     (descrittivo) e riga in `config.RATIOS` (operativa). Nessun controllo le confronta: un
+     rapporto solo nel catalogo non viene calcolato, senza avvisi. Opzioni: lasciare così; un
+     controllo in `export_catalog.py` che le confronti; ricavare `RATIOS` dal catalogo.
+  2. *Riempimento per colonna o per riga.* Se un file ha la colonna misurata (es. `AB4240_CSF`, o
+     `AGE`) ma vuota in alcune righe, quelle righe restano vuote anche quando gli input ci sono.
+     Da decidere se riempirle col valore calcolato; in quel caso misurati e calcolati starebbero
+     nella stessa colonna, e andrebbe deciso come distinguerli.
+- **Da tenere presente:** un denominatore 0 produce `inf` senza avviso; il controllo ±0,5 anni
+  rimosso era l'unica verifica tra età del file ed età calcolata.
+- **Impatto:** ADNIMERGE e PTDEMOG identici a prima cella per cella (cleaning 1 e 2); età non
+  calcolabile per 7 righe in ADNIMERGE e 1 in PTDEMOG, come prima. Rapporti provati solo su dati
+  sintetici (file plasma e CSF non disponibili in locale): conteggi reali da verificare (vedi anche
+  D043).
 
 ### D042 · Storico dei log di esecuzione
 - **Area:** Struttura · **Stato:** Implementata
