@@ -117,7 +117,6 @@ La chiave è il **nome standard** della variabile:
 | `worsening` | direzione di peggioramento, per scale, volumi e biomarcatori (D040): `increase` = peggiora se aumenta (CDRSB, Ventricles), `decrease` = peggiora se diminuisce (MMSE, Hippocampus); le figlie %ICV la ereditano; copiata da `ranges.json`, che la tiene ancora; `export_catalog.py` segnala se i due non coincidono |
 | `role` | predittore, normalizzazione, metodo, qualita, metadato, identificativo… |
 | `scope` | fin dove vive la variabile: `cleaning` (tolta a fine cleaning 1), `merge` (fino al merge), `output` (D032) |
-| `date_precision` | presente solo per le date (D038): `day` = data completa; `month` = nota solo come mese/anno, giorno imputato al 15 (D029); `year` = nota solo come anno, data imputata al 1° luglio (D039); assente = non è una data |
 | `aliases` | colonne grezze da cui arriva (§4.2) |
 | `derived` | come si calcola (§4.3) |
 | `levels` | solo per le categoriche: etichetta → codice intero (§4.4) |
@@ -293,7 +292,7 @@ diversi da una riga all'altra (D020, in standby).
 | `decensor` | `">1700"` → 1700 (biomarcatori, se attivo) | — |
 | `drop_rows_by_value` | scarta righe per valore (es. screen fail) | — |
 | `drop_if_all_none` (un passo per gruppo di `row_filters`) | scarta la riga se mancano tutti i valori del gruppo; un gruppo di una colonna = colonna obbligatoria (D045) | `drop_if_all_none` ×2 |
-| `parse_dates` | converte in data `date_column` e le variabili con `date_precision`; per le date mese/anno mette il giorno 15, **solo** ai valori MM/YYYY (D029) | `to_date_format` |
+| `parse_dates` | converte le variabili di `config.DATE_VARS` presenti; per ogni colonna riconosce la precisione a maggioranza (solo righe con un valore): giorno/mese → data, MM/YYYY → giorno 15, solo anno → NaT; anno → intero con warning; `EXAM_DATE` mai anno (D046, D047) | `to_date_format` |
 | `dedup_visits` + `add_visit_month` | una riga per soggetto e data; `VISIT_MONTH` | `find_exam_code` |
 | `recompute_age` + `add_derived_ratios` | AGE alla visita; rapporti di `config.RATIOS` (D041) | `add_calculated_age` |
 | `recode` | categorie → etichette standard | `categorize_*` |

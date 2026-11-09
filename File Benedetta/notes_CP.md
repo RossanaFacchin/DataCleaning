@@ -135,3 +135,8 @@ Copiata tale e quale da ranges.json. Da controllare:
 - Fonte unica dei rapporti: oggi un rapporto sta sia nel catalogo (`derived`, solo descrittivo) sia in `config.RATIOS` (operativo), e nessun controllo le confronta. Lasciare così, aggiungere un controllo in `export_catalog.py`, o ricavare `RATIOS` dal catalogo?
 - Riempimento per colonna o per riga: se un file ha la colonna misurata (es. `AB4240_CSF`, `AGE`) ma vuota in alcune righe, quelle righe restano vuote anche se gli input ci sono. Riempirle col calcolato? Se sì, come distinguere misurati e calcolati nella stessa colonna?
 - Da tenere presente: denominatore 0 → `inf` senza avviso; il controllo ±0,5 anni sull'età è stato tolto.
+
+19. date in config (D046, D047)
+- Fatto il 09/11/2026: data di visita fissa `config.EXAM_DATE`, variabili-data in `config.DATE_VARS`, precisione riconosciuta da `parse_dates` a maggioranza; `date_precision` tolto dal catalogo.
+- Da decidere: aggiungere a `DATE_VARS` PTADBEG, PTCOGBEG, PTADDX (anni di calendario, oggi con unità "a" = durata nel catalogo)? Diventerebbero anni interi (Int64).
+- Da tenere presente: se PTDOB in un file fosse a maggioranza anno, `recompute_age` darebbe un'età sbagliata (warning di parse_dates).

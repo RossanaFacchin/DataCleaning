@@ -132,8 +132,8 @@ Corollari:
 **Cleaning 1** — `run_cleaning1(cfg)`, singolo file:
 `load` → `load_columns` (lista bianca grezza, D044) → `drop_columns` (grezze, D016) → `replace_unknown` (codici del file, D027) →
 **`rename_variables` (per primo)** → `decensor` (opz.) → `drop_rows_by_value` (es. screen
-fail, D028) → `drop_if_all_none` per ogni gruppo di `row_filters` (D045) → `parse_dates` (date_column + variabili con `date_precision` nel catalogo;
-giorno 15 solo per `date_precision: month`, D029) → `dedup_visits` + `add_visit_month` →
+fail, D028) → `drop_if_all_none` per ogni gruppo di `row_filters` (D045) → `parse_dates` (le variabili di `config.DATE_VARS`
+presenti; precisione giorno/mese/anno riconosciuta a maggioranza dai valori, D047) → `dedup_visits` + `add_visit_month` su `config.EXAM_DATE` (D046) →
 `recompute_age` (AGE da PTDOB o da AGE_bl, 1 decimale) + `add_derived_ratios` (rapporti di
 `config.RATIOS`); il misurato vince, D019/D030/D041 → `recode` (in **etichette stringa
 standard**, per sorgente) → `clean_fs_fields` (opz.) → `add_constant_columns`
@@ -145,9 +145,12 @@ standard**, per sorgente) → `clean_fs_fields` (opz.) → `add_constant_columns
 si fanno dopo il merge, D026) → `normalize_volumes_icv` (rinomina in `<vol>%ICV`) →
 `keep_only_columns`
 
-**Attenzione alle date.** Nessuna data va "normalizzata" in blocco: l'imputazione del
-giorno vale solo per le variabili con `date_precision: month` nel catalogo e solo per i valori
-`MM/YYYY`. Ogni modifica che tocca date o età va verificata riga per riga contro il grezzo.
+**Attenzione alle date** (D047). Quali colonne sono date lo dice `config.DATE_VARS` (nomi
+standard); la precisione la riconosce `parse_dates` per ogni colonna, contando solo le righe con
+un valore: maggioranza giorno o mese → datetime, i valori `MM/YYYY` prendono il giorno 15 e i
+valori solo anno diventano NaT; maggioranza anno → intero, con warning. La data di visita
+(`config.EXAM_DATE`) non può mai diventare anno. Il log riporta precisione e conteggi per colonna.
+Ogni modifica che tocca date o età va verificata riga per riga contro il grezzo.
 
 **Armonizzazione + merge per categoria** — `merge_category` / `run_harmonization`:
 impila i file puliti di una categoria (long), armonizza le misure multi-metodo su un
@@ -174,7 +177,7 @@ Sulla macchina di Chiara Python è quello di Anaconda: `~/anaconda3/python.exe`
 
 - **`catalog.json`** (D006, D017, D018): unica fonte di verità sulle variabili. Chiave =
   nome standard; campi `domain`, `definition`, `unit` (UCUM), `worsening` (direzione di peggioramento, D040), `role`, `scope`
-  (`cleaning`/`merge`/`output`), `date_precision` (presente = data: `day`/`month`/`year`), `aliases`, `derived`, `levels`,
+  (`cleaning`/`merge`/`output`), `aliases`, `derived`, `levels`,
   `method_col`, codici standard, `note`, `log_ref`. Letto e validato da `config.catalog()`
   (errore esplicito se qualcosa non torna). **Mai** rimettere variabili, alias o rename nel
   `.py`; mai inserire codici standard non verificati su una fonte ufficiale (D033).
@@ -193,7 +196,8 @@ Sulla macchina di Chiara Python è quello di Anaconda: `~/anaconda3/python.exe`
   salvo per dare loro definizione o codici propri. Dummy: dopo il merge, reversibili
   (`undummy`); %ICV: sostituisce il volume in mm3; ICV resta in mm3 (D035).
 - **POLICY**: segnaposto dei mancanti, prefissi censurati, soglie, giorno imputato
-  (`DOB_IMPUTED_DAY`), decimali dell'età, rapporti (`RATIOS`). I mancanti sono su due
+  (`IMPUTED_DAY`), data di visita (`EXAM_DATE`) e variabili-data (`DATE_VARS`), decimali
+  dell'età, rapporti (`RATIOS`). Le date non si dichiarano nel catalogo (D047). I mancanti sono su due
   livelli (D027): `MISSING_STRINGS` valgono sempre; i **codici numerici** (−4, −1, 9999) si
   dichiarano per file in `DatasetConfig.missing_codes`, perché in alcune colonne sono valori
   veri (es. RAVLT in ADNIMERGE). Mai aggiungere un codice numerico globale senza controllare

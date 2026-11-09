@@ -49,7 +49,7 @@ registra qui e in `notes_CP.md` si lascia il rimando all'ID.
 | D026 | 20/10/2026 | Dati | Dummy create dopo il merge, non in cleaning 2 | Implementata |
 | D027 | 20/10/2026 | Dati | Codici numerici di mancante dichiarati per file | Implementata |
 | D028 | 20/10/2026 | Dati | Scarto delle righe per valore (screen fail `VISCODE == "f"`) | Implementata |
-| D029 | 20/10/2026 | Dati | Date note solo come mese/anno: giorno imputato al 15 | Implementata |
+| D029 | 20/10/2026 | Dati | Date note solo come mese/anno: giorno imputato al 15 | Implementata; *superata in parte da D047* (vale per ogni colonna-data) |
 | D030 | 20/10/2026 | Dati | Età calcolata anche da data di nascita, arrotondata a 1 decimale | Implementata |
 | D031 | 20/10/2026 | Dati | PTDEMOG e i suoi codici portati dal branch della collega | Implementata |
 | D032 | 20/10/2026 | Struttura | Campo `scope` nel catalogo (ciclo di vita delle variabili) | Implementata in parte (20/10/2026) |
@@ -58,14 +58,16 @@ registra qui e in `notes_CP.md` si lascia il rimando all'ID.
 | D035 | 26/10/2026 | Dati | ICV resta in mm3 quando si normalizzano i volumi | Implementata |
 | D036 | 26/10/2026 | Struttura | Evoluzioni nel catalogo: dummy e %ICV come voci figlie generate | Implementata |
 | D037 | 26/10/2026 | Struttura | Separatore delle dummy: `/` (es. `GENDER/male`) | Implementata |
-| D038 | 26/10/2026 | Struttura | `dtype` eliminato: è una data chi ha `date_precision` (`day`/`month`); modelli del catalogo separati | Implementata |
-| D039 | 26/10/2026 | Dati | `date_precision: year`: date note solo come anno, imputate al 1° luglio | Implementata |
+| D038 | 26/10/2026 | Struttura | `dtype` eliminato: è una data chi ha `date_precision` (`day`/`month`); modelli del catalogo separati | Implementata; `date_precision` *superato da D047* |
+| D039 | 26/10/2026 | Dati | `date_precision: year`: date note solo come anno, imputate al 1° luglio | *Superata da D047* |
 | D040 | 26/10/2026 | Struttura | Campo `worsening` nel catalogo: direzione di peggioramento (`increase`/`decrease`) | Implementata |
 | D041 | 27/10/2026 | Struttura | Derivate senza motore: `recompute_age` + `add_derived_ratios` (`config.RATIOS`); `derived` solo descrittivo; tolto il controllo ±0,5 anni | Implementata (voce scritta il 06/11/2026; due punti aperti) |
 | D042 | 29/10/2026 | Struttura | Storico dei log: runlog e mergelog in `logs/` con data e ora nel nome | Implementata |
 | D043 | 29/10/2026 | Struttura | `evolution` solo per `dummy`/`pct_icv`: rapporti e APOE4 si dichiarano con `derived` sulla figlia | Implementata |
 | D044 | 29/10/2026 | Struttura | `load_columns`: lista bianca di colonne grezze subito dopo il load; avvisi su colonne fuori catalogo e filtri di riga | Implementata (ADNIMERGE, PTDEMOG) |
 | D045 | 29/10/2026 | Struttura | `row_filters` (gruppi "almeno uno") sostituisce i tre campi dei filtri di riga; `dedup_columns` separata | Implementata |
+| D046 | 09/11/2026 | Struttura | Data di visita fissa in config (`EXAM_DATE = "EXAMDATE"`): via `date_column` dalle `DatasetConfig` | Implementata |
+| D047 | 09/11/2026 | Dati | Date in `config.DATE_VARS`, non nel catalogo; precisione riconosciuta a maggioranza da `parse_dates`; anno → intero; `EXAM_DATE` mai anno | Implementata |
 
 \* Data indicativa: decisioni prese prima, già presenti nel codice a quella data (dopo la quale
 il codice non è cambiato in modo significativo).
@@ -347,7 +349,7 @@ il codice non è cambiato in modo significativo).
 - **Impatto misurato (PTDEMOG):** −564 righe, −564 soggetti (gli screen fail hanno solo quella riga).
 
 ### D029 · Date note solo come mese/anno
-- **Area:** Dati · **Stato:** Implementata
+- **Area:** Dati · **Stato:** Implementata · *Superata in parte da D047: il giorno 15 vale per i valori MM/YYYY di ogni colonna-data, non solo di quelle dichiarate `month`*
 - **Problema:** PTDOB è `MM/YYYY`; pandas mette il giorno 1, quindi l'età risulta sempre sovrastimata
   (in media di circa mezzo mese).
 - **Decisione:** `POLICY.DOB_IMPUTED_DAY = 15`, applicato **solo** alle colonne in
@@ -490,7 +492,7 @@ il codice non è cambiato in modo significativo).
   file produce comunque la sua colonna (tutta 0), così tutti i file hanno le stesse dummy.
 
 ### D038 · Solo `date_precision` per le date; modelli del catalogo separati
-- **Area:** Struttura · **Stato:** Implementata
+- **Area:** Struttura · **Stato:** Implementata · *`date_precision` superato da D047 (le date sono in `config.DATE_VARS`); resta valida la separazione dei modelli del catalogo*
 - **Problema:** `dtype` aveva un solo valore possibile (`date`) e serviva solo insieme a
   `date_precision`: due campi per un'informazione. I modelli del catalogo erano annidati
   (`_variabile_calcolata` dentro `_templates`), e una parentesi sbagliata rendeva il file illeggibile.
@@ -503,7 +505,7 @@ il codice non è cambiato in modo significativo).
 - **Impatto:** stesse 88 voci, stesse 4 variabili data; output della pipeline identici.
 
 ### D039 · Date note solo come anno
-- **Area:** Dati · **Stato:** Implementata
+- **Area:** Dati · **Stato:** *Superata da D047* (colonna a maggioranza anno → intero, nessuna data imputata al 1° luglio)
 - **Decisione:** terzo valore di `date_precision`, `year`, per le date note solo come anno (valori
   `YYYY`, anche letti come numero 1940.0). La data è imputata a metà anno, al 1° luglio
   (`POLICY.YEAR_IMPUTED_MONTH_DAY = (7, 1)`): errore centrato, massimo ±6 mesi, stessa logica del
@@ -652,3 +654,53 @@ il codice non è cambiato in modo significativo).
   `["VISCODE", "EXAMDATE"]`.
 - **Impatto:** output identico (ADNIMERGE 11.458 righe / 2.409 soggetti; PTDEMOG 5.396 / 4.292).
   Righe rimosse per gruppo: ADNIMERGE RID 0, essenziali 0, DX 4.963; PTDEMOG anagrafiche 18, PTDOB 171.
+
+### D046 · Data di visita fissa in config (`EXAM_DATE`)
+- **Area:** Struttura · **Stato:** Implementata il 09/11/2026
+- **Problema:** `DatasetConfig.date_column` valeva `"EXAMDATE"` in tutte le schede. Con il rename
+  per primo (D009) è comunque un nome standard, quindi non decideva nulla. Il generatore di bozze
+  scriveva invece nomi grezzi (`USERDATE`, `SCANDATE`…) che, dopo il rename, non esistono.
+- **Decisione:** `config.EXAM_DATE = "EXAMDATE"`, unica per tutti i file; tolto `date_column` da
+  `DatasetConfig` e dalle 3 schede. Per un file nuovo la colonna grezza della data si collega a
+  EXAMDATE con un alias nel catalogo (D017); il generatore lo propone come commento.
+  EXAMDATE è "la data dell'evento della riga" (visita, prelievo, scansione), come già
+  presuppone il merge.
+- **Alternative scartate:** tenere `date_column` con il solo default (campo che non decide nulla).
+- **Da tenere presente:** se un file ha due date e si vuole come chiave quella diversa da
+  EXAMDATE, l'alias specifico va affiancato a `load_columns`/`drop_columns` che escludono la
+  EXAMDATE grezza (altrimenti collisione di rename, D016). `id_column` ha la stessa natura ed è
+  rimasto com'è.
+- **Impatto:** output identici a prima (vedi D047).
+
+### D047 · Date in config, precisione riconosciuta dai valori
+- **Area:** Dati · **Stato:** Implementata il 09/11/2026 · **Supera:** D039; in parte D029, D038
+- **Problema:** il catalogo portava troppe decisioni. La precisione di una data (giorno, mese,
+  anno) era fissata per variabile con `date_precision`, ma può cambiare da un dataset all'altro.
+- **Decisione:**
+  - quali colonne sono date lo dice `config.DATE_VARS` (nomi standard: EXAMDATE, EXAMDATE_bl,
+    PTDOB, update_stamp); tolto `date_precision` dal catalogo (19 voci, template, validazione) e
+    `config.date_vars()`;
+  - `parse_dates(df, cols, no_year)` conta, sulle sole righe con un valore (nulle e stringhe
+    vuote escluse), i valori scritti come data completa, `MM/YYYY` o `YYYY`; vince il più
+    frequente, a parità giorno e poi mese;
+  - maggioranza giorno o mese → datetime: date complete lette anche in formati misti
+    (`format="mixed"`, `05/03/2010` = 3 maggio, formato USA); `MM/YYYY` → giorno
+    `config.IMPUTED_DAY` (15, ex `DOB_IMPUTED_DAY`); valori solo anno → NaT;
+  - maggioranza anno → intero (`Int64`) con warning; dalle date complete o `MM/YYYY` si tiene
+    l'anno;
+  - `config.EXAM_DATE` è passata in `no_year`: non diventa mai anno (se gli anni sono la
+    maggioranza, warning e NaT);
+  - il log del passo riporta per colonna precisione, conteggi, giorni imputati, anni resi NaT e
+    valori illeggibili.
+- **Alternative scartate:** precisione dichiarata per variabile nel catalogo (stato precedente);
+  riconoscere da sola anche quali colonne sono date (pandas legge i numeri come nanosecondi dal
+  1970); anni sparsi imputati al 1° luglio (fino a 6 mesi di errore su una data di visita).
+- **Da tenere presente:** `recompute_age` non è stata modificata: se in un file PTDOB fosse a
+  maggioranza anno diventerebbe un intero e l'età calcolata da lì sarebbe sbagliata; il warning di
+  `parse_dates` lo segnala. Da valutare se aggiungere a `DATE_VARS` PTADBEG, PTCOGBEG, PTADDX
+  (anni di calendario).
+- **Impatto:** ADNIMERGE e PTDEMOG `cleaned_01` e `cleaned_02` e COFACTOR consolidato
+  **identici** a prima, cella per cella (ADNIMERGE 10.098 righe, PTDEMOG 5.396). Precisione
+  riconosciuta: EXAMDATE, EXAMDATE_bl, update_stamp a giorno; PTDOB a mese, 5.396 giorni imputati
+  come prima. Provati su dati sintetici i casi: formati misti, mese con anni sparsi, anno a
+  maggioranza, colonne vuote, parità, EXAM_DATE con anni a maggioranza.

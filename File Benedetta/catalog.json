@@ -8,7 +8,6 @@
     "worsening": "Facoltativo. Direzione di peggioramento: 'increase' = il valore che aumenta indica un peggioramento (es. CDRSB, Ventricles); 'decrease' = il valore che diminuisce indica un peggioramento (es. MMSE, Hippocampus). Per scale, volumi e biomarcatori; ometti per le altre variabili. Le figlie %ICV lo ereditano dalla madre. Copiato da ranges.json [D040].",
     "role": "Facoltativo. Ruolo nell'analisi: predittore, cofattore, outcome, normalizzazione, identificativo, metodo, qualita, metadato. Le variabili figlie (dummy, %ICV) lo ereditano. Ometti se non entra nel modello.",
     "scope": "Facoltativo. Fin dove vive la colonna. 'output' (default): arriva al dataset finale. 'merge': resta fino al merge e poi si toglie (es. update_stamp, HAS_QC_ERROR, servono a scegliere o scartare valori). 'cleaning': si toglie a fine cleaning 1 perché serve solo come input di calcolo (es. PTDOB per l'età).",
-    "date_precision": "Facoltativo. Presente SOLO se la variabile e' una data (la colonna viene convertita in data da parse_dates); ometti per numeri e testo. 'day' = data completa (giorno, mese, anno). 'month' = data nota solo come mese/anno (MM/YYYY): giorno imputato al 15 (POLICY.DOB_IMPUTED_DAY). 'year' = data nota solo come anno (YYYY): data imputata al 1 luglio (POLICY.YEAR_IMPUTED_MONTH_DAY). L'imputazione riguarda solo i valori scritti in quella forma; le date complete non vengono toccate.",
     "aliases": "OBBLIGATORIO. Colonne grezze da cui arriva la variabile: ['DATASET:FILE.colonna'], FILE = file_code del DatasetConfig oppure '*' (tutti i file); il nome nudo vale per tutti i dataset. Se più alias rivendicano la stessa colonna vince il più specifico.",
     "derived": "Facoltativo, solo informativo. Se la variabile si può ANCHE calcolare (es. AGE), {'from': [...], 'by': 'passo della pipeline'}. Il calcolo lo fa la pipeline, non il catalogo; se il valore è già nel file, vince il file.",
     "levels": "Facoltativo. Solo per le categoriche: {\"etichetta\": codice_intero}. Le etichette sono quelle prodotte da RECODE; il codice serve per passare a numeri (config.encode / decode).",
@@ -30,7 +29,6 @@
     "worsening": "Facoltativo. Direzione di peggioramento: 'increase' = il valore che aumenta indica un peggioramento (es. CDRSB, Ventricles); 'decrease' = il valore che diminuisce indica un peggioramento (es. MMSE, Hippocampus). Per scale, volumi e biomarcatori; ometti per le altre variabili. Le figlie %ICV lo ereditano dalla madre. Copiato da ranges.json [D040].",
     "role": "Facoltativo. Ruolo nell'analisi: predittore, cofattore, outcome, normalizzazione, identificativo, metodo, qualita, metadato. Le variabili figlie (dummy, %ICV) lo ereditano. Ometti se non entra nel modello.",
     "scope": "Facoltativo. Fin dove vive la colonna. 'output' (default): arriva al dataset finale. 'merge': resta fino al merge e poi si toglie (es. update_stamp, HAS_QC_ERROR, servono a scegliere o scartare valori). 'cleaning': si toglie a fine cleaning 1 perché serve solo come input di calcolo (es. PTDOB per l'età).",
-    "date_precision": "Facoltativo. Presente SOLO se la variabile e' una data (la colonna viene convertita in data da parse_dates); ometti per numeri e testo. 'day' = data completa (giorno, mese, anno). 'month' = data nota solo come mese/anno (MM/YYYY): giorno imputato al 15 (POLICY.DOB_IMPUTED_DAY). 'year' = data nota solo come anno (YYYY): data imputata al 1 luglio (POLICY.YEAR_IMPUTED_MONTH_DAY). L'imputazione riguarda solo i valori scritti in quella forma; le date complete non vengono toccate.",
     "aliases": "Facoltativo. Solo se qualche file riporta già la variabile: ['ADNI:<FILE>.<COLONNA>']. In quel caso il valore del file vince sul calcolato.",
     "derived": "OBBLIGATORIO, solo informativo: da quali variabili si calcola e con quale passo. {'from': [variabili standard di input], 'by': passo}. 'by' = recompute_age | add_derived_ratios | add_visit_month | add_atn_profile | add_constant_columns. Per un rapporto nuovo va aggiunta anche la riga in config.RATIOS.",
     "levels": "Facoltativo. Solo per le categoriche: {\"etichetta\": codice_intero}. Le etichette sono quelle prodotte da RECODE; il codice serve per passare a numeri (config.encode / decode).",
@@ -120,10 +118,9 @@
   },
   "EXAMDATE": {
     "domain": "Visit",
-    "definition": "Data della visita/esame.",
+    "definition": "Data dell'evento della riga: visita, prelievo o scansione.",
     "role": "visit_reference",
     "scope": "output",
-    "date_precision": "day",
     "aliases": [
       "ADNI:*.EXAMDATE",
       "ADNI:PTDEMOG.VISDATE"
@@ -132,15 +129,14 @@
     "vocab_code": null,
     "admapper_ref": null,
     "standard_match": "none",
-    "note": "",
-    "log_ref": []
+    "note": "Chiave di visita (config.EXAM_DATE): per un file nuovo la colonna grezza della data si collega qui con un alias. Non puo' essere solo anno (parse_dates).",
+    "log_ref": ["D046", "D047"]
   },
   "EXAMDATE_bl": {
     "domain": "Visit",
     "definition": "Data della visita di baseline.",
     "role": "visit_reference",
     "scope": "cleaning",
-    "date_precision": "day",
     "aliases": [
       "ADNI:*.EXAMDATE_bl"
     ],
@@ -159,7 +155,6 @@
     "unit": "mo",
     "role": "visit_reference",
     "scope": "output",
-    "date_precision": null,
     "aliases": [],
     "derived": [
       {
@@ -236,7 +231,6 @@
     "unit": null,
     "role": null,
     "scope": "cleaning",
-    "date_precision": "month",
     "aliases": [
       "ADNI:PTDEMOG.PTDOB"
     ],
@@ -255,7 +249,6 @@
     "definition": "Sesso del partecipante come registrato nello studio.",
     "role": "cofattore",
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:*.PTGENDER",
       "*:*.SEX",
@@ -355,7 +348,6 @@
     "definition": "Razza dichiarata; 'mixed' = più di una.",
     "role": "cofattore",
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:*.PTRACCAT"
     ],
@@ -387,7 +379,6 @@
     "unit": null,
     "role": "predittore",
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:*.APOE4",
       "ADNI:ADNI_DIAN_COMPARISON.DIAN_APOE",
@@ -427,7 +418,6 @@
     "unit": null,
     "role": null,
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:*.DX",
       "ADNI:ADSP_PHC_BIOMARKER.PHC_Diagnosis",
@@ -621,7 +611,6 @@
     "worsening": "increase",
     "role": "predittore",
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:*.FAQ",
       "ADNI:FAQ.FAQTOTAL"
@@ -742,7 +731,6 @@
     "worsening": "decrease",
     "role": "predittore",
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:*.Entorhinal"
     ],
@@ -768,7 +756,6 @@
     "worsening": "decrease",
     "role": "predittore",
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:*.Fusiform"
     ],
@@ -927,7 +914,6 @@
     "worsening": "decrease",
     "role": "predittore",
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:EUROIMMUN.BETA_AMYLOID_42_40",
       "ADNI:FUJIREBIOABETA.ABETA42_40",
@@ -1093,7 +1079,6 @@
     "worsening": "decrease",
     "role": "predittore",
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:PLASMA_ABETA_PROJECT_ADX_VUMC.AB42",
       "ADNI:PLASMA_ABETA_PROJECT_ADX_VUMC.ABETA42",
@@ -1119,7 +1104,6 @@
     "worsening": "increase",
     "role": "predittore",
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:PLASMA_ABETA_PROJECT_ADX_VUMC.PLASMA_NFL",
       "ADNI:PLASMA_ABETA_PROJECT_ADX_VUMC.NF_LIGHT",
@@ -1337,7 +1321,6 @@
     "worsening": "increase",
     "role": null,
     "scope": "output",
-    "date_precision": null,
     "aliases": [
       "ADNI:*.META_TEMPORAL_SUVR"
     ],
@@ -1355,7 +1338,6 @@
     "unit": null,
     "role": "qualita",
     "scope": "merge",
-    "date_precision": null,
     "aliases": [
       "ADNI:*.HAS_QC_ERROR"
     ],
@@ -1374,7 +1356,6 @@
     "unit": null,
     "role": "qualita",
     "scope": "merge",
-    "date_precision": "day",
     "aliases": [
       "ADNI:*.update_stamp"
     ],

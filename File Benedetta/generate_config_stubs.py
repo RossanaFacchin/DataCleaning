@@ -157,16 +157,17 @@ def stub_for(path: Path, reverse: dict):
         L.append(f'    id_column="{id_c[0]}",                      # rilevato, VERIFICA')
     else:
         L.append(f"    # id_column=?  candidati: {id_c or 'NESSUNO'}  <-- DECIDI")
-    # date_column: ordine di preferenza ESPLICITO tra i candidati rilevati dai valori
+    # data di visita: e' sempre config.EXAM_DATE (EXAMDATE) [D046]; se nel file ha un altro
+    # nome, si propone l'alias da aggiungere a EXAMDATE in catalog.json (ordine di preferenza ESPLICITO)
     DATE_PREF = ["EXAMDATE", "SCANDATE", "DRAW_DATE", "DRAWDATE", "USERDATE", "PROCESSDATE"]
-    chosen_date = next((d for d in DATE_PREF if d in date_c), None)
-    if chosen_date:
+    chosen_date = next((d for d in DATE_PREF if d in date_c), None) or (date_c[0] if len(date_c) == 1 else None)
+    if chosen_date == "EXAMDATE":
+        L.append(f"    # data di visita: EXAMDATE gia' presente (alt: {[c for c in date_c if c != 'EXAMDATE'] or 'nessuna'}) VERIFICA")
+    elif chosen_date:
         alt = [c for c in date_c if c != chosen_date]
-        L.append(f'    date_column="{chosen_date}",{" "*(18-len(chosen_date))}# preferenza ADNI (alt: {alt or "nessuna"}) VERIFICA')
-    elif len(date_c) == 1:
-        L.append(f'    date_column="{date_c[0]}",                  # rilevato dai valori, VERIFICA')
+        L.append(f'    # data di visita: aggiungi "ADNI:{code}.{chosen_date}" agli alias di EXAMDATE in catalog.json (alt: {alt or "nessuna"}) VERIFICA')
     else:
-        L.append(f"    # date_column=?  candidati (dai valori): {date_c or 'NESSUNO'}  <-- DECIDI")
+        L.append(f"    # data di visita?  candidati (dai valori): {date_c or 'NESSUNO'} -> alias su EXAMDATE  <-- DECIDI")
     if len(visit_c) == 1:
         L.append(f'    viscode_reference="{visit_c[0]}",')
     if auto_rename:

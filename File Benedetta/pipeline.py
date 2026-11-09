@@ -213,6 +213,7 @@ def drop_if_all_none(df, cols):
 
 _MONTH_ONLY = r"\s*\d{1,2}/\d{4}\s*"          # es. "07/1940": data nota solo come mese/anno
 _YEAR_ONLY = r"\s*\d{4}(\.0+)?\s*"             # es. "1940" o 1940.0: data nota solo come anno
+# (le maschere servono a parse_dates per riconoscere la precisione di ogni colonna [D047])
 
 
 def month_only_mask(s):
@@ -225,38 +226,55 @@ def year_only_mask(s):
     return s.notna() & s.astype(str).str.fullmatch(_YEAR_ONLY)
 
 
-def parse_dates(df, cols, month_precision=(), year_precision=()):
-    """Converte le colonne indicate in datetime vero.
+def parse_dates(df, cols, no_year=()):
+    """Converte le colonne-data e ne riconosce la precisione dai valori (ex to_date_format) [D047].
 
-    [D029] Per le colonne in `month_precision` (es. PTDOB) i valori MM/YYYY vengono letti con
-    formato esplicito e il giorno, che non e' noto, e' imputato a config.DOB_IMPUTED_DAY (15).
-    [D039] Per le colonne in `year_precision` i valori YYYY diventano il giorno
-    config.YEAR_IMPUTED_MONTH_DAY (1 luglio) di quell'anno.
-    Errore centrato invece che sempre in eccesso. Le date COMPLETE, anche nella stessa colonna,
-    non vengono toccate; le altre colonne (EXAMDATE...) restano esattamente come sono.
+    Per ogni colonna si contano, sulle sole righe con un valore (nulle e vuote escluse), i
+    valori scritti come data completa (giorno), MM/YYYY (mese) o YYYY (anno): la precisione e'
+    quella piu' frequente; a parita' vince giorno, poi mese, cosi' un pareggio non tronca mai
+    la colonna ad anno.
+      - giorno / mese: datetime. Le date complete si leggono anche in formati misti; i valori
+        MM/YYYY prendono il giorno config.IMPUTED_DAY (15) [D029]; i valori solo anno -> NaT
+        (l'errore sarebbe fino a 6 mesi).
+      - anno: intero (Int64), con warning; dalle date complete o MM/YYYY si tiene l'anno.
+    Le colonne in `no_year` (la data di visita, config.EXAM_DATE) non diventano mai anno.
+    Restituisce (df, info) con, per colonna, la precisione scelta e i conteggi.
     """
-    df = df.copy()
+    df, info = df.copy(), {}
     for c in cols:
         if c not in df.columns:
             continue
-        raw = df[c]
-        if c in month_precision or c in year_precision:
-            partial = month_only_mask(raw) if c in month_precision else year_only_mask(raw)
-            parsed = pd.to_datetime(raw.where(~partial), errors="coerce")
-            if partial.any():
-                text = raw[partial].astype(str).str.strip()
-                if c in month_precision:
-                    imputed = (pd.to_datetime(text, format="%m/%Y")
-                               + pd.Timedelta(days=config.DOB_IMPUTED_DAY - 1))
-                else:
-                    month, day = config.YEAR_IMPUTED_MONTH_DAY
-                    imputed = pd.to_datetime(pd.DataFrame(
-                        {"year": text.astype(float).astype(int), "month": month, "day": day}))
-                parsed.loc[partial] = imputed
-            df[c] = parsed
+        s = df[c]
+        valid = s.notna() & s.astype(str).str.strip().ne("")
+        if not valid.any():
+            continue
+        year = year_only_mask(s) & valid
+        month = month_only_mask(s) & valid
+        day = valid & ~year & ~month
+        n = {"giorno": int(day.sum()), "mese": int(month.sum()), "anno": int(year.sum())}
+        allowed = ("giorno", "mese") if c in no_year else ("giorno", "mese", "anno")
+        prec = max(allowed, key=lambda k: n[k])          # a parita' max tiene il primo
+        tot = int(valid.sum())
+        if prec == "anno":
+            out = pd.Series(pd.NA, index=s.index, dtype="Int64")
+            out[year] = s[year].astype(str).str.strip().astype(float).astype(int)
+            other = valid & ~year
+            out[other] = pd.to_datetime(s[other], format="mixed", errors="coerce").dt.year
+            warnings.warn(f"{c}: {n['anno']} valori solo-anno su {tot}: colonna convertita in anno intero")
         else:
-            df[c] = pd.to_datetime(raw, errors="coerce")
-    return df
+            out = pd.to_datetime(s.where(day), format="mixed", errors="coerce")
+            if month.any():
+                out[month] = (pd.to_datetime(s[month].astype(str).str.strip(), format="%m/%Y")
+                              + pd.Timedelta(days=config.IMPUTED_DAY - 1))
+            if n["anno"] > max(n["giorno"], n["mese"]):  # solo per le colonne in no_year
+                warnings.warn(f"{c}: {n['anno']} valori solo-anno su {tot} resi NaT")
+        voluti = n["anno"] if prec != "anno" else 0      # NaT voluti: anni in colonna giorno/mese
+        info[c] = {"precisione": prec, "valori": n,
+                   "giorno_imputato": n["mese"] if prec != "anno" else 0,
+                   "anni_resi_NaT": voluti,
+                   "illeggibili_resi_NaT": int((valid & out.isna()).sum()) - voluti}
+        df[c] = out
+    return df, info
 
 
 def dedup_visits(df, id_col, date_col, cols):
@@ -546,38 +564,24 @@ def run_cleaning1(cfg: DatasetConfig = ADNIMERGE):
     for group in cfg.row_filters:                                # [D045] scarta se TUTTE NaN
         df = _log_step(log, f"row_filters {group}", df, drop_if_all_none(df, group))
     
-    # date: date_column + tutte le variabili 'date' del catalogo presenti; la precisione
-    # mese/anno viene dal catalogo (date_precision='month') [D029]
-    dates = config.date_vars()
-    date_cols = [cfg.date_column] + [c for c in dates if c in df.columns and c != cfg.date_column]
-    month_cols = [c for c, v in dates.items() if v.date_precision == "month"]
-    year_cols = [c for c, v in dates.items() if v.date_precision == "year"]
-    imputed = {c: int(month_only_mask(df[c]).sum())              # [D029] giorno messo a 15
-               for c in month_cols if c in df.columns}
-    imputed_y = {c: int(year_only_mask(df[c]).sum())             # [D039] data messa al 1 luglio
-                 for c in year_cols if c in df.columns}
-    n_nat = {c: int(df[c].isna().sum()) for c in date_cols if c in df.columns}
-    new = parse_dates(df, date_cols, month_cols, year_cols)      # to_date_format
-    df = _log_step(log, "parse_dates", df, new,
-                   colonne=[c for c in date_cols if c in df.columns],
-                   giorno_imputato_per_colonna=imputed,
-                   mese_e_giorno_imputati_per_colonna=imputed_y,
-                   date_non_leggibili_rese_NaT={c: int(new[c].isna().sum()) - n
-                                                for c, n in n_nat.items()
-                                                if int(new[c].isna().sum()) - n > 0})
+    # date: le variabili di config.DATE_VARS presenti; precisione riconosciuta dai valori,
+    # la data di visita non puo' diventare anno [D046, D047]
+    date_cols = [c for c in config.DATE_VARS if c in df.columns]
+    new, info = parse_dates(df, date_cols, no_year=(config.EXAM_DATE,))   # to_date_format
+    df = _log_step(log, "parse_dates", df, new, **info)
 
-    has_keys = (cfg.date_column in df.columns) and (cfg.id_column in df.columns)
+    has_keys = (config.EXAM_DATE in df.columns) and (cfg.id_column in df.columns)
     if has_keys:
         df = _log_step(log, "dedup_visits", df,
-                       dedup_visits(df, cfg.id_column, cfg.date_column, cfg.dedup_columns))
+                       dedup_visits(df, cfg.id_column, config.EXAM_DATE, cfg.dedup_columns))
         df = _log_step(log, "add_visit_month", df,             # find_exam_code -> VISIT_MONTH
-                       add_visit_month(df, cfg.id_column, cfg.date_column))
+                       add_visit_month(df, cfg.id_column, config.EXAM_DATE))
     else:
-        missing = [c for c in (cfg.id_column, cfg.date_column) if c not in df.columns]
+        missing = [c for c in (cfg.id_column, config.EXAM_DATE) if c not in df.columns]
         _log_skip(log, "dedup_visits + add_visit_month", f"mancano le colonne chiave {missing}")
 
     # eta' e rapporti: si calcolano se mancano e gli input ci sono  [D019, D030, D041]
-    new, info = recompute_age(df, cfg.id_column, cfg.date_column)
+    new, info = recompute_age(df, cfg.id_column, config.EXAM_DATE)
     df = _log_step(log, "recompute_age", df, new, **info)
     new, info = add_derived_ratios(df, config.RATIOS, cfg.id_column)
     df = _log_step(log, "add_derived_ratios", df, new, **info)

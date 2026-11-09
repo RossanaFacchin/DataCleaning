@@ -51,14 +51,15 @@ SPARSE_KEEP_THRESHOLD = 0.65
 # (ex soglia hardcoded nel notebook cleaning2).  [spostata qui dalla riga di Rossana]
 MULTIVISIT_MIN_SUBJECTS = 10
 
-# [D029] Date note solo come mese/anno (es. PTDOB "07/1940"): giorno imputato a META' mese,
-# cosi' l'errore sull'eta' e' centrato (max ±15 giorni) invece che sempre in eccesso.
-# Si applica SOLO alle variabili con date_precision='month' nel catalogo e SOLO ai valori
-# scritti come MM/YYYY: le date complete non vengono toccate.
-DOB_IMPUTED_DAY = 15
-# [D039] Date note solo come anno (date_precision='year', valori YYYY): data imputata a META'
-# anno, 1 luglio (mese, giorno) -> errore centrato, max ±6 mesi. Solo ai valori scritti YYYY.
-YEAR_IMPUTED_MONTH_DAY = (7, 1)
+# [D046] Data dell'evento della riga (visita, prelievo, scansione), nome standard: chiave di
+# visita per dedup, VISIT_MONTH ed eta'. La colonna grezza diventa EXAMDATE tramite alias.
+EXAM_DATE = "EXAMDATE"
+# [D047] Variabili-data (nomi standard): parse_dates converte quelle presenti nel file e ne
+# riconosce la precisione dai valori (giorno, mese o anno, a maggioranza).
+DATE_VARS = [EXAM_DATE, "EXAMDATE_bl", "PTDOB", "update_stamp"]
+# [D029, D047] Valori scritti come MM/YYYY: giorno imputato a META' mese, cosi' l'errore e'
+# centrato (max ±15 giorni). Le date complete non vengono toccate.
+IMPUTED_DAY = 15
 # [D030] Decimali dell'eta' calcolata (notes_CP B.4).
 AGE_ROUND_DECIMALS = 1
 # [D041] Rapporti calcolati da pipeline.add_derived_ratios: {nome: (numeratore, denominatore)},
@@ -214,7 +215,6 @@ def recode_map(var: str, file_code: Optional[str] = None) -> dict:
 # ---------------------------------------------------------------------------
 CATALOG_FILE = "catalog.json"
 SCOPES = ("cleaning", "merge", "output")        # [D032] fin dove vive la variabile
-DATE_PRECISIONS = ("day", "month", "year")      # [D038, D039] presenza di date_precision = e' una data
 WORSENING = ("increase", "decrease")             # [D040] direzione di peggioramento (copiata da ranges.json)
 
 
@@ -226,9 +226,7 @@ class Var:
     worsening: Optional[str] = None              # increase = peggiora se aumenta, decrease = se diminuisce [D040]
     role: Optional[str] = None                   # predittore | normalizzazione | metodo | qualita | ...
     scope: str = "output"                        # cleaning | merge | output  [D032]
-    # presente = e' una data (convertita da parse_dates): 'day' completa, 'month' solo MM/YYYY
-    # con giorno imputato, 'year' solo YYYY con data imputata a meta' anno [D029, D038, D039]
-    date_precision: Optional[str] = None
+    # (le date non si dichiarano qui: sono in DATE_VARS, precisione dai valori [D047])
     aliases: tuple = ()                          # 'DATASET:FILE.colonna'  [D017]
     derived: tuple = ()                          # ({"from": [...], "by": "..."}, ...)  [D019]
     levels: Optional[dict] = None                # categoriche: {"etichetta": codice_intero}
@@ -332,8 +330,6 @@ def load_catalog(path=None) -> dict[str, Var]:
             errors.append(f"{name}: serve almeno uno tra 'aliases' e 'derived'")
         if attrs.get("scope", "output") not in SCOPES:
             errors.append(f"{name}: scope '{attrs.get('scope')}' non valido {SCOPES}")
-        if attrs.get("date_precision") not in (None,) + DATE_PRECISIONS:
-            errors.append(f"{name}: date_precision '{attrs.get('date_precision')}' non valida {DATE_PRECISIONS}")
         if attrs.get("worsening") not in (None,) + WORSENING:
             errors.append(f"{name}: worsening '{attrs.get('worsening')}' non valido {WORSENING}")
         for kind in attrs["evolution"]:
@@ -414,11 +410,6 @@ def derived_vars() -> dict[str, Var]:
     return {n: v for n, v in catalog().items() if v.derived}
 
 
-def date_vars() -> dict[str, Var]:
-    """Variabili di tipo data: quelle con date_precision ('day', 'month' o 'year') [D038, D039]."""
-    return {n: v for n, v in catalog().items() if v.date_precision}
-
-
 def scope_vars(scope: str) -> list[str]:
     """Nomi standard con un certo ciclo di vita [D032]."""
     return [n for n, v in catalog().items() if v.scope == scope]
@@ -471,7 +462,7 @@ class DatasetConfig:
     source: str
     dataset: str = "ADNI"               # = DATASET negli alias [D017]
     id_column: str = "RID"
-    date_column: str = "EXAMDATE"
+    # (la data di visita e' config.EXAM_DATE per tutti i file [D046])
     viscode_reference: Optional[str] = "VISCODE"
     cohort_column: str = "COLPROT"
 
@@ -491,8 +482,7 @@ class DatasetConfig:
     drop_rows: dict[str, list] = field(default_factory=dict)
     # [D027] codici numerici di "mancante" di questo file; None -> config.DEFAULT_MISSING_CODES.
     missing_codes: Optional[list] = None
-    # (le date da convertire e la precisione mese/anno ora vengono dal catalogo:
-    #  date_precision='day' o 'month' [D029, D038])
+    # (le date da convertire sono config.DATE_VARS; la precisione la riconosce parse_dates [D047])
     # [D045] filtri di riga, NOMI STANDARD: lista di gruppi; per ogni gruppo la riga resta se ha
     # ALMENO UNO dei valori, e si scarta se mancano tutti. Un gruppo di una sola colonna =
     # colonna obbligatoria (es. ["RID"]). Sostituisce required_all_present, essential_columns
@@ -639,7 +629,6 @@ PLASMA_ADX_VUMC = DatasetConfig(
     file_code="PLASMA_ABETA_PROJECT_ADX_VUMC",
     source="PLASMA_ABETA_PROJECT_ADX_VUMC_11Aug2025.csv",
     category="plasma",
-    date_column="EXAMDATE",
     row_filters=[["NFL_PL", "AB42_PL", "GFAP"]],          # NOMI STANDARD (rename-first) [D045]
     dedup_columns=["NFL_PL", "AB42_PL", "GFAP"],
     # rename -> alias 'ADNI:<file_code>.<colonna>' in catalog.json [D017]
@@ -659,7 +648,6 @@ PLASMA_NFL = DatasetConfig(
     file_code="BLENNOWPLASMANFL",
     source="ADNI_BLENNOWPLASMANFLLONG_10_03_18_11Aug2025.csv",
     category="plasma",
-    date_column="EXAMDATE",
     row_filters=[["NFL_PL"]],                             # NOME STANDARD (rename-first) [D045]
     dedup_columns=["NFL_PL"],
     # rename -> alias 'ADNI:<file_code>.<colonna>' in catalog.json [D017]
@@ -672,7 +660,6 @@ PLASMA_C2N = DatasetConfig(
     file_code="C2N_PRECIVITYAD2_PLASMA",
     source="C2N_PRECIVITYAD2_PLASMA_11Aug2025.csv",
     category="plasma",
-    date_column="EXAMDATE",
     row_filters=[["PT217_PL", "AB42_PL"]],                # NOMI STANDARD (rename-first) [D045]
     dedup_columns=["PT217_PL", "AB42_PL"],
     # rename -> alias 'ADNI:<file_code>.<colonna>' in catalog.json [D017]
@@ -872,8 +859,7 @@ PTDEMOG = DatasetConfig(
     drop_rows={"VISCODE": ["f"]},              # [D028] screen fail
     # [D027] qui -4 e 9999 sono codici; -1 compare in PTEDUCAT e PTADBEG, ed e' un codice
     missing_codes=[-4, "-4", -1, "-1", 9999, 9999.0],
-    # PTDOB (MM/YYYY) e update_stamp sono date per il catalogo; PTDOB ha date_precision
-    # 'month' -> giorno 15 [D029]. AGE si calcola da PTDOB perche' il file non la riporta [D019].
+    # PTDOB (MM/YYYY) e update_stamp sono in DATE_VARS; PTDOB e' a mese -> giorno 15 [D029, D047]. AGE si calcola da PTDOB perche' il file non la riporta [D019].
     row_filters=[
         ["GENDER", "MARRY", "ETHNICITY", "RACE"],
         ["PTDOB"],                             # senza data di nascita non si calcola l'eta'

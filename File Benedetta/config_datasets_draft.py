@@ -28,7 +28,7 @@ ADAS = DatasetConfig(
     source="ADAS_28Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['scale'])
     id_column="RID",                            # standard ADNI (alt: ['PTID', 'ID']) VERIFICA
-    date_column="USERDATE",          # preferenza ADNI (alt: ['VISDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): USERDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['VISDATE', 'update_stamp']) VERIFICA
     # 3 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['TOTSCORE', 'TOTAL13', 'USERDATE2']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -179,7 +179,7 @@ ADNI_DIAN_COMPARISON_STUDY_DATA_SUBSET_05_23_22 = DatasetConfig(
     source="ADNI-DIAN_Comparison_Study_Data_Subset_05_23_22_23Oct2025.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: ['DIAN_ID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['CSFDATE', 'MRI_SCANDATE', 'CSF_DATE_BL', 'MRI_DATE_BL', 'VISIT_DATE_BL', 'LAST_VISIT_DATE', 'PET_DATE_BL', 'PET_SCANDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['CSFDATE', 'MRI_SCANDATE', 'CSF_DATE_BL', 'MRI_DATE_BL', 'VISIT_DATE_BL', 'LAST_VISIT_DATE', 'PET_DATE_BL', 'PET_SCANDATE', 'update_stamp']) VERIFICA
     # 120 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['COLPROT', 'VISITAGE', 'CDRGLOB', 'EDUC', 'FLUF', 'WORDIM', 'LOGIMEM', 'DIGIF', 'DIGIFLEN', 'DIGIB', 'DIGIBLEN', 'ANIMALS', 'VEG', 'TRAILA', 'TRAILARR', 'TRAILB', 'TRAILBRR', 'WAIS', 'MEMUNITS', 'BOSTON', 'WORDDEL', 'MR_TOTV_WMHYPOINTENSITIES', 'MR_TOTV_INTRACRANIAL', 'MR_TOTV_HIPPOCAMPUS', 'FDG_FSUVR_RSF_TOT_CTX_PRECUNEUS', 'FDG_FSUVR_RSF_TOT_HIPPOCAMPUS', 'FDG_FSUVR_RSF_TOT_CORTMEAN', 'PIB_FSUVR_RSF_TOT_CTX_PRECUNEUS', 'PIB_FSUVR_RSF_TOT_HIPPOCAMPUS', 'PIB_FSUVR_RSF_TOT_CORTMEAN', 'BIRTHMO', 'BIRTHYR', 'HISPANIC', 'RACE', 'PRIMLANG', 'MARISTAT', 'HANDED', 'MOMDEM', 'MOMAUTO', 'DADDEM', 'DADAUTO', 'ABRUPT', 'STEPWISE', 'SOMATIC', 'EMOT', 'HXHYPER', 'HXSTROKE', 'FOCLSYM', 'FOCLSIGN', 'HACHIN', 'CDRSUM', 'GDS', 'BILLS', 'TAXES', 'SHOPPING', 'GAMES', 'STOVE', 'MEALPREP', 'EVENTS', 'PAYATTN', 'REMDATES', 'TRAVEL', 'DECSUB', 'VASC', 'ALCDEM', 'FTD', 'PPAPH', 'PSP', 'CORT', 'HUNT', 'PRION', 'DEP', 'PARK', 'HYCEPH', 'COGOTH', 'COGOTHX', 'GENDER', 'CSF_ELC_AB42', 'CSF_ELC_PTAU', 'CSF_ELC_TAU', 'CSF_ELC_AB40', 'CSF_ELC_AB4240', 'MSP_AB38', 'MSP_AB40', 'MSP_AB42', 'CSF_CDR_BL', 'MRI_CDR_BL', 'CSF_CDRSB_BL', 'MRI_CDRSB_BL', 'MR_TOTT_PRECUNEUS', 'TIME_COGNITIVE_FOLLOWUP', 'TIME_CSF_FOLLOWUP', 'TIME_MRI_FOLLOWUP', 'CDR_BASELINE', 'GROUP_CSF', 'GROUP_MRI', 'COHORT', 'PET_TYPE', 'PIB_MSUVR_TOT_PRECUNEUS', 'PIB_MSUVR_TOT_CORTMEAN', 'FDG_MSUVR_TOT_PRECUNEUS', 'FDG_MSUVR_TOT_CORTMEAN', 'AV45_FSUVR_RSF_TOT_CTX_PRECUNEUS', 'AV45_FSUVR_RSF_TOT_HIPPOCAMPUS', 'AV45_FSUVR_RSF_TOT_CORTMEAN', 'AV45_MSUVR_TOT_PRECUNEUS', 'AV45_MSUVR_TOT_CORTMEAN', 'PET_CDR_BL', 'PET_CDRSB_BL', 'TIME_PET_FOLLOWUP', 'ADGROUP', 'ADGROUP_BL', 'GROUP_PET', 'ORIGIN', 'DIAN_APOE', 'DIAN_GROUP', 'DIAN_CDRSB_BL', 'DIAN_YEARS_BL', 'DIAN_MMSE', 'NEYO']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -311,7 +311,7 @@ ADNIMERGE = DatasetConfig(
     source="ADNIMERGE_05Mar2026.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: ['PTID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['EXAMDATE_bl', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['EXAMDATE_bl', 'update_stamp']) VERIFICA
     viscode_reference="VISCODE",
     # 108 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['COLPROT', 'ORIGPROT', 'SITE', 'DX_bl', 'AGE', 'PTGENDER', 'PTEDUCAT', 'PTETHCAT', 'PTRACCAT', 'PTMARRY', 'APOE4', 'FDG', 'PIB', 'AV45', 'FBB', 'ABETA', 'TAU', 'PTAU', 'CDRSB', 'ADAS11', 'ADAS13', 'ADASQ4', 'MMSE', 'RAVLT_immediate', 'RAVLT_learning', 'RAVLT_forgetting', 'RAVLT_perc_forgetting', 'LDELTOTAL', 'DIGITSCOR', 'TRABSCOR', 'FAQ', 'MOCA', 'EcogPtMem', 'EcogPtLang', 'EcogPtVisspat', 'EcogPtPlan', 'EcogPtOrgan', 'EcogPtDivatt', 'EcogPtTotal', 'EcogSPMem', 'EcogSPLang', 'EcogSPVisspat', 'EcogSPPlan', 'EcogSPOrgan', 'EcogSPDivatt', 'EcogSPTotal', 'FLDSTRENG', 'Ventricles', 'Hippocampus', 'WholeBrain', 'Entorhinal', 'Fusiform', 'MidTemp', 'ICV', 'DX', 'mPACCdigit', 'mPACCtrailsB', 'CDRSB_bl', 'ADAS11_bl', 'ADAS13_bl', 'ADASQ4_bl', 'MMSE_bl', 'RAVLT_immediate_bl', 'RAVLT_learning_bl', 'RAVLT_forgetting_bl', 'RAVLT_perc_forgetting_bl', 'LDELTOTAL_BL', 'DIGITSCOR_bl', 'TRABSCOR_bl', 'FAQ_bl', 'mPACCdigit_bl', 'mPACCtrailsB_bl', 'FLDSTRENG_bl', 'FSVERSION_bl', 'IMAGEUID_bl', 'Ventricles_bl', 'Hippocampus_bl', 'WholeBrain_bl', 'Entorhinal_bl', 'Fusiform_bl', 'MidTemp_bl', 'ICV_bl', 'MOCA_bl', 'EcogPtMem_bl', 'EcogPtLang_bl', 'EcogPtVisspat_bl', 'EcogPtPlan_bl', 'EcogPtOrgan_bl', 'EcogPtDivatt_bl', 'EcogPtTotal_bl', 'EcogSPMem_bl', 'EcogSPLang_bl', 'EcogSPVisspat_bl', 'EcogSPPlan_bl', 'EcogSPOrgan_bl', 'EcogSPDivatt_bl', 'EcogSPTotal_bl', 'ABETA_bl', 'TAU_bl', 'PTAU_bl', 'FDG_bl', 'PIB_bl', 'AV45_bl', 'FBB_bl', 'Years_bl', 'Month_bl', 'Month', 'M']
@@ -340,7 +340,7 @@ ADNI_BLENNOWPLASMANFLLONG_10_03_18 = DatasetConfig(
     source="ADNI_BLENNOWPLASMANFLLONG_10_03_18_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['plasma'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['USERDATE', 'DRAW_DATE', 'DRAW_TIME', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['USERDATE', 'DRAW_DATE', 'DRAW_TIME', 'update_stamp']) VERIFICA
     # 1 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['PLASMA_NFL']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -369,7 +369,7 @@ ADNI_EUROIMMUN = DatasetConfig(
     source="ADNI_EUROIMMUN_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['csf', 'volumes'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['DRAWTIME', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['DRAWTIME', 'update_stamp']) VERIFICA
     # 5 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['POOL', 'COMMENTS', 'BETA_AMYLOID_1_40', 'BETA_AMYLOID_1_42', 'BETA_AMYLOID_42_40']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -397,7 +397,7 @@ ADNI_LIPIDOMICSRADER = DatasetConfig(
     source="ADNI_LIPIDOMICSRADER_09Oct2025.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="update_stamp",                  # rilevato dai valori, VERIFICA
+    # data di visita (ex date_column, D046): update_stamp -> alias su EXAMDATE in catalog.json se diverso. rilevato dai valori, VERIFICA
     # 7 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['ORIGPROT', 'COLPROT', 'CHOL', 'HDL', 'TG', 'APOA1', 'APOE']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -478,7 +478,7 @@ ADNI_PICSLASHS = DatasetConfig(
     source="ADNI_PICSLASHS_28Oct2025.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: ['PTID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['PROCESSDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['PROCESSDATE', 'update_stamp']) VERIFICA
     # 56 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['IMAGEUID_T1', 'IMAGEUID_T2', 'LEFT_CA1_VOL', 'LEFT_CA1_NS', 'LEFT_CA2_VOL', 'LEFT_CA2_NS', 'LEFT_CA3_VOL', 'LEFT_CA3_NS', 'LEFT_DG_VOL', 'LEFT_DG_NS', 'LEFT_MISC_VOL', 'LEFT_MISC_NS', 'LEFT_SUB_VOL', 'LEFT_SUB_NS', 'LEFT_ERC_VOL', 'LEFT_ERC_NS', 'LEFT_BA35_VOL', 'LEFT_BA35_NS', 'LEFT_BA36_VOL', 'LEFT_BA36_NS', 'LEFT_PHC_VOL', 'LEFT_PHC_NS', 'LEFT_SULCUS_VOL', 'LEFT_SULCUS_NS', 'LEFT_CA_VOL', 'LEFT_CA_NS', 'LEFT_HIPP_VOL', 'LEFT_HIPP_NS', 'RIGHT_CA1_VOL', 'RIGHT_CA1_NS', 'RIGHT_CA2_VOL', 'RIGHT_CA2_NS', 'RIGHT_CA3_VOL', 'RIGHT_CA3_NS', 'RIGHT_DG_VOL', 'RIGHT_DG_NS', 'RIGHT_MISC_VOL', 'RIGHT_MISC_NS', 'RIGHT_SUB_VOL', 'RIGHT_SUB_NS', 'RIGHT_ERC_VOL', 'RIGHT_ERC_NS', 'RIGHT_BA35_VOL', 'RIGHT_BA35_NS', 'RIGHT_BA36_VOL', 'RIGHT_BA36_NS', 'RIGHT_PHC_VOL', 'RIGHT_PHC_NS', 'RIGHT_SULCUS_VOL', 'RIGHT_SULCUS_NS', 'RIGHT_CA_VOL', 'RIGHT_CA_NS', 'RIGHT_HIPP_VOL', 'RIGHT_HIPP_NS', 'ICV', 'SLICE_THICKNESS']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -521,7 +521,7 @@ ADSP_PHC_BIOMARKER = DatasetConfig(
     source="ADSP_PHC_BIOMARKER_25Jul2025.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: ['PTID']) VERIFICA
-    date_column="DRAWDATE",          # preferenza ADNI (alt: ['update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): DRAWDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['update_stamp']) VERIFICA
     # 19 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['SUBJID', 'PHC_Visit', 'PHC_Age_Biomarker', 'PHC_Age_Cognition', 'PHC_Diagnosis', 'PHC_Sex', 'PHC_Race', 'PHC_Ethnicity', 'PHC_Education', 'AB42_RAW', 'PHC_AB42', 'Tau_RAW', 'PHC_Tau', 'pTau_RAW', 'PHC_pTau', 'AT_class', 'Platform', 'PHC_SCeNS_AB42_Score', 'PHC_SCeNS_pTau_Score']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -547,7 +547,7 @@ AMPRION_ASYN_SAA = DatasetConfig(
     source="AMPRION_ASYN_SAA_11Aug2025.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: ['Sample_ID', 'Amprion_ID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['update_stamp']) VERIFICA
     viscode_reference="VISCODE2",
     # 3 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['Order', 'Result', 'Specimen_Color']
@@ -584,7 +584,7 @@ AMYREAD = DatasetConfig(
     source="AMYREAD_28Oct2025.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: ['PTID', 'ID']) VERIFICA
-    date_column="SCANDATE",          # preferenza ADNI (alt: ['READDATE', 'CONSENSDATE', 'USERDATE', 'USERDATE2', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): SCANDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['READDATE', 'CONSENSDATE', 'USERDATE', 'USERDATE2', 'update_stamp']) VERIFICA
     # 7 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['TRACERTYPE', 'OUTCOME', 'CORTREGION', 'CONSENS', 'CONGRU', 'CONSRSN', 'CONSENSRES']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -617,7 +617,7 @@ APOERES = DatasetConfig(
     source="APOERES_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['cofactor'])
     id_column="RID",                            # standard ADNI (alt: ['PTID', 'ID']) VERIFICA
-    date_column="USERDATE",          # preferenza ADNI (alt: ['APTESTDT', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): USERDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['APTESTDT', 'update_stamp']) VERIFICA
     viscode_reference="VISCODE",
     # 7 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['GENOTYPE', 'APVOLUME', 'APRECEIVE', 'APAMBTEMP', 'APRESAMP', 'APUSABLE', 'USERDATE2']
@@ -649,7 +649,7 @@ BAIPETNMRCFTP_08_17_22 = DatasetConfig(
     source="BAIPETNMRCFTP_08_17_22_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['pet'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['RUNDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['RUNDATE', 'update_stamp']) VERIFICA
     # 6 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['ORIGPROT', 'COLPROT', 'MODALITY', 'ENTORHINAL_SUVR', 'INFERIOR_TEMPORAL_SUVR', 'TAU_METAROI']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -685,7 +685,7 @@ BHR_SP_FAQ = DatasetConfig(
     source="BHR_SP_FAQ_28Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['scale'])
     # id_column=?  candidati: NESSUNO  <-- DECIDI
-    # date_column=?  candidati (dai valori): ['CollectedDateTime', 'CollectedDate_DRVD', 'update_stamp']  <-- DECIDI
+    # data di visita?  candidati (dai valori): ['CollectedDateTime', 'CollectedDate_DRVD', 'update_stamp']  <-- DECIDI
     # 15 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['AboutRID', 'StudyPartnerID', 'AboutPTID', 'Timepoint', 'latest', 'QID3_1', 'QID3_2', 'QID3_3', 'QID3_4', 'QID3_5', 'QID4_1', 'QID4_2', 'QID4_3', 'QID4_4', 'QID4_5']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -727,7 +727,7 @@ BLCHANGE = DatasetConfig(
     source="BLCHANGE_25Jul2025.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: ['PTID', 'ID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['USERDATE', 'USERDATE2', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['USERDATE', 'USERDATE2', 'update_stamp']) VERIFICA
     # 15 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['BCPREDX', 'BCADAS', 'BCMMSE', 'BCMMSREC', 'BCNMMMS', 'BCNEUPSY', 'BCNONMEM', 'BCFAQ', 'BCCDR', 'BCDEPRES', 'BCSTROKE', 'BCDELIR', 'BCEXTCIR', 'BCCORADL', 'BCCORCOG']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -753,7 +753,7 @@ BLENNOWCSFNFL = DatasetConfig(
     source="BLENNOWCSFNFL_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['plasma', 'csf'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['USERDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['USERDATE', 'update_stamp']) VERIFICA
     viscode_reference="VISCODE",
     # 3 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['VOLUME', 'CSFNFL', 'COMMENTS']
@@ -780,7 +780,7 @@ BLENNOWPLASMATAU = DatasetConfig(
     source="BLENNOWPLASMATAU_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['plasma'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['USERDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['USERDATE', 'update_stamp']) VERIFICA
     viscode_reference="VISCODE",
     # 2 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['VOL', 'PLASMATAU']
@@ -814,7 +814,7 @@ C2N_PRECIVITYAD2_PLASMA = DatasetConfig(
     source="C2N_PRECIVITYAD2_PLASMA_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['plasma'])
     id_column="RID",                            # standard ADNI (alt: ['PTID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['update_stamp']) VERIFICA
     # 8 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['pT217_C2N', 'npT217_C2N', 'AB42_C2N', 'AB40_C2N', 'AB42_AB40_C2N', 'pT217_npT217_C2N', 'APS2_C2N', 'APOE_C2N']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -852,7 +852,7 @@ CDR = DatasetConfig(
     source="CDR_28Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['scale'])
     id_column="RID",                            # standard ADNI (alt: ['PTID', 'ID']) VERIFICA
-    date_column="USERDATE",          # preferenza ADNI (alt: ['VISDATE', 'USERDATE2', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): USERDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['VISDATE', 'USERDATE2', 'update_stamp']) VERIFICA
     # 10 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['CDSOURCE', 'SPID', 'CDMEMORY', 'CDORIENT', 'CDJUDGE', 'CDCOMMUN', 'CDHOME', 'CDCARE', 'CDGLOBAL', 'CDRSB']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -879,7 +879,7 @@ CSFALPHASYN_03_21_14 = DatasetConfig(
     source="CSFALPHASYN_03_21_14_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['csf'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['LUMINEX_TESTING_DATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['LUMINEX_TESTING_DATE', 'update_stamp']) VERIFICA
     # 5 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['PROTOCOL', 'BOX', 'LUMINEX_BATCH_NUMBER', 'ALPHA_SYN', 'HEMOGLOBIN']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -934,7 +934,7 @@ DXSUM = DatasetConfig(
     source="DXSUM_25Jul2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['cofactor'])
     id_column="RID",                            # standard ADNI (alt: ['PTID', 'ID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['USERDATE', 'USERDATE2', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['USERDATE', 'USERDATE2', 'update_stamp']) VERIFICA
     # 27 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['DIAGNOSIS', 'DXNORM', 'DXNODEP', 'DXMCI', 'DXMDES', 'DXMPTR1', 'DXMPTR2', 'DXMPTR3', 'DXMPTR4', 'DXMPTR5', 'DXMPTR6', 'DXMDUE', 'DXMOTHET', 'DXDSEV', 'DXDDUE', 'DXAD', 'DXAPP', 'DXAPROB', 'DXAPOSS', 'DXPARK', 'DXPDES', 'DXPCOG', 'DXPATYP', 'DXDEP', 'DXOTHDEM', 'DXODES', 'DXCONFID']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -975,7 +975,7 @@ FAQ = DatasetConfig(
     source="FAQ_28Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['scale'])
     id_column="RID",                            # standard ADNI (alt: ['PTID', 'ID']) VERIFICA
-    date_column="USERDATE",          # preferenza ADNI (alt: ['VISDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): USERDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['VISDATE', 'update_stamp']) VERIFICA
     # 14 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['SOURCE', 'FAQFINAN', 'FAQFORM', 'FAQSHOP', 'FAQGAME', 'FAQBEVG', 'FAQMEAL', 'FAQEVENT', 'FAQTV', 'FAQREM', 'FAQTRAVL', 'FAQTOTAL', 'SPID', 'USERDATE2']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -1007,7 +1007,7 @@ FNIH_PLASMA_PTAU_PROJECT = DatasetConfig(
     source="FNIH_PLASMA_PTAU_PROJECT_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['plasma'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['RUNDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['RUNDATE', 'update_stamp']) VERIFICA
     # 8 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['PROT', 'TYPE', 'SAMPLEID', 'PTAU_181', 'PTAU_231', 'UNITS', 'RUN_NUM', 'IMMUNOASSAY']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -1041,7 +1041,7 @@ FUJIREBIOABETA = DatasetConfig(
     source="FUJIREBIOABETA_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['csf'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['DRAWDTE', 'RECDTE', 'STORDTE', 'RUNDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['DRAWDTE', 'RECDTE', 'STORDTE', 'RUNDATE', 'update_stamp']) VERIFICA
     # 6 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['SITE', 'VOL', 'ABETA42', 'ABETA40', 'ABETA42_40', 'COMMENTS']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -1824,7 +1824,7 @@ ITEM = DatasetConfig(
     source="ITEM.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    # date_column=?  candidati (dai valori): ['LogMemIA_ExamDate', 'LogMemIIA_ExamDate', 'update_stamp']  <-- DECIDI
+    # data di visita?  candidati (dai valori): ['LogMemIA_ExamDate', 'LogMemIIA_ExamDate', 'update_stamp']  <-- DECIDI
     viscode_reference="VISCODE",
     # 761 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['ADAS_QuestionnaireNotAttempted', 'ADAS_Q1_T1_WL1_W1_butter', 'ADAS_Q1_T1_WL1_W2_arm', 'ADAS_Q1_T1_WL1_W3_shore', 'ADAS_Q1_T1_WL1_W4_letter', 'ADAS_Q1_T1_WL1_W5_queen', 'ADAS_Q1_T1_WL1_W6_cabin', 'ADAS_Q1_T1_WL1_W7_pole', 'ADAS_Q1_T1_WL1_W8_ticket', 'ADAS_Q1_T1_WL1_W9_grass', 'ADAS_Q1_T1_WL1_W10_engine', 'ADAS_Q1_T2_WL1_W1_pole', 'ADAS_Q1_T2_WL1_W2_letter', 'ADAS_Q1_T2_WL1_W3_butter', 'ADAS_Q1_T2_WL1_W4_queen', 'ADAS_Q1_T2_WL1_W5_arm', 'ADAS_Q1_T2_WL1_W6_shore', 'ADAS_Q1_T2_WL1_W7_grass', 'ADAS_Q1_T2_WL1_W8_cabin', 'ADAS_Q1_T2_WL1_W9_ticket', 'ADAS_Q1_T2_WL1_W10_engine', 'ADAS_Q1_T3_WL1_W1_shore', 'ADAS_Q1_T3_WL1_W2_letter', 'ADAS_Q1_T3_WL1_W3_arm', 'ADAS_Q1_T3_WL1_W4_cabin', 'ADAS_Q1_T3_WL1_W5_pole', 'ADAS_Q1_T3_WL1_W6_ticket', 'ADAS_Q1_T3_WL1_W7_engine', 'ADAS_Q1_T3_WL1_W8_grass', 'ADAS_Q1_T3_WL1_W9_butter', 'ADAS_Q1_T3_WL1_W10_queen', 'ADAS_Q1_T1_WL2_W1_bottle', 'ADAS_Q1_T1_WL2_W2_potato', 'ADAS_Q1_T1_WL2_W3_girl', 'ADAS_Q1_T1_WL2_W4_temple', 'ADAS_Q1_T1_WL2_W5_star', 'ADAS_Q1_T1_WL2_W6_animal', 'ADAS_Q1_T1_WL2_W7_forest', 'ADAS_Q1_T1_WL2_W8_lake', 'ADAS_Q1_T1_WL2_W9_clock', 'ADAS_Q1_T1_WL2_W10_office', 'ADAS_Q1_T2_WL2_W1_forest', 'ADAS_Q1_T2_WL2_W2_temple', 'ADAS_Q1_T2_WL2_W3_bottle', 'ADAS_Q1_T2_WL2_W4_star', 'ADAS_Q1_T2_WL2_W5_potato', 'ADAS_Q1_T2_WL2_W6_girl', 'ADAS_Q1_T2_WL2_W7_clock', 'ADAS_Q1_T2_WL2_W8_animal', 'ADAS_Q1_T2_WL2_W9_lake', 'ADAS_Q1_T2_WL2_W10_office', 'ADAS_Q1_T3_WL2_W1_girl', 'ADAS_Q1_T3_WL2_W2_temple', 'ADAS_Q1_T3_WL2_W3_potato', 'ADAS_Q1_T3_WL2_W4_animal', 'ADAS_Q1_T3_WL2_W5_forest', 'ADAS_Q1_T3_WL2_W6_lake', 'ADAS_Q1_T3_WL2_W7_office', 'ADAS_Q1_T3_WL2_W8_clock', 'ADAS_Q1_T3_WL2_W9_bottle', 'ADAS_Q1_T3_WL2_W10_star', 'ADAS_Q1_T1_WL3_W1_coast', 'ADAS_Q1_T1_WL3_W2_doll', 'ADAS_Q1_T1_WL3_W3_lip', 'ADAS_Q1_T1_WL3_W4_chair', 'ADAS_Q1_T1_WL3_W5_student', 'ADAS_Q1_T1_WL3_W6_apple', 'ADAS_Q1_T1_WL3_W7_horse', 'ADAS_Q1_T1_WL3_W8_pipe', 'ADAS_Q1_T1_WL3_W9_valley', 'ADAS_Q1_T1_WL3_W10_rock', 'ADAS_Q1_T2_WL3_W1_horse', 'ADAS_Q1_T2_WL3_W2_chair', 'ADAS_Q1_T2_WL3_W3_coast', 'ADAS_Q1_T2_WL3_W4_student', 'ADAS_Q1_T2_WL3_W5_doll', 'ADAS_Q1_T2_WL3_W6_lip', 'ADAS_Q1_T2_WL3_W7_valley', 'ADAS_Q1_T2_WL3_W8_apple', 'ADAS_Q1_T2_WL3_W9_pipe', 'ADAS_Q1_T2_WL3_W10_rock', 'ADAS_Q1_T3_WL3_W1_lip', 'ADAS_Q1_T3_WL3_W2_chair', 'ADAS_Q1_T3_WL3_W3_doll', 'ADAS_Q1_T3_WL3_W4_apple', 'ADAS_Q1_T3_WL3_W5_horse', 'ADAS_Q1_T3_WL3_W6_pipe', 'ADAS_Q1_T3_WL3_W7_rock', 'ADAS_Q1_T3_WL3_W8_valley', 'ADAS_Q1_T3_WL3_W9_coast', 'ADAS_Q1_T3_WL3_W10_student', 'ADAS_Q1_TimeEnded', 'ADAS_Q2a', 'ADAS_Q2b', 'ADAS_Q2c', 'ADAS_Q2d', 'ADAS_Q2e', 'ADAS_Q3a', 'ADAS_Q3b', 'ADAS_Q3c', 'ADAS_Q3d', 'ADAS_Q4_TimeBegan', 'ADAS_Q4_WL1_W1_butter', 'ADAS_Q4_WL1_W2_arm', 'ADAS_Q4_WL1_W3_shore', 'ADAS_Q4_WL1_W4_letter', 'ADAS_Q4_WL1_W5_queen', 'ADAS_Q4_WL1_W6_cabin', 'ADAS_Q4_WL1_W7_pole', 'ADAS_Q4_WL1_W8_ticket', 'ADAS_Q4_WL1_W9_grass', 'ADAS_Q4_WL1_W10_engine', 'ADAS_Q4_WL2_W1_bottle', 'ADAS_Q4_WL2_W2_potato', 'ADAS_Q4_WL2_W3_girl', 'ADAS_Q4_WL2_W4_temple', 'ADAS_Q4_WL2_W5_star', 'ADAS_Q4_WL2_W6_animal', 'ADAS_Q4_WL2_W7_forest', 'ADAS_Q4_WL2_W8_lake', 'ADAS_Q4_WL2_W9_clock', 'ADAS_Q4_WL2_W10_office', 'ADAS_Q4_WL3_W1_coast', 'ADAS_Q4_WL3_W2_doll', 'ADAS_Q4_WL3_W3_lip', 'ADAS_Q4_WL3_W4_chair', 'ADAS_Q4_WL3_W5_student', 'ADAS_Q4_WL3_W6_apple', 'ADAS_Q4_WL3_W7_horse', 'ADAS_Q4_WL3_W8_pipe', 'ADAS_Q4_WL3_W9_valley', 'ADAS_Q4_WL3_W10_rock', 'ADAS_Q5a_Flower', 'ADAS_Q5a_Bed', 'ADAS_Q5a_Whistle', 'ADAS_Q5a_Pencil', 'ADAS_Q5a_Rattle', 'ADAS_Q5a_Mask', 'ADAS_Q5a_Scissors', 'ADAS_Q5a_Comb', 'ADAS_Q5a_Wallet', 'ADAS_Q5a_Harmonica', 'ADAS_Q5a_Stethoscope', 'ADAS_Q5a_Tongs', 'ADAS_Q5b_Thumb', 'ADAS_Q5b_Middle', 'ADAS_Q5b_Ring', 'ADAS_Q5b_Index', 'ADAS_Q5b_Pinky', 'ADAS_Q6a', 'ADAS_Q6b', 'ADAS_Q6c', 'ADAS_Q6d', 'ADAS_Q6e', 'ADAS_Q7a', 'ADAS_Q7b', 'ADAS_Q7c', 'ADAS_Q7d', 'ADAS_Q7e', 'ADAS_Q7f', 'ADAS_Q7g', 'ADAS_Q7h', 'ADAS_Q8_WL1_REC_W1_nurse', 'ADAS_Q8_WL1_REC_W2_magazine', 'ADAS_Q8_WL1_REC_W3_wizard', 'ADAS_Q8_WL1_REC_W4_van', 'ADAS_Q8_WL1_REC_W5_leopard', 'ADAS_Q8_WL1_REC_W6_sale', 'ADAS_Q8_WL1_REC_W7_sea', 'ADAS_Q8_WL1_REC_W8_train', 'ADAS_Q8_WL1_REC_W9_coin', 'ADAS_Q8_WL1_REC_W10_ship', 'ADAS_Q8_WL1_REC_W11_institution', 'ADAS_Q8_WL1_REC_W12_map', 'ADAS_Q8_WL1_REC_W13_axe', 'ADAS_Q8_WL1_REC_W14_board', 'ADAS_Q8_WL1_REC_W15_carrot', 'ADAS_Q8_WL1_REC_W16_milk', 'ADAS_Q8_WL1_REC_W17_volume', 'ADAS_Q8_WL1_REC_W18_forest', 'ADAS_Q8_WL1_REC_W19_anchor', 'ADAS_Q8_WL1_REC_W20_gem', 'ADAS_Q8_WL1_REC_W21_cat', 'ADAS_Q8_WL1_REC_W22_fund', 'ADAS_Q8_WL1_REC_W23_edge', 'ADAS_Q8_WL1_REC_W24_cake', 'ADAS_Q8_WL1_Reminder_W1_nurse', 'ADAS_Q8_WL1_Reminder_W2_magazine', 'ADAS_Q8_WL1_Reminder_W3_wizard', 'ADAS_Q8_WL1_Reminder_W4_van', 'ADAS_Q8_WL1_Reminder_W5_leopard', 'ADAS_Q8_WL1_Reminder_W6_sale', 'ADAS_Q8_WL1_Reminder_W7_sea', 'ADAS_Q8_WL1_Reminder_W8_train', 'ADAS_Q8_WL1_Reminder_W9_coin', 'ADAS_Q8_WL1_Reminder_W10_ship', 'ADAS_Q8_WL1_Reminder_W11_institution', 'ADAS_Q8_WL1_Reminder_W12_map', 'ADAS_Q8_WL1_Reminder_W13_axe', 'ADAS_Q8_WL1_Reminder_W14_board', 'ADAS_Q8_WL1_Reminder_W15_carrot', 'ADAS_Q8_WL1_Reminder_W16_milk', 'ADAS_Q8_WL1_Reminder_W17_volume', 'ADAS_Q8_WL1_Reminder_W18_forest', 'ADAS_Q8_WL1_Reminder_W19_anchor', 'ADAS_Q8_WL1_Reminder_W20_gem', 'ADAS_Q8_WL1_Reminder_W21_cat', 'ADAS_Q8_WL1_Reminder_W22_fund', 'ADAS_Q8_WL1_Reminder_W23_edge', 'ADAS_Q8_WL1_Reminder_W24_cake', 'ADAS_Q8_WL2_REC_W1_cost', 'ADAS_Q8_WL2_REC_W2_nation', 'ADAS_Q8_WL2_REC_W3_chimney', 'ADAS_Q8_WL2_REC_W4_sparrow', 'ADAS_Q8_WL2_REC_W5_damages', 'ADAS_Q8_WL2_REC_W6_traffic', 'ADAS_Q8_WL2_REC_W7_sandwich', 'ADAS_Q8_WL2_REC_W8_service', 'ADAS_Q8_WL2_REC_W9_shell', 'ADAS_Q8_WL2_REC_W10_solution', 'ADAS_Q8_WL2_REC_W11_yard', 'ADAS_Q8_WL2_REC_W12_tube', 'ADAS_Q8_WL2_REC_W13_body', 'ADAS_Q8_WL2_REC_W14_ground', 'ADAS_Q8_WL2_REC_W15_stick', 'ADAS_Q8_WL2_REC_W16_engine', 'ADAS_Q8_WL2_REC_W17_riches', 'ADAS_Q8_WL2_REC_W18_gravity', 'ADAS_Q8_WL2_REC_W19_summer', 'ADAS_Q8_WL2_REC_W20_wisdom', 'ADAS_Q8_WL2_REC_W21_man', 'ADAS_Q8_WL2_REC_W22_meal', 'ADAS_Q8_WL2_REC_W23_passenger', 'ADAS_Q8_WL2_REC_W24_acid', 'ADAS_Q8_WL2_Reminder_W1_cost', 'ADAS_Q8_WL2_Reminder_W2_nation', 'ADAS_Q8_WL2_Reminder_W3_chimney', 'ADAS_Q8_WL2_Reminder_W4_sparrow', 'ADAS_Q8_WL2_Reminder_W5_damages', 'ADAS_Q8_WL2_Reminder_W6_traffic', 'ADAS_Q8_WL2_Reminder_W7_sandwich', 'ADAS_Q8_WL2_Reminder_W8_service', 'ADAS_Q8_WL2_Reminder_W9_shell', 'ADAS_Q8_WL2_Reminder_W10_solution', 'ADAS_Q8_WL2_Reminder_W11_yard', 'ADAS_Q8_WL2_Reminder_W12_tube', 'ADAS_Q8_WL2_Reminder_W13_body', 'ADAS_Q8_WL2_Reminder_W14_ground', 'ADAS_Q8_WL2_Reminder_W15_stick', 'ADAS_Q8_WL2_Reminder_W16_engine', 'ADAS_Q8_WL2_Reminder_W17_riches', 'ADAS_Q8_WL2_Reminder_W18_gravity', 'ADAS_Q8_WL2_Reminder_W19_summer', 'ADAS_Q8_WL2_Reminder_W20_wisdom', 'ADAS_Q8_WL2_Reminder_W21_man', 'ADAS_Q8_WL2_Reminder_W22_meal', 'ADAS_Q8_WL2_Reminder_W23_passenger', 'ADAS_Q8_WL2_Reminder_W24_acid', 'ADAS_Q8_WL3_REC_W1_silence', 'ADAS_Q8_WL3_REC_W2_elbow', 'ADAS_Q8_WL3_REC_W3_daughter', 'ADAS_Q8_WL3_REC_W4_powder', 'ADAS_Q8_WL3_REC_W5_canal', 'ADAS_Q8_WL3_REC_W6_forehead', 'ADAS_Q8_WL3_REC_W7_tiger', 'ADAS_Q8_WL3_REC_W8_twilight', 'ADAS_Q8_WL3_REC_W9_dragon', 'ADAS_Q8_WL3_REC_W10_chamber', 'ADAS_Q8_WL3_REC_W11_sister', 'ADAS_Q8_WL3_REC_W12_beggar', 'ADAS_Q8_WL3_REC_W13_echo', 'ADAS_Q8_WL3_REC_W14_nephew', 'ADAS_Q8_WL3_REC_W15_duty', 'ADAS_Q8_WL3_REC_W16_village', 'ADAS_Q8_WL3_REC_W17_corner', 'ADAS_Q8_WL3_REC_W18_olive', 'ADAS_Q8_WL3_REC_W19_music', 'ADAS_Q8_WL3_REC_W20_courage', 'ADAS_Q8_WL3_REC_W21_bushel', 'ADAS_Q8_WL3_REC_W22_ribbon', 'ADAS_Q8_WL3_REC_W23_object', 'ADAS_Q8_WL3_REC_W24_collar', 'ADAS_Q8_WL3_Reminder_W1_silence', 'ADAS_Q8_WL3_Reminder_W2_elbow', 'ADAS_Q8_WL3_Reminder_W3_daughter', 'ADAS_Q8_WL3_Reminder_W4_powder', 'ADAS_Q8_WL3_Reminder_W5_canal', 'ADAS_Q8_WL3_Reminder_W6_forehead', 'ADAS_Q8_WL3_Reminder_W7_tiger', 'ADAS_Q8_WL3_Reminder_W8_twilight', 'ADAS_Q8_WL3_Reminder_W9_dragon', 'ADAS_Q8_WL3_Reminder_W10_chamber', 'ADAS_Q8_WL3_Reminder_W11_sister', 'ADAS_Q8_WL3_Reminder_W12_beggar', 'ADAS_Q8_WL3_Reminder_W13_echo', 'ADAS_Q8_WL3_Reminder_W14_nephew', 'ADAS_Q8_WL3_Reminder_W15_duty', 'ADAS_Q8_WL3_Reminder_W16_village', 'ADAS_Q8_WL3_Reminder_W17_corner', 'ADAS_Q8_WL3_Reminder_W18_olive', 'ADAS_Q8_WL3_Reminder_W19_music', 'ADAS_Q8_WL3_Reminder_W20_courage', 'ADAS_Q8_WL3_Reminder_W21_bushel', 'ADAS_Q8_WL3_Reminder_W22_ribbon', 'ADAS_Q8_WL3_Reminder_W23_object', 'ADAS_Q8_WL3_Reminder_W24_collar', 'ADAS_Q9', 'ADAS_Q10', 'ADAS_Q11', 'ADAS_Q12', 'ADAS_Q13a', 'ADAS_Q13b', 'ADAS_Q13c', 'ADAS_ExamDate', 'ANART_QuestionnaireNotAttempted', 'ANART_Q1', 'ANART_Q2', 'ANART_Q3', 'ANART_Q4', 'ANART_Q5', 'ANART_Q6', 'ANART_Q7', 'ANART_Q8', 'ANART_Q9', 'ANART_Q10', 'ANART_Q11', 'ANART_Q12', 'ANART_Q13', 'ANART_Q14', 'ANART_Q15', 'ANART_Q16', 'ANART_Q17', 'ANART_Q18', 'ANART_Q19', 'ANART_Q20', 'ANART_Q21', 'ANART_Q22', 'ANART_Q23', 'ANART_Q24', 'ANART_Q25', 'ANART_Q26', 'ANART_Q27', 'ANART_Q28', 'ANART_Q29', 'ANART_Q30', 'ANART_Q31', 'ANART_Q32', 'ANART_Q33', 'ANART_Q34', 'ANART_Q35', 'ANART_Q36', 'ANART_Q37', 'ANART_Q38', 'ANART_Q39', 'ANART_Q40', 'ANART_Q41', 'ANART_Q42', 'ANART_Q43', 'ANART_Q44', 'ANART_Q45', 'ANART_Q46', 'ANART_Q47', 'ANART_Q48', 'ANART_Q49', 'ANART_Q50', 'ANART_ExamDate', 'AVLT_QuestionnaireNotAttempted', 'AVLT_StartTime', 'AVLTA_WL1a_T1_W1_drum', 'AVLTA_WL1a_T1_W2_curtain', 'AVLTA_WL1a_T1_W3_bell', 'AVLTA_WL1a_T1_W4_coffee', 'AVLTA_WL1a_T1_W5_school', 'AVLTA_WL1a_T1_W6_parent', 'AVLTA_WL1a_T1_W7_moon', 'AVLTA_WL1a_T1_W8_garden', 'AVLTA_WL1a_T1_W9_hat', 'AVLTA_WL1a_T1_W10_farmer', 'AVLTA_WL1a_T1_W11_nose', 'AVLTA_WL1a_T1_W12_turkey', 'AVLTA_WL1a_T1_W13_color', 'AVLTA_WL1a_T1_W14_house', 'AVLTA_WL1a_T1_W15_river', 'AVLTA_WL1a_T2_W1_drum', 'AVLTA_WL1a_T2_W2_curtain', 'AVLTA_WL1a_T2_W3_bell', 'AVLTA_WL1a_T2_W4_coffee', 'AVLTA_WL1a_T2_W5_school', 'AVLTA_WL1a_T2_W6_parent', 'AVLTA_WL1a_T2_W7_moon', 'AVLTA_WL1a_T2_W8_garden', 'AVLTA_WL1a_T2_W9_hat', 'AVLTA_WL1a_T2_W10_farmer', 'AVLTA_WL1a_T2_W11_nose', 'AVLTA_WL1a_T2_W12_turkey', 'AVLTA_WL1a_T2_W13_color', 'AVLTA_WL1a_T2_W14_house', 'AVLTA_WL1a_T2_W15_river', 'AVLTA_WL1a_T3_W1_drum', 'AVLTA_WL1a_T3_W2_curtain', 'AVLTA_WL1a_T3_W3_bell', 'AVLTA_WL1a_T3_W4_coffee', 'AVLTA_WL1a_T3_W5_school', 'AVLTA_WL1a_T3_W6_parent', 'AVLTA_WL1a_T3_W7_moon', 'AVLTA_WL1a_T3_W8_garden', 'AVLTA_WL1a_T3_W9_hat', 'AVLTA_WL1a_T3_W10_farmer', 'AVLTA_WL1a_T3_W11_nose', 'AVLTA_WL1a_T3_W12_turkey', 'AVLTA_WL1a_T3_W13_color', 'AVLTA_WL1a_T3_W14_house', 'AVLTA_WL1a_T3_W15_river', 'AVLTA_WL1a_T4_W1_drum', 'AVLTA_WL1a_T4_W2_curtain', 'AVLTA_WL1a_T4_W3_bell', 'AVLTA_WL1a_T4_W4_coffee', 'AVLTA_WL1a_T4_W5_school', 'AVLTA_WL1a_T4_W6_parent', 'AVLTA_WL1a_T4_W7_moon', 'AVLTA_WL1a_T4_W8_garden', 'AVLTA_WL1a_T4_W9_hat', 'AVLTA_WL1a_T4_W10_farmer', 'AVLTA_WL1a_T4_W11_nose', 'AVLTA_WL1a_T4_W12_turkey', 'AVLTA_WL1a_T4_W13_color', 'AVLTA_WL1a_T4_W14_house', 'AVLTA_WL1a_T4_W15_river', 'AVLTA_WL1a_T5_W1_drum', 'AVLTA_WL1a_T5_W2_curtain', 'AVLTA_WL1a_T5_W3_bell', 'AVLTA_WL1a_T5_W4_coffee', 'AVLTA_WL1a_T5_W5_school', 'AVLTA_WL1a_T5_W6_parent', 'AVLTA_WL1a_T5_W7_moon', 'AVLTA_WL1a_T5_W8_garden', 'AVLTA_WL1a_T5_W9_hat', 'AVLTA_WL1a_T5_W10_farmer', 'AVLTA_WL1a_T5_W11_nose', 'AVLTA_WL1a_T5_W12_turkey', 'AVLTA_WL1a_T5_W13_color', 'AVLTA_WL1a_T5_W14_house', 'AVLTA_WL1a_T5_W15_river', 'AVLTA_WL1a_T6_W1_drum', 'AVLTA_WL1a_T6_W2_curtain', 'AVLTA_WL1a_T6_W3_bell', 'AVLTA_WL1a_T6_W4_coffee', 'AVLTA_WL1a_T6_W5_school', 'AVLTA_WL1a_T6_W6_parent', 'AVLTA_WL1a_T6_W7_moon', 'AVLTA_WL1a_T6_W8_garden', 'AVLTA_WL1a_T6_W9_hat', 'AVLTA_WL1a_T6_W10_farmer', 'AVLTA_WL1a_T6_W11_nose', 'AVLTA_WL1a_T6_W12_turkey', 'AVLTA_WL1a_T6_W13_color', 'AVLTA_WL1a_T6_W14_house', 'AVLTA_WL1a_T6_W15_river', 'AVLTA_WL1b_T7_W1_desk', 'AVLTA_WL1b_T7_W2_ranger', 'AVLTA_WL1b_T7_W3_bird', 'AVLTA_WL1b_T7_W4_shoe', 'AVLTA_WL1b_T7_W5_stove', 'AVLTA_WL1b_T7_W6_mountain', 'AVLTA_WL1b_T7_W7_glasses', 'AVLTA_WL1b_T7_W8_towel', 'AVLTA_WL1b_T7_W9_cloud', 'AVLTA_WL1b_T7_W10_boat', 'AVLTA_WL1b_T7_W11_lamb', 'AVLTA_WL1b_T7_W12_gun', 'AVLTA_WL1b_T7_W13_pencil', 'AVLTA_WL1b_T7_W14_church', 'AVLTA_WL1b_T7_W15_fish', 'AVLTB_WL2a_T1_W1_doll', 'AVLTB_WL2a_T1_W2_mirror', 'AVLTB_WL2a_T1_W3_nail', 'AVLTB_WL2a_T1_W4_sailor', 'AVLTB_WL2a_T1_W5_heart', 'AVLTB_WL2a_T1_W6_desert', 'AVLTB_WL2a_T1_W7_face', 'AVLTB_WL2a_T1_W8_letter', 'AVLTB_WL2a_T1_W9_bed', 'AVLTB_WL2a_T1_W10_machine', 'AVLTB_WL2a_T1_W11_milk', 'AVLTB_WL2a_T1_W12_helmet', 'AVLTB_WL2a_T1_W13_music', 'AVLTB_WL2a_T1_W14_horse', 'AVLTB_WL2a_T1_W15_road', 'AVLTB_WL2a_T2_W1_doll', 'AVLTB_WL2a_T2_W2_mirror', 'AVLTB_WL2a_T2_W3_nail', 'AVLTB_WL2a_T2_W4_sailor', 'AVLTB_WL2a_T2_W5_heart', 'AVLTB_WL2a_T2_W6_desert', 'AVLTB_WL2a_T2_W7_face', 'AVLTB_WL2a_T2_W8_letter', 'AVLTB_WL2a_T2_W9_bed', 'AVLTB_WL2a_T2_W10_machine', 'AVLTB_WL2a_T2_W11_milk', 'AVLTB_WL2a_T2_W12_helmet', 'AVLTB_WL2a_T2_W13_music', 'AVLTB_WL2a_T2_W14_horse', 'AVLTB_WL2a_T2_W15_road', 'AVLTB_WL2a_T3_W1_doll', 'AVLTB_WL2a_T3_W2_mirror', 'AVLTB_WL2a_T3_W3_nail', 'AVLTB_WL2a_T3_W4_sailor', 'AVLTB_WL2a_T3_W5_heart', 'AVLTB_WL2a_T3_W6_desert', 'AVLTB_WL2a_T3_W7_face', 'AVLTB_WL2a_T3_W8_letter', 'AVLTB_WL2a_T3_W9_bed', 'AVLTB_WL2a_T3_W10_machine', 'AVLTB_WL2a_T3_W11_milk', 'AVLTB_WL2a_T3_W12_helmet', 'AVLTB_WL2a_T3_W13_music', 'AVLTB_WL2a_T3_W14_horse', 'AVLTB_WL2a_T3_W15_road', 'AVLTB_WL2a_T4_W1_doll', 'AVLTB_WL2a_T4_W2_mirror', 'AVLTB_WL2a_T4_W3_nail', 'AVLTB_WL2a_T4_W4_sailor', 'AVLTB_WL2a_T4_W5_heart', 'AVLTB_WL2a_T4_W6_desert', 'AVLTB_WL2a_T4_W7_face', 'AVLTB_WL2a_T4_W8_letter', 'AVLTB_WL2a_T4_W9_bed', 'AVLTB_WL2a_T4_W10_machine', 'AVLTB_WL2a_T4_W11_milk', 'AVLTB_WL2a_T4_W12_helmet', 'AVLTB_WL2a_T4_W13_music', 'AVLTB_WL2a_T4_W14_horse', 'AVLTB_WL2a_T4_W15_road', 'AVLTB_WL2a_T5_W1_doll', 'AVLTB_WL2a_T5_W2_mirror', 'AVLTB_WL2a_T5_W3_nail', 'AVLTB_WL2a_T5_W4_sailor', 'AVLTB_WL2a_T5_W5_heart', 'AVLTB_WL2a_T5_W6_desert', 'AVLTB_WL2a_T5_W7_face', 'AVLTB_WL2a_T5_W8_letter', 'AVLTB_WL2a_T5_W9_bed', 'AVLTB_WL2a_T5_W10_machine', 'AVLTB_WL2a_T5_W11_milk', 'AVLTB_WL2a_T5_W12_helmet', 'AVLTB_WL2a_T5_W13_music', 'AVLTB_WL2a_T5_W14_horse', 'AVLTB_WL2a_T5_W15_road', 'AVLTB_WL2a_T6_W1_doll', 'AVLTB_WL2a_T6_W2_mirror', 'AVLTB_WL2a_T6_W3_nail', 'AVLTB_WL2a_T6_W4_sailor', 'AVLTB_WL2a_T6_W5_heart', 'AVLTB_WL2a_T6_W6_desert', 'AVLTB_WL2a_T6_W7_face', 'AVLTB_WL2a_T6_W8_letter', 'AVLTB_WL2a_T6_W9_bed', 'AVLTB_WL2a_T6_W10_machine', 'AVLTB_WL2a_T6_W11_milk', 'AVLTB_WL2a_T6_W12_helmet', 'AVLTB_WL2a_T6_W13_music', 'AVLTB_WL2a_T6_W14_horse', 'AVLTB_WL2a_T6_W15_road', 'AVLTB_WL2b_T7_W1_dish', 'AVLTB_WL2b_T7_W2_jester', 'AVLTB_WL2b_T7_W3_hill', 'AVLTB_WL2b_T7_W4_coat', 'AVLTB_WL2b_T7_W5_tool', 'AVLTB_WL2b_T7_W6_forest', 'AVLTB_WL2b_T7_W7_water', 'AVLTB_WL2b_T7_W8_ladder', 'AVLTB_WL2b_T7_W9_girl', 'AVLTB_WL2b_T7_W10_foot', 'AVLTB_WL2b_T7_W11_shield', 'AVLTB_WL2b_T7_W12_pie', 'AVLTB_WL2b_T7_W13_insect', 'AVLTB_WL2b_T7_W14_ball', 'AVLTB_WL2b_T7_W15_car', 'AVLT_Trial1Int', 'AVLT_Trial2Int', 'AVLT_Trial3Int', 'AVLT_Trial4Int', 'AVLT_Trial5Int', 'AVLT_Trial6Int', 'AVLT_Trial7Int', 'AVLT_ExamDate', 'AVLT_Delay_QuestionnaireNotAttempted', 'AVLT_DelayTime', 'AVLT_Delay_WL1_W1_drum', 'AVLT_Delay_WL1_W2_curtain', 'AVLT_Delay_WL1_W3_bell', 'AVLT_Delay_WL1_W4_coffee', 'AVLT_Delay_WL1_W5_school', 'AVLT_Delay_WL1_W6_parent', 'AVLT_Delay_WL1_W7_moon', 'AVLT_Delay_WL1_W8_garden', 'AVLT_Delay_WL1_W9_hat', 'AVLT_Delay_WL1_W10_farmer', 'AVLT_Delay_WL1_W11_nose', 'AVLT_Delay_WL1_W12_turkey', 'AVLT_Delay_WL1_W13_color', 'AVLT_Delay_WL1_W14_house', 'AVLT_Delay_WL1_W15_river', 'AVLT_Delay_WL2_W1_doll', 'AVLT_Delay_WL2_W2_mirror', 'AVLT_Delay_WL2_W3_nail', 'AVLT_Delay_WL2_W4_sailor', 'AVLT_Delay_WL2_W5_heart', 'AVLT_Delay_WL2_W6_desert', 'AVLT_Delay_WL2_W7_face', 'AVLT_Delay_WL2_W8_letter', 'AVLT_Delay_WL2_W9_bed', 'AVLT_Delay_WL2_W10_machine', 'AVLT_Delay_WL2_W11_milk', 'AVLT_Delay_WL2_W12_helmet', 'AVLT_Delay_WL2_W13_music', 'AVLT_Delay_WL2_W14_horse', 'AVLT_Delay_WL2_W15_road', 'AVLT_Delay_Int', 'AVLT_Delay_Rec', 'AVLT_Delay_TotInt', 'AVLT_Delay_ExamDate', 'BosNam_QuestionnaireNotAttempted', 'BosNam_Q1', 'BosNam_Q3', 'BosNam_Q5', 'BosNam_Q7', 'BosNam_Q9', 'BosNam_Q11', 'BosNam_Q13', 'BosNam_Q15', 'BosNam_Q17', 'BosNam_Q19', 'BosNam_Q21', 'BosNam_Q23', 'BosNam_Q25', 'BosNam_Q27', 'BosNam_Q29', 'BosNam_Q31', 'BosNam_Q33', 'BosNam_Q35', 'BosNam_Q37', 'BosNam_Q39', 'BosNam_Q41', 'BosNam_Q43', 'BosNam_Q45', 'BosNam_Q47', 'BosNam_Q49', 'BosNam_Q51', 'BosNam_Q53', 'BosNam_Q55', 'BosNam_Q57', 'BosNam_Q59', 'BosNam_ExamDate', 'CatFlu_QuestionnaireNotAttempted', 'CatFlu_Practise', 'CatFlu_Animal_Total', 'CatFlu_Animal_Perseverations', 'CatFlu_Animal_Intrusions', 'CatFlu_Vegetable_Total', 'CatFlu_Vegetable_Perseverations', 'CatFlu_Vegetable_Intrusions', 'CatFlu_ExamDate', 'CDT_QuestionnaireNotAttempted', 'CDT_Q1pt1', 'CDT_Q1pt2', 'CDT_Q1pt3', 'CDT_Q1pt4', 'CDT_Q1pt5', 'CDT_Q2pt1', 'CDT_Q2pt2', 'CDT_Q2pt3', 'CDT_Q2pt4', 'CDT_Q2pt5', 'CDT_ExamDate', 'DSBac_QuestionnaireNotAttempted', 'DSBac_Q1a', 'DSBac_Q1b', 'DSBac_Q2a', 'DSBac_Q2b', 'DSBac_Q3a', 'DSBac_Q3b', 'DSBac_Q4a', 'DSBac_Q4b', 'DSBac_Q5a', 'DSBac_Q5b', 'DSBac_Q6a', 'DSBac_Q6b', 'DSBac_Length', 'DSBac_ExamDate', 'DSFor_QuestionnaireNotAttempted', 'DSFor_Q1a', 'DSFor_Q1b', 'DSFor_Q2a', 'DSFor_Q2b', 'DSFor_Q3a', 'DSFor_Q3b', 'DSFor_Q4a', 'DSFor_Q4b', 'DSFor_Q5a', 'DSFor_Q5b', 'DSFor_Q6a', 'DSFor_Q6b', 'DSFor_Length', 'DSFor_ExamDate', 'LogMemIA_QuestionnaireNotAttempted', 'LogMemIA_TimeEnded', 'LogMemIA_ImmediateScore', 'LogMemIIA_QuestionnaireNotAttempted', 'LogMemIIA_TimeBegan', 'LogMemIIA_DelayedScore', 'LogMemIIA_ReminderGiven', 'MMSE_QuestionnaireNotAttempted', 'MMSE_Q1', 'MMSE_Q2', 'MMSE_Q3', 'MMSE_Q4', 'MMSE_Q5', 'MMSE_Q6', 'MMSE_Q7', 'MMSE_Q8', 'MMSE_Q9', 'MMSE_Q10', 'MMSE_Q11', 'MMSE_Q12', 'MMSE_Q13', 'MMSE_Q13a', 'MMSE_Q14', 'MMSE_Q15', 'MMSE_Q16', 'MMSE_Q17', 'MMSE_Q18', 'MMSE_Q14value', 'MMSE_Q15value', 'MMSE_Q16value', 'MMSE_Q17value', 'MMSE_Q18value', 'MMSE_Q19', 'MMSE_Q20', 'MMSE_Q21', 'MMSE_Q22', 'MMSE_Q23', 'MMSE_Q24', 'MMSE_Q25', 'MMSE_Q26', 'MMSE_Q27', 'MMSE_Q28', 'MMSE_Q29', 'MMSE_Q30', 'MMSE_ExamDate', 'TMT_QuestionnaireNotAttempted', 'TMT_PtA_Complete', 'TMT_PtA_Comission', 'TMT_PtA_Omission', 'TMT_PtB_Complete', 'TMT_PtB_Comission', 'TMT_PtB_Omission', 'TMT_ExamDate', 'WAISR_QuestionnaireNotAttempted', 'WAISR_Score', 'WAISR_ExamDate']
@@ -1897,7 +1897,7 @@ MMSE = DatasetConfig(
     source="MMSE_25Jul2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['scale'])
     id_column="RID",                            # standard ADNI (alt: ['PTID', 'ID']) VERIFICA
-    date_column="USERDATE",          # preferenza ADNI (alt: ['VISDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): USERDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['VISDATE', 'update_stamp']) VERIFICA
     # 45 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['DONE', 'NDREASON', 'SOURCE', 'MMDATE', 'MMYEAR', 'MMMONTH', 'MMDAY', 'MMSEASON', 'MMHOSPIT', 'MMFLOOR', 'MMCITY', 'MMAREA', 'MMSTATE', 'WORDLIST', 'WORD1', 'WORD2', 'WORD3', 'MMTRIALS', 'MMD', 'MML', 'MMR', 'MMO', 'MMW', 'MMLTR1', 'MMLTR2', 'MMLTR3', 'MMLTR4', 'MMLTR5', 'MMLTR6', 'MMLTR7', 'WORLDSCORE', 'WORD1DL', 'WORD2DL', 'WORD3DL', 'MMWATCH', 'MMPENCIL', 'MMREPEAT', 'MMHAND', 'MMFOLD', 'MMONFLR', 'MMREAD', 'MMWRITE', 'MMDRAW', 'MMSCORE', 'USERDATE2']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -1969,7 +1969,7 @@ MOCA = DatasetConfig(
     source="MOCA_28Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['scale'])
     id_column="RID",                            # standard ADNI (alt: ['PTID', 'ID']) VERIFICA
-    date_column="USERDATE",          # preferenza ADNI (alt: ['VISDATE', 'USERDATE2', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): USERDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['VISDATE', 'USERDATE2', 'update_stamp']) VERIFICA
     # 44 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['TRAILS', 'CUBE', 'CLOCKCON', 'CLOCKNO', 'CLOCKHAN', 'LION', 'RHINO', 'CAMEL', 'IMMT1W1', 'IMMT1W2', 'IMMT1W3', 'IMMT1W4', 'IMMT1W5', 'IMMT2W1', 'IMMT2W2', 'IMMT2W3', 'IMMT2W4', 'IMMT2W5', 'DIGFOR', 'DIGBACK', 'LETTERS', 'SERIAL1', 'SERIAL2', 'SERIAL3', 'SERIAL4', 'SERIAL5', 'REPEAT1', 'REPEAT2', 'FFLUENCY', 'ABSTRAN', 'ABSMEAS', 'DELW1', 'DELW2', 'DELW3', 'DELW4', 'DELW5', 'DATE', 'MONTH', 'YEAR', 'DAY', 'PLACE', 'CITY', 'MOCA', 'SOURCE']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -2065,7 +2065,7 @@ NEUROBAT = DatasetConfig(
     source="NEUROBAT_28Oct2025.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: ['PTID', 'ID']) VERIFICA
-    date_column="USERDATE",          # preferenza ADNI (alt: ['VISDATE', 'USERDATE2', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): USERDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['VISDATE', 'USERDATE2', 'update_stamp']) VERIFICA
     # 69 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['SOURCE', 'CLOCKCIRC', 'CLOCKSYM', 'CLOCKNUM', 'CLOCKHAND', 'CLOCKTIME', 'CLOCKSCOR', 'COPYCIRC', 'COPYSYM', 'COPYNUM', 'COPYHAND', 'COPYTIME', 'COPYSCOR', 'LMSTORY', 'LIMMTOTAL', 'LIMMEND', 'AVTOT1', 'AVERR1', 'AVTOT2', 'AVERR2', 'AVTOT3', 'AVERR3', 'AVTOT4', 'AVERR4', 'AVTOT5', 'AVERR5', 'AVTOT6', 'AVERR6', 'AVTOTB', 'AVERRB', 'AVENDED', 'DSPANFOR', 'DSPANFLTH', 'DSPANBAC', 'DSPANBLTH', 'CATANIMSC', 'CATANPERS', 'CATANINTR', 'CATVEGESC', 'CATVGPERS', 'CATVGINTR', 'TRAASCOR', 'TRAAERRCOM', 'TRAAERROM', 'TRABSCOR', 'TRABERRCOM', 'TRABERROM', 'DIGITSCOR', 'LDELBEGIN', 'LDELTOTAL', 'LDELCUE', 'BNTND', 'BNTSPONT', 'BNTSTIM', 'BNTCSTIM', 'BNTPHON', 'BNTCPHON', 'BNTTOTAL', 'AVDELBEGAN', 'AVDEL30MIN', 'AVDELERR1', 'AVDELTOT', 'AVDELERR2', 'ANARTERR', 'ANARTND', 'ANART', 'MINTSEMCUE', 'MINTTOTAL', 'MINTUNCUED']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -2246,7 +2246,7 @@ NEUROPATH = DatasetConfig(
     source="NEUROPATH_06Jun2025.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: ['PTID']) VERIFICA
-    # date_column=?  candidati (dai valori): ['NPFORMDATE_DRVD', 'update_stamp']  <-- DECIDI
+    # data di visita?  candidati (dai valori): ['NPFORMDATE_DRVD', 'update_stamp']  <-- DECIDI
     viscode_reference="VISCODE2",
     # 159 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['NPFORMMO', 'NPFORMDY', 'NPFORMYR', 'NPDAGE', 'NPDODYR', 'NPPMIH', 'NPFIX', 'NPFIXX', 'NPWBRWT', 'NPWBRF', 'NPGRCCA', 'NPGRLA', 'NPGRHA', 'NPGRSNH', 'NPGRLCH', 'NPAVAS', 'NPTAN', 'NPTANX', 'NPABAN', 'NPABANX', 'NPASAN', 'NPASANX', 'NPTDPAN', 'NPTDPANX', 'NPHISMB', 'NPHISG', 'NPHISSS', 'NPHIST', 'NPHISO', 'NPHISOX', 'NPTHAL', 'NPBRAAK', 'NPNEUR', 'NPADNC', 'NPDIFF', 'NPAMY', 'NPINF', 'NPINF1A', 'NPINF1B', 'NPINF1D', 'NPINF1F', 'NPINF2A', 'NPINF2B', 'NPINF2D', 'NPINF2F', 'NPINF3A', 'NPINF3B', 'NPINF3D', 'NPINF3F', 'NPINF4A', 'NPINF4B', 'NPINF4D', 'NPINF4F', 'NPHEMO', 'NPHEMO1', 'NPHEMO2', 'NPHEMO3', 'NPOLD', 'NPOLD1', 'NPOLD2', 'NPOLD3', 'NPOLD4', 'NPOLDD', 'NPOLDD1', 'NPOLDD2', 'NPOLDD3', 'NPOLDD4', 'NPARTER', 'NPWMR', 'NPPATH', 'NPNEC', 'NPPATH2', 'NPPATH3', 'NPPATH4', 'NPPATH5', 'NPPATH6', 'NPPATH7', 'NPPATH8', 'NPPATH9', 'NPPATH10', 'NPPATH11', 'NPPATHO', 'NPPATHOX', 'NPLBOD', 'NPNLOSS', 'NPHIPSCL', 'NPTDPA', 'NPTDPB', 'NPTDPC', 'NPTDPD', 'NPTDPE', 'NPFTDTAU', 'NPPICK', 'NPFTDT2', 'NPCORT', 'NPPROG', 'NPFTDT5', 'NPFTDT6', 'NPFTDT7', 'NPFTDT8', 'NPFTDT9', 'NPFTDT10', 'NPFTDTDP', 'NPALSMND', 'NPOFTD', 'NPOFTD1', 'NPOFTD2', 'NPOFTD3', 'NPOFTD4', 'NPOFTD5', 'NPPDXA', 'NPPDXB', 'NPPDXC', 'NPPDXD', 'NPPDXE', 'NPPDXF', 'NPPDXG', 'NPPDXH', 'NPPDXI', 'NPPDXJ', 'NPPDXK', 'NPPDXL', 'NPPDXM', 'NPPDXN', 'NPPDXO', 'NPPDXP', 'NPPDXQ', 'NPPDXR', 'NPPDXRX', 'NPPDXS', 'NPPDXSX', 'NPPDXT', 'NPPDXTX', 'NPBNKA', 'NPBNKB', 'NPBNKC', 'NPBNKD', 'NPBNKE', 'NPBNKF', 'NPBNKG', 'NPFAUT', 'NPFAUT1', 'NPFAUT2', 'NPFAUT3', 'NPFAUT4', 'FORMVER', 'NPARTAG', 'NPATGSEV', 'NPATGAMY', 'NPATGAM1', 'NPATGAM2', 'NPATGAM3', 'NPATGAM4', 'NPATGAM5', 'NPATGFRN', 'NPATGFR1', 'NPATGFR2', 'NPATGFR3', 'NPATGFR4']
@@ -2276,7 +2276,7 @@ PLASMA_ABETA_PROJECT_ADX_VUMC = DatasetConfig(
     source="PLASMA_ABETA_PROJECT_ADX_VUMC_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['plasma'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['DRAWTIME', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['DRAWTIME', 'update_stamp']) VERIFICA
     # 4 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['NF_LIGHT', 'ABETA42', 'ABETA40', 'GFAP']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -2322,7 +2322,7 @@ PLASMA_ABETA_PROJECT_QUANTERIX = DatasetConfig(
     source="PLASMA_ABETA_PROJECT_QUANTERIX_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['plasma'])
     id_column="RID",                            # standard ADNI (alt: ['SAMPLE_ID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['DRAWTIME', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['DRAWTIME', 'update_stamp']) VERIFICA
     # 20 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['AB1_40_RUN', 'AB1_40_AEB_REP1', 'AB1_40_AEB_REP2', 'AB1_40_AVE_AEB', 'AB1_40_CONC_REP1', 'AB1_40_CONC_REP2', 'AB1_40_AVE_CONC', 'AB1_40_DILUTION_FACTOR', 'AB1_40_DILUTION_CORRECTED_CONC', 'AB1_40_RUN_NOTES', 'AB1_42_RUN', 'AB1_42_AEB_REP1', 'AB1_42_AEB_REP2', 'AB1_42_AVE_AEB', 'AB1_42_CONC_REP1', 'AB1_42_CONC_REP2', 'AB1_42_AVE_CONC', 'AB1_42_DILUTION_FACTOR', 'AB1_42_DILUTION_CORRECTED_CONC', 'AB1_42_RUN_NOTES']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -2351,7 +2351,7 @@ PLASMA_ABETA_PROJECT_ROCHE = DatasetConfig(
     source="PLASMA_ABETA_PROJECT_ROCHE_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['plasma'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['DRAWTIME', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['DRAWTIME', 'update_stamp']) VERIFICA
     # 4 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['STUDYID', 'RBARCODE', 'ASSAY', 'RESULT']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -2381,7 +2381,7 @@ PLASMA_ABETA_PROJECT_SHIMADZU = DatasetConfig(
     source="PLASMA_ABETA_PROJECT_SHIMADZU_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['plasma'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['DRAWTIME', 'DATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['DRAWTIME', 'DATE', 'update_stamp']) VERIFICA
     # 4 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['AB1_42', 'AB1_40', 'APP_669_711', 'COMPOSITE_BIOMARKER']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -2412,7 +2412,7 @@ PLASMA_ABETA_PROJECT_U_OF_GOTHENBURG = DatasetConfig(
     source="PLASMA_ABETA_PROJECT_U_OF_GOTHENBURG_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['plasma'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['DRAWTIME', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['DRAWTIME', 'update_stamp']) VERIFICA
     # 6 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['NUMBER', 'PLATE', 'AB_1_37', 'AB_1_38', 'AB_1_40', 'AB_1_42']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -2453,7 +2453,7 @@ PLASMA_ABETA_PROJECT_WASH_U_11_05_21 = DatasetConfig(
     source="PLASMA_ABETA_PROJECT_WASH_U_11_05_21_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['plasma'])
     id_column="RID",                            # standard ADNI (alt: ['LC_MS_SAMPLE_ID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['DRAWTIME', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['DRAWTIME', 'update_stamp']) VERIFICA
     # 15 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['FILE_NAME_NE', 'SAMPLE_TYPE', 'INJECTION', 'INSTRUMENT', 'BATCH', 'ASSAY', 'ASSAY_IP_PROTOCOL', 'MS_RUN_DATE', 'AB40', 'AB42', 'PLASMAAB4240', 'STANDARDIZED_PLASMAAB42', 'STANDARDIZED_PLASMAAB40', 'STANDARDIZEAB42_STANDARDIZEDAB40', 'STANDARDIZED_PLASMAAB4240']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -2551,7 +2551,7 @@ PTDEMOG = DatasetConfig(
     source="PTDEMOG_25Jul2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['cofactor'])
     id_column="RID",                            # standard ADNI (alt: ['PTID', 'ID']) VERIFICA
-    date_column="USERDATE",          # preferenza ADNI (alt: ['VISDATE', 'PTDOB', 'USERDATE2', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): USERDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['VISDATE', 'PTDOB', 'USERDATE2', 'update_stamp']) VERIFICA
     # 69 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['PTSOURCE', 'PTGENDER', 'PTDOBYY', 'PTHAND', 'PTMARRY', 'PTEDUCAT', 'PTWORKHS', 'PTWORK', 'PTNOTRT', 'PTRTYR', 'PTHOME', 'PTTLANG', 'PTPLANG', 'PTADBEG', 'PTCOGBEG', 'PTADDX', 'PTETHCAT', 'PTRACCAT', 'PTIDENT', 'PTORIENT', 'PTORIENTOT', 'PTENGSPK', 'PTNLANG', 'PTENGSPKAGE', 'PTCLANG', 'PTLANGSP', 'PTLANGWR', 'PTSPTIM', 'PTSPOTTIM', 'PTLANGPR1', 'PTLANGSP1', 'PTLANGRD1', 'PTLANGWR1', 'PTLANGUN1', 'PTLANGPR2', 'PTLANGSP2', 'PTLANGRD2', 'PTLANGWR2', 'PTLANGUN2', 'PTLANGPR3', 'PTLANGSP3', 'PTLANGRD3', 'PTLANGWR3', 'PTLANGUN3', 'PTLANGPR4', 'PTLANGSP4', 'PTLANGRD4', 'PTLANGWR4', 'PTLANGUN4', 'PTLANGPR5', 'PTLANGSP5', 'PTLANGRD5', 'PTLANGWR5', 'PTLANGUN5', 'PTLANGPR6', 'PTLANGSP6', 'PTLANGRD6', 'PTLANGWR6', 'PTLANGUN6', 'PTLANGTTL', 'PTETHCATH', 'PTASIAN', 'PTOPI', 'PTBORN', 'PTBIRPL', 'PTIMMAGE', 'PTIMMWHY', 'PTBIRPR', 'PTBIRGR']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -2573,7 +2573,7 @@ RMT_APOERES = DatasetConfig(
     source="RMT_APOERES_28Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['cofactor'])
     # id_column=?  candidati: NESSUNO  <-- DECIDI
-    date_column="update_stamp",                  # rilevato dai valori, VERIFICA
+    # data di visita (ex date_column, D046): update_stamp -> alias su EXAMDATE in catalog.json se diverso. rilevato dai valori, VERIFICA
     # 2 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['ADNIOnlineID', 'GENOTYPE']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -2611,7 +2611,7 @@ RMT_ECOG12PT = DatasetConfig(
     source="RMT_ECOG12PT_04Nov2025.csv",
     category=None,                              # <-- DECIDI
     id_column="PTID",                      # rilevato, VERIFICA
-    # date_column=?  candidati (dai valori): ['RMT_StatusDate', 'update_stamp']  <-- DECIDI
+    # data di visita?  candidati (dai valori): ['RMT_StatusDate', 'update_stamp']  <-- DECIDI
     # 18 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['RMT_PHASE', 'ADNIOnlineID', 'RMT_Timepoint', 'RMT_CONCERN', 'RMT_MEMREF', 'RMT_ecogpt_Duration', 'RMT_ecogpt1', 'RMT_ecogpt2', 'RMT_ecogpt3', 'RMT_ecogpt4', 'RMT_ecogpt5', 'RMT_ecogpt6', 'RMT_ecogpt7', 'RMT_ecogpt8', 'RMT_ecogpt9', 'RMT_ecogpt10', 'RMT_ecogpt11', 'RMT_ecogpt12']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -2649,7 +2649,7 @@ RMT_ECOG12SP = DatasetConfig(
     source="RMT_ECOG12SP_04Nov2025.csv",
     category=None,                              # <-- DECIDI
     id_column="PTID",                      # rilevato, VERIFICA
-    # date_column=?  candidati (dai valori): ['RMT_StatusDate', 'update_stamp']  <-- DECIDI
+    # data di visita?  candidati (dai valori): ['RMT_StatusDate', 'update_stamp']  <-- DECIDI
     # 18 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['RMT_PHASE', 'ADNIOnlineID', 'RMT_Timepoint', 'RMT_SP_CONCERN', 'RMT_SP_MEMREF', 'RMT_ecogsp_Duration', 'RMT_ecogsp1', 'RMT_ecogsp2', 'RMT_ecogsp3', 'RMT_ecogsp4', 'RMT_ecogsp5', 'RMT_ecogsp6', 'RMT_ecogsp7', 'RMT_ecogsp8', 'RMT_ecogsp9', 'RMT_ecogsp10', 'RMT_ecogsp11', 'RMT_ecogsp12']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -2690,7 +2690,7 @@ RMT_PTDEMOG = DatasetConfig(
     source="RMT_PTDEMOG_04Nov2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['cofactor'])
     id_column="PTID",                      # rilevato, VERIFICA
-    # date_column=?  candidati (dai valori): ['RMT_StatusDate', 'update_stamp']  <-- DECIDI
+    # data di visita?  candidati (dai valori): ['RMT_StatusDate', 'update_stamp']  <-- DECIDI
     # 20 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['RMT_PHASE', 'ADNIOnlineID', 'RMT_Timepoint', 'Age_Baseline', 'Gender', 'LatinoEthnicity', 'Latino_MX', 'Latino_PR', 'Latino_CB', 'Latino_Other', 'Race_AmerIndian', 'Race_Asian', 'Race_AfricanAmerican', 'Race_PacificIslander', 'Race_White', 'Race_Unknown', 'Race_PreferNotSay', 'RMT_Education', 'RMT_ADI_NATRANK_v2021', 'RMT_ADI_STATERANK_v2021']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -2733,7 +2733,7 @@ RMT_SCREENING = DatasetConfig(
     source="RMT_Screening_04Nov2025.csv",
     category=None,                              # <-- DECIDI
     id_column="PTID",                      # rilevato, VERIFICA
-    # date_column=?  candidati (dai valori): ['RMT_StatusDate', 'update_stamp']  <-- DECIDI
+    # data di visita?  candidati (dai valori): ['RMT_StatusDate', 'update_stamp']  <-- DECIDI
     # 23 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['RMT_PHASE', 'ADNIOnlineID', 'RMT_Timepoint', 'RMT_MCI_Dx', 'RMT_AD_Dx', 'RMT_DEM_Dx', 'RMT_CImed', 'RMT_FamAD', 'RMT_NursHm', 'RMT_MntlHlth', 'RMT_BrainCndtn', 'RMT_AlchlDrug', 'RMT_Metal', 'RMT_Metal_rplc', 'RMT_Metal_other', 'RMT_MemStudy', 'RMT_MRIPET', 'RMT_Clausphba', 'RMT_BLDwill', 'RMT_Web', 'RMT_Device', 'Referral_BLD', 'Referral_CLIN']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -2760,7 +2760,7 @@ SALADAX_BIOMEDICAL = DatasetConfig(
     source="SALADAX_BIOMEDICAL_11Aug2025.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: ['PTID', 'SAMPLE_ID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['TESTINGDATE']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['TESTINGDATE']) VERIFICA
     viscode_reference="VISCODE2",
     # 4 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['BIOFLUID', 'ABETA42', 'TOTALTAU', 'UNITS']
@@ -3121,7 +3121,7 @@ UCBERKELEY_AMY_6MM = DatasetConfig(
     source="UCBERKELEY_AMY_6MM_28Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['pet'])
     id_column="RID",                            # standard ADNI (alt: ['PTID']) VERIFICA
-    date_column="SCANDATE",          # preferenza ADNI (alt: ['PROCESSDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): SCANDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['PROCESSDATE', 'update_stamp']) VERIFICA
     # 334 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['IMAGE_RESOLUTION', 'TRACER', 'TRACER_SUVR_WARNING', 'AMYLOID_STATUS', 'AMYLOID_STATUS_COMPOSITE_REF', 'CENTILOIDS', 'SUMMARY_SUVR', 'SUMMARY_VOLUME', 'WHOLECEREBELLUM_SUVR', 'WHOLECEREBELLUM_VOLUME', 'COMPOSITE_REF_SUVR', 'COMPOSITE_REF_VOLUME', 'CEREBELLUM_CORTEX_SUVR', 'CEREBELLUM_CORTEX_VOLUME', 'ERODED_SUBCORTICALWM_SUVR', 'ERODED_SUBCORTICALWM_VOLUME', 'BRAINSTEM_SUVR', 'BRAINSTEM_VOLUME', 'CC_ANTERIOR_SUVR', 'CC_ANTERIOR_VOLUME', 'CC_CENTRAL_SUVR', 'CC_CENTRAL_VOLUME', 'CC_MID_ANTERIOR_SUVR', 'CC_MID_ANTERIOR_VOLUME', 'CC_MID_POSTERIOR_SUVR', 'CC_MID_POSTERIOR_VOLUME', 'CC_POSTERIOR_SUVR', 'CC_POSTERIOR_VOLUME', 'CSF_SUVR', 'CSF_VOLUME', 'VENTRICLE_3RD_SUVR', 'VENTRICLE_3RD_VOLUME', 'VENTRICLE_4TH_SUVR', 'VENTRICLE_4TH_VOLUME', 'VENTRICLE_5TH_SUVR', 'VENTRICLE_5TH_VOLUME', 'WM_HYPOINTENSITIES_SUVR', 'WM_HYPOINTENSITIES_VOLUME', 'NON_WM_HYPOINTENSITIES_SUVR', 'NON_WM_HYPOINTENSITIES_VOLUME', 'CTX_BANKSSTS_SUVR', 'CTX_BANKSSTS_VOLUME', 'CTX_CAUDALANTERIORCINGULATE_SUVR', 'CTX_CAUDALANTERIORCINGULATE_VOLUME', 'CTX_CAUDALMIDDLEFRONTAL_SUVR', 'CTX_CAUDALMIDDLEFRONTAL_VOLUME', 'CTX_CUNEUS_SUVR', 'CTX_CUNEUS_VOLUME', 'CTX_ENTORHINAL_SUVR', 'CTX_ENTORHINAL_VOLUME', 'CTX_FRONTALPOLE_SUVR', 'CTX_FRONTALPOLE_VOLUME', 'CTX_FUSIFORM_SUVR', 'CTX_FUSIFORM_VOLUME', 'CTX_INFERIORPARIETAL_SUVR', 'CTX_INFERIORPARIETAL_VOLUME', 'CTX_INFERIORTEMPORAL_SUVR', 'CTX_INFERIORTEMPORAL_VOLUME', 'CTX_INSULA_SUVR', 'CTX_INSULA_VOLUME', 'CTX_ISTHMUSCINGULATE_SUVR', 'CTX_ISTHMUSCINGULATE_VOLUME', 'CTX_LATERALOCCIPITAL_SUVR', 'CTX_LATERALOCCIPITAL_VOLUME', 'CTX_LATERALORBITOFRONTAL_SUVR', 'CTX_LATERALORBITOFRONTAL_VOLUME', 'CTX_LINGUAL_SUVR', 'CTX_LINGUAL_VOLUME', 'CTX_MEDIALORBITOFRONTAL_SUVR', 'CTX_MEDIALORBITOFRONTAL_VOLUME', 'CTX_MIDDLETEMPORAL_SUVR', 'CTX_MIDDLETEMPORAL_VOLUME', 'CTX_PARACENTRAL_SUVR', 'CTX_PARACENTRAL_VOLUME', 'CTX_PARAHIPPOCAMPAL_SUVR', 'CTX_PARAHIPPOCAMPAL_VOLUME', 'CTX_PARSOPERCULARIS_SUVR', 'CTX_PARSOPERCULARIS_VOLUME', 'CTX_PARSORBITALIS_SUVR', 'CTX_PARSORBITALIS_VOLUME', 'CTX_PARSTRIANGULARIS_SUVR', 'CTX_PARSTRIANGULARIS_VOLUME', 'CTX_PERICALCARINE_SUVR', 'CTX_PERICALCARINE_VOLUME', 'CTX_POSTCENTRAL_SUVR', 'CTX_POSTCENTRAL_VOLUME', 'CTX_POSTERIORCINGULATE_SUVR', 'CTX_POSTERIORCINGULATE_VOLUME', 'CTX_PRECENTRAL_SUVR', 'CTX_PRECENTRAL_VOLUME', 'CTX_PRECUNEUS_SUVR', 'CTX_PRECUNEUS_VOLUME', 'CTX_ROSTRALANTERIORCINGULATE_SUVR', 'CTX_ROSTRALANTERIORCINGULATE_VOLUME', 'CTX_ROSTRALMIDDLEFRONTAL_SUVR', 'CTX_ROSTRALMIDDLEFRONTAL_VOLUME', 'CTX_SUPERIORFRONTAL_SUVR', 'CTX_SUPERIORFRONTAL_VOLUME', 'CTX_SUPERIORPARIETAL_SUVR', 'CTX_SUPERIORPARIETAL_VOLUME', 'CTX_SUPERIORTEMPORAL_SUVR', 'CTX_SUPERIORTEMPORAL_VOLUME', 'CTX_SUPRAMARGINAL_SUVR', 'CTX_SUPRAMARGINAL_VOLUME', 'CTX_TEMPORALPOLE_SUVR', 'CTX_TEMPORALPOLE_VOLUME', 'CTX_TRANSVERSETEMPORAL_SUVR', 'CTX_TRANSVERSETEMPORAL_VOLUME', 'ACCUMBENS_AREA_SUVR', 'ACCUMBENS_AREA_VOLUME', 'AMYGDALA_SUVR', 'AMYGDALA_VOLUME', 'CAUDATE_SUVR', 'CAUDATE_VOLUME', 'CEREBELLUM_WHITE_MATTER_SUVR', 'CEREBELLUM_WHITE_MATTER_VOLUME', 'CEREBRAL_WHITE_MATTER_SUVR', 'CEREBRAL_WHITE_MATTER_VOLUME', 'CHOROID_PLEXUS_SUVR', 'CHOROID_PLEXUS_VOLUME', 'HIPPOCAMPUS_SUVR', 'HIPPOCAMPUS_VOLUME', 'OPTIC_CHIASM_SUVR', 'OPTIC_CHIASM_VOLUME', 'INF_LAT_VENT_SUVR', 'INF_LAT_VENT_VOLUME', 'LATERAL_VENTRICLE_SUVR', 'LATERAL_VENTRICLE_VOLUME', 'PALLIDUM_SUVR', 'PALLIDUM_VOLUME', 'PUTAMEN_SUVR', 'PUTAMEN_VOLUME', 'THALAMUS_PROPER_SUVR', 'THALAMUS_PROPER_VOLUME', 'VENTRALDC_SUVR', 'VENTRALDC_VOLUME', 'VESSEL_SUVR', 'VESSEL_VOLUME', 'CTX_LH_BANKSSTS_SUVR', 'CTX_LH_BANKSSTS_VOLUME', 'CTX_LH_CAUDALANTERIORCINGULATE_SUVR', 'CTX_LH_CAUDALANTERIORCINGULATE_VOLUME', 'CTX_LH_CAUDALMIDDLEFRONTAL_SUVR', 'CTX_LH_CAUDALMIDDLEFRONTAL_VOLUME', 'CTX_LH_CUNEUS_SUVR', 'CTX_LH_CUNEUS_VOLUME', 'CTX_LH_ENTORHINAL_SUVR', 'CTX_LH_ENTORHINAL_VOLUME', 'CTX_LH_FRONTALPOLE_SUVR', 'CTX_LH_FRONTALPOLE_VOLUME', 'CTX_LH_FUSIFORM_SUVR', 'CTX_LH_FUSIFORM_VOLUME', 'CTX_LH_INFERIORPARIETAL_SUVR', 'CTX_LH_INFERIORPARIETAL_VOLUME', 'CTX_LH_INFERIORTEMPORAL_SUVR', 'CTX_LH_INFERIORTEMPORAL_VOLUME', 'CTX_LH_INSULA_SUVR', 'CTX_LH_INSULA_VOLUME', 'CTX_LH_ISTHMUSCINGULATE_SUVR', 'CTX_LH_ISTHMUSCINGULATE_VOLUME', 'CTX_LH_LATERALOCCIPITAL_SUVR', 'CTX_LH_LATERALOCCIPITAL_VOLUME', 'CTX_LH_LATERALORBITOFRONTAL_SUVR', 'CTX_LH_LATERALORBITOFRONTAL_VOLUME', 'CTX_LH_LINGUAL_SUVR', 'CTX_LH_LINGUAL_VOLUME', 'CTX_LH_MEDIALORBITOFRONTAL_SUVR', 'CTX_LH_MEDIALORBITOFRONTAL_VOLUME', 'CTX_LH_MIDDLETEMPORAL_SUVR', 'CTX_LH_MIDDLETEMPORAL_VOLUME', 'CTX_LH_PARACENTRAL_SUVR', 'CTX_LH_PARACENTRAL_VOLUME', 'CTX_LH_PARAHIPPOCAMPAL_SUVR', 'CTX_LH_PARAHIPPOCAMPAL_VOLUME', 'CTX_LH_PARSOPERCULARIS_SUVR', 'CTX_LH_PARSOPERCULARIS_VOLUME', 'CTX_LH_PARSORBITALIS_SUVR', 'CTX_LH_PARSORBITALIS_VOLUME', 'CTX_LH_PARSTRIANGULARIS_SUVR', 'CTX_LH_PARSTRIANGULARIS_VOLUME', 'CTX_LH_PERICALCARINE_SUVR', 'CTX_LH_PERICALCARINE_VOLUME', 'CTX_LH_POSTCENTRAL_SUVR', 'CTX_LH_POSTCENTRAL_VOLUME', 'CTX_LH_POSTERIORCINGULATE_SUVR', 'CTX_LH_POSTERIORCINGULATE_VOLUME', 'CTX_LH_PRECENTRAL_SUVR', 'CTX_LH_PRECENTRAL_VOLUME', 'CTX_LH_PRECUNEUS_SUVR', 'CTX_LH_PRECUNEUS_VOLUME', 'CTX_LH_ROSTRALANTERIORCINGULATE_SUVR', 'CTX_LH_ROSTRALANTERIORCINGULATE_VOLUME', 'CTX_LH_ROSTRALMIDDLEFRONTAL_SUVR', 'CTX_LH_ROSTRALMIDDLEFRONTAL_VOLUME', 'CTX_LH_SUPERIORFRONTAL_SUVR', 'CTX_LH_SUPERIORFRONTAL_VOLUME', 'CTX_LH_SUPERIORPARIETAL_SUVR', 'CTX_LH_SUPERIORPARIETAL_VOLUME', 'CTX_LH_SUPERIORTEMPORAL_SUVR', 'CTX_LH_SUPERIORTEMPORAL_VOLUME', 'CTX_LH_SUPRAMARGINAL_SUVR', 'CTX_LH_SUPRAMARGINAL_VOLUME', 'CTX_LH_TEMPORALPOLE_SUVR', 'CTX_LH_TEMPORALPOLE_VOLUME', 'CTX_LH_TRANSVERSETEMPORAL_SUVR', 'CTX_LH_TRANSVERSETEMPORAL_VOLUME', 'CTX_RH_BANKSSTS_SUVR', 'CTX_RH_BANKSSTS_VOLUME', 'CTX_RH_CAUDALANTERIORCINGULATE_SUVR', 'CTX_RH_CAUDALANTERIORCINGULATE_VOLUME', 'CTX_RH_CAUDALMIDDLEFRONTAL_SUVR', 'CTX_RH_CAUDALMIDDLEFRONTAL_VOLUME', 'CTX_RH_CUNEUS_SUVR', 'CTX_RH_CUNEUS_VOLUME', 'CTX_RH_ENTORHINAL_SUVR', 'CTX_RH_ENTORHINAL_VOLUME', 'CTX_RH_FRONTALPOLE_SUVR', 'CTX_RH_FRONTALPOLE_VOLUME', 'CTX_RH_FUSIFORM_SUVR', 'CTX_RH_FUSIFORM_VOLUME', 'CTX_RH_INFERIORPARIETAL_SUVR', 'CTX_RH_INFERIORPARIETAL_VOLUME', 'CTX_RH_INFERIORTEMPORAL_SUVR', 'CTX_RH_INFERIORTEMPORAL_VOLUME', 'CTX_RH_INSULA_SUVR', 'CTX_RH_INSULA_VOLUME', 'CTX_RH_ISTHMUSCINGULATE_SUVR', 'CTX_RH_ISTHMUSCINGULATE_VOLUME', 'CTX_RH_LATERALOCCIPITAL_SUVR', 'CTX_RH_LATERALOCCIPITAL_VOLUME', 'CTX_RH_LATERALORBITOFRONTAL_SUVR', 'CTX_RH_LATERALORBITOFRONTAL_VOLUME', 'CTX_RH_LINGUAL_SUVR', 'CTX_RH_LINGUAL_VOLUME', 'CTX_RH_MEDIALORBITOFRONTAL_SUVR', 'CTX_RH_MEDIALORBITOFRONTAL_VOLUME', 'CTX_RH_MIDDLETEMPORAL_SUVR', 'CTX_RH_MIDDLETEMPORAL_VOLUME', 'CTX_RH_PARACENTRAL_SUVR', 'CTX_RH_PARACENTRAL_VOLUME', 'CTX_RH_PARAHIPPOCAMPAL_SUVR', 'CTX_RH_PARAHIPPOCAMPAL_VOLUME', 'CTX_RH_PARSOPERCULARIS_SUVR', 'CTX_RH_PARSOPERCULARIS_VOLUME', 'CTX_RH_PARSORBITALIS_SUVR', 'CTX_RH_PARSORBITALIS_VOLUME', 'CTX_RH_PARSTRIANGULARIS_SUVR', 'CTX_RH_PARSTRIANGULARIS_VOLUME', 'CTX_RH_PERICALCARINE_SUVR', 'CTX_RH_PERICALCARINE_VOLUME', 'CTX_RH_POSTCENTRAL_SUVR', 'CTX_RH_POSTCENTRAL_VOLUME', 'CTX_RH_POSTERIORCINGULATE_SUVR', 'CTX_RH_POSTERIORCINGULATE_VOLUME', 'CTX_RH_PRECENTRAL_SUVR', 'CTX_RH_PRECENTRAL_VOLUME', 'CTX_RH_PRECUNEUS_SUVR', 'CTX_RH_PRECUNEUS_VOLUME', 'CTX_RH_ROSTRALANTERIORCINGULATE_SUVR', 'CTX_RH_ROSTRALANTERIORCINGULATE_VOLUME', 'CTX_RH_ROSTRALMIDDLEFRONTAL_SUVR', 'CTX_RH_ROSTRALMIDDLEFRONTAL_VOLUME', 'CTX_RH_SUPERIORFRONTAL_SUVR', 'CTX_RH_SUPERIORFRONTAL_VOLUME', 'CTX_RH_SUPERIORPARIETAL_SUVR', 'CTX_RH_SUPERIORPARIETAL_VOLUME', 'CTX_RH_SUPERIORTEMPORAL_SUVR', 'CTX_RH_SUPERIORTEMPORAL_VOLUME', 'CTX_RH_SUPRAMARGINAL_SUVR', 'CTX_RH_SUPRAMARGINAL_VOLUME', 'CTX_RH_TEMPORALPOLE_SUVR', 'CTX_RH_TEMPORALPOLE_VOLUME', 'CTX_RH_TRANSVERSETEMPORAL_SUVR', 'CTX_RH_TRANSVERSETEMPORAL_VOLUME', 'LEFT_ACCUMBENS_AREA_SUVR', 'LEFT_ACCUMBENS_AREA_VOLUME', 'LEFT_AMYGDALA_SUVR', 'LEFT_AMYGDALA_VOLUME', 'LEFT_CAUDATE_SUVR', 'LEFT_CAUDATE_VOLUME', 'LEFT_CEREBELLUM_CORTEX_SUVR', 'LEFT_CEREBELLUM_CORTEX_VOLUME', 'LEFT_CEREBELLUM_WHITE_MATTER_SUVR', 'LEFT_CEREBELLUM_WHITE_MATTER_VOLUME', 'LEFT_CEREBRAL_WHITE_MATTER_SUVR', 'LEFT_CEREBRAL_WHITE_MATTER_VOLUME', 'LEFT_CHOROID_PLEXUS_SUVR', 'LEFT_CHOROID_PLEXUS_VOLUME', 'LEFT_HIPPOCAMPUS_SUVR', 'LEFT_HIPPOCAMPUS_VOLUME', 'LEFT_INF_LAT_VENT_SUVR', 'LEFT_INF_LAT_VENT_VOLUME', 'LEFT_LATERAL_VENTRICLE_SUVR', 'LEFT_LATERAL_VENTRICLE_VOLUME', 'LEFT_PALLIDUM_SUVR', 'LEFT_PALLIDUM_VOLUME', 'LEFT_PUTAMEN_SUVR', 'LEFT_PUTAMEN_VOLUME', 'LEFT_THALAMUS_PROPER_SUVR', 'LEFT_THALAMUS_PROPER_VOLUME', 'LEFT_VENTRALDC_SUVR', 'LEFT_VENTRALDC_VOLUME', 'LEFT_VESSEL_SUVR', 'LEFT_VESSEL_VOLUME', 'RIGHT_ACCUMBENS_AREA_SUVR', 'RIGHT_ACCUMBENS_AREA_VOLUME', 'RIGHT_AMYGDALA_SUVR', 'RIGHT_AMYGDALA_VOLUME', 'RIGHT_CAUDATE_SUVR', 'RIGHT_CAUDATE_VOLUME', 'RIGHT_CEREBELLUM_CORTEX_SUVR', 'RIGHT_CEREBELLUM_CORTEX_VOLUME', 'RIGHT_CEREBELLUM_WHITE_MATTER_SUVR', 'RIGHT_CEREBELLUM_WHITE_MATTER_VOLUME', 'RIGHT_CEREBRAL_WHITE_MATTER_SUVR', 'RIGHT_CEREBRAL_WHITE_MATTER_VOLUME', 'RIGHT_CHOROID_PLEXUS_SUVR', 'RIGHT_CHOROID_PLEXUS_VOLUME', 'RIGHT_HIPPOCAMPUS_SUVR', 'RIGHT_HIPPOCAMPUS_VOLUME', 'RIGHT_INF_LAT_VENT_SUVR', 'RIGHT_INF_LAT_VENT_VOLUME', 'RIGHT_LATERAL_VENTRICLE_SUVR', 'RIGHT_LATERAL_VENTRICLE_VOLUME', 'RIGHT_PALLIDUM_SUVR', 'RIGHT_PALLIDUM_VOLUME', 'RIGHT_PUTAMEN_SUVR', 'RIGHT_PUTAMEN_VOLUME', 'RIGHT_THALAMUS_PROPER_SUVR', 'RIGHT_THALAMUS_PROPER_VOLUME', 'RIGHT_VENTRALDC_SUVR', 'RIGHT_VENTRALDC_VOLUME', 'RIGHT_VESSEL_SUVR', 'RIGHT_VESSEL_VOLUME']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -3473,7 +3473,7 @@ UCBERKELEY_TAUPVC_6MM = DatasetConfig(
     source="UCBERKELEY_TAUPVC_6MM_28Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['pet'])
     id_column="RID",                            # standard ADNI (alt: ['PTID']) VERIFICA
-    date_column="SCANDATE",          # preferenza ADNI (alt: ['PROCESSDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): SCANDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['PROCESSDATE', 'update_stamp']) VERIFICA
     # 326 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['TRACER', 'TRACER_SUVR_WARNING', 'META_TEMPORAL_SUVR', 'META_TEMPORAL_VOLUME', 'CTX_ENTORHINAL_SUVR', 'CTX_ENTORHINAL_VOLUME', 'INFERIORCEREBELLUM_SUVR', 'INFERIORCEREBELLUM_VOLUME', 'CEREBRAL_WHITE_MATTER_SUVR', 'CEREBRAL_WHITE_MATTER_VOLUME', 'BRAINSTEM_SUVR', 'BRAINSTEM_VOLUME', 'CC_ANTERIOR_SUVR', 'CC_ANTERIOR_VOLUME', 'CC_CENTRAL_SUVR', 'CC_CENTRAL_VOLUME', 'CC_MID_ANTERIOR_SUVR', 'CC_MID_ANTERIOR_VOLUME', 'CC_MID_POSTERIOR_SUVR', 'CC_MID_POSTERIOR_VOLUME', 'CC_POSTERIOR_SUVR', 'CC_POSTERIOR_VOLUME', 'CSF_SUVR', 'CSF_VOLUME', 'VENTRICLE_3RD_SUVR', 'VENTRICLE_3RD_VOLUME', 'VENTRICLE_4TH_SUVR', 'VENTRICLE_4TH_VOLUME', 'VENTRICLE_5TH_SUVR', 'VENTRICLE_5TH_VOLUME', 'WM_HYPOINTENSITIES_SUVR', 'WM_HYPOINTENSITIES_VOLUME', 'NON_WM_HYPOINTENSITIES_SUVR', 'NON_WM_HYPOINTENSITIES_VOLUME', 'CTX_BANKSSTS_SUVR', 'CTX_BANKSSTS_VOLUME', 'CTX_CAUDALANTERIORCINGULATE_SUVR', 'CTX_CAUDALANTERIORCINGULATE_VOLUME', 'CTX_CAUDALMIDDLEFRONTAL_SUVR', 'CTX_CAUDALMIDDLEFRONTAL_VOLUME', 'CTX_CUNEUS_SUVR', 'CTX_CUNEUS_VOLUME', 'CTX_FRONTALPOLE_SUVR', 'CTX_FRONTALPOLE_VOLUME', 'CTX_FUSIFORM_SUVR', 'CTX_FUSIFORM_VOLUME', 'CTX_INFERIORPARIETAL_SUVR', 'CTX_INFERIORPARIETAL_VOLUME', 'CTX_INFERIORTEMPORAL_SUVR', 'CTX_INFERIORTEMPORAL_VOLUME', 'CTX_INSULA_SUVR', 'CTX_INSULA_VOLUME', 'CTX_ISTHMUSCINGULATE_SUVR', 'CTX_ISTHMUSCINGULATE_VOLUME', 'CTX_LATERALOCCIPITAL_SUVR', 'CTX_LATERALOCCIPITAL_VOLUME', 'CTX_LATERALORBITOFRONTAL_SUVR', 'CTX_LATERALORBITOFRONTAL_VOLUME', 'CTX_LINGUAL_SUVR', 'CTX_LINGUAL_VOLUME', 'CTX_MEDIALORBITOFRONTAL_SUVR', 'CTX_MEDIALORBITOFRONTAL_VOLUME', 'CTX_MIDDLETEMPORAL_SUVR', 'CTX_MIDDLETEMPORAL_VOLUME', 'CTX_PARACENTRAL_SUVR', 'CTX_PARACENTRAL_VOLUME', 'CTX_PARAHIPPOCAMPAL_SUVR', 'CTX_PARAHIPPOCAMPAL_VOLUME', 'CTX_PARSOPERCULARIS_SUVR', 'CTX_PARSOPERCULARIS_VOLUME', 'CTX_PARSORBITALIS_SUVR', 'CTX_PARSORBITALIS_VOLUME', 'CTX_PARSTRIANGULARIS_SUVR', 'CTX_PARSTRIANGULARIS_VOLUME', 'CTX_PERICALCARINE_SUVR', 'CTX_PERICALCARINE_VOLUME', 'CTX_POSTCENTRAL_SUVR', 'CTX_POSTCENTRAL_VOLUME', 'CTX_POSTERIORCINGULATE_SUVR', 'CTX_POSTERIORCINGULATE_VOLUME', 'CTX_PRECENTRAL_SUVR', 'CTX_PRECENTRAL_VOLUME', 'CTX_PRECUNEUS_SUVR', 'CTX_PRECUNEUS_VOLUME', 'CTX_ROSTRALANTERIORCINGULATE_SUVR', 'CTX_ROSTRALANTERIORCINGULATE_VOLUME', 'CTX_ROSTRALMIDDLEFRONTAL_SUVR', 'CTX_ROSTRALMIDDLEFRONTAL_VOLUME', 'CTX_SUPERIORFRONTAL_SUVR', 'CTX_SUPERIORFRONTAL_VOLUME', 'CTX_SUPERIORPARIETAL_SUVR', 'CTX_SUPERIORPARIETAL_VOLUME', 'CTX_SUPERIORTEMPORAL_SUVR', 'CTX_SUPERIORTEMPORAL_VOLUME', 'CTX_SUPRAMARGINAL_SUVR', 'CTX_SUPRAMARGINAL_VOLUME', 'CTX_TEMPORALPOLE_SUVR', 'CTX_TEMPORALPOLE_VOLUME', 'CTX_TRANSVERSETEMPORAL_SUVR', 'CTX_TRANSVERSETEMPORAL_VOLUME', 'ACCUMBENS_AREA_SUVR', 'ACCUMBENS_AREA_VOLUME', 'AMYGDALA_SUVR', 'AMYGDALA_VOLUME', 'CAUDATE_SUVR', 'CAUDATE_VOLUME', 'CEREBELLUM_CORTEX_SUVR', 'CEREBELLUM_CORTEX_VOLUME', 'CEREBELLUM_WHITE_MATTER_SUVR', 'CEREBELLUM_WHITE_MATTER_VOLUME', 'CHOROID_PLEXUS_SUVR', 'CHOROID_PLEXUS_VOLUME', 'HIPPOCAMPUS_SUVR', 'HIPPOCAMPUS_VOLUME', 'OPTIC_CHIASM_SUVR', 'OPTIC_CHIASM_VOLUME', 'INF_LAT_VENT_SUVR', 'INF_LAT_VENT_VOLUME', 'LATERAL_VENTRICLE_SUVR', 'LATERAL_VENTRICLE_VOLUME', 'PALLIDUM_SUVR', 'PALLIDUM_VOLUME', 'PUTAMEN_SUVR', 'PUTAMEN_VOLUME', 'THALAMUS_PROPER_SUVR', 'THALAMUS_PROPER_VOLUME', 'VENTRALDC_SUVR', 'VENTRALDC_VOLUME', 'VESSEL_SUVR', 'VESSEL_VOLUME', 'CTX_LH_BANKSSTS_SUVR', 'CTX_LH_BANKSSTS_VOLUME', 'CTX_LH_CAUDALANTERIORCINGULATE_SUVR', 'CTX_LH_CAUDALANTERIORCINGULATE_VOLUME', 'CTX_LH_CAUDALMIDDLEFRONTAL_SUVR', 'CTX_LH_CAUDALMIDDLEFRONTAL_VOLUME', 'CTX_LH_CUNEUS_SUVR', 'CTX_LH_CUNEUS_VOLUME', 'CTX_LH_ENTORHINAL_SUVR', 'CTX_LH_ENTORHINAL_VOLUME', 'CTX_LH_FRONTALPOLE_SUVR', 'CTX_LH_FRONTALPOLE_VOLUME', 'CTX_LH_FUSIFORM_SUVR', 'CTX_LH_FUSIFORM_VOLUME', 'CTX_LH_INFERIORPARIETAL_SUVR', 'CTX_LH_INFERIORPARIETAL_VOLUME', 'CTX_LH_INFERIORTEMPORAL_SUVR', 'CTX_LH_INFERIORTEMPORAL_VOLUME', 'CTX_LH_INSULA_SUVR', 'CTX_LH_INSULA_VOLUME', 'CTX_LH_ISTHMUSCINGULATE_SUVR', 'CTX_LH_ISTHMUSCINGULATE_VOLUME', 'CTX_LH_LATERALOCCIPITAL_SUVR', 'CTX_LH_LATERALOCCIPITAL_VOLUME', 'CTX_LH_LATERALORBITOFRONTAL_SUVR', 'CTX_LH_LATERALORBITOFRONTAL_VOLUME', 'CTX_LH_LINGUAL_SUVR', 'CTX_LH_LINGUAL_VOLUME', 'CTX_LH_MEDIALORBITOFRONTAL_SUVR', 'CTX_LH_MEDIALORBITOFRONTAL_VOLUME', 'CTX_LH_MIDDLETEMPORAL_SUVR', 'CTX_LH_MIDDLETEMPORAL_VOLUME', 'CTX_LH_PARACENTRAL_SUVR', 'CTX_LH_PARACENTRAL_VOLUME', 'CTX_LH_PARAHIPPOCAMPAL_SUVR', 'CTX_LH_PARAHIPPOCAMPAL_VOLUME', 'CTX_LH_PARSOPERCULARIS_SUVR', 'CTX_LH_PARSOPERCULARIS_VOLUME', 'CTX_LH_PARSORBITALIS_SUVR', 'CTX_LH_PARSORBITALIS_VOLUME', 'CTX_LH_PARSTRIANGULARIS_SUVR', 'CTX_LH_PARSTRIANGULARIS_VOLUME', 'CTX_LH_PERICALCARINE_SUVR', 'CTX_LH_PERICALCARINE_VOLUME', 'CTX_LH_POSTCENTRAL_SUVR', 'CTX_LH_POSTCENTRAL_VOLUME', 'CTX_LH_POSTERIORCINGULATE_SUVR', 'CTX_LH_POSTERIORCINGULATE_VOLUME', 'CTX_LH_PRECENTRAL_SUVR', 'CTX_LH_PRECENTRAL_VOLUME', 'CTX_LH_PRECUNEUS_SUVR', 'CTX_LH_PRECUNEUS_VOLUME', 'CTX_LH_ROSTRALANTERIORCINGULATE_SUVR', 'CTX_LH_ROSTRALANTERIORCINGULATE_VOLUME', 'CTX_LH_ROSTRALMIDDLEFRONTAL_SUVR', 'CTX_LH_ROSTRALMIDDLEFRONTAL_VOLUME', 'CTX_LH_SUPERIORFRONTAL_SUVR', 'CTX_LH_SUPERIORFRONTAL_VOLUME', 'CTX_LH_SUPERIORPARIETAL_SUVR', 'CTX_LH_SUPERIORPARIETAL_VOLUME', 'CTX_LH_SUPERIORTEMPORAL_SUVR', 'CTX_LH_SUPERIORTEMPORAL_VOLUME', 'CTX_LH_SUPRAMARGINAL_SUVR', 'CTX_LH_SUPRAMARGINAL_VOLUME', 'CTX_LH_TEMPORALPOLE_SUVR', 'CTX_LH_TEMPORALPOLE_VOLUME', 'CTX_LH_TRANSVERSETEMPORAL_SUVR', 'CTX_LH_TRANSVERSETEMPORAL_VOLUME', 'CTX_RH_BANKSSTS_SUVR', 'CTX_RH_BANKSSTS_VOLUME', 'CTX_RH_CAUDALANTERIORCINGULATE_SUVR', 'CTX_RH_CAUDALANTERIORCINGULATE_VOLUME', 'CTX_RH_CAUDALMIDDLEFRONTAL_SUVR', 'CTX_RH_CAUDALMIDDLEFRONTAL_VOLUME', 'CTX_RH_CUNEUS_SUVR', 'CTX_RH_CUNEUS_VOLUME', 'CTX_RH_ENTORHINAL_SUVR', 'CTX_RH_ENTORHINAL_VOLUME', 'CTX_RH_FRONTALPOLE_SUVR', 'CTX_RH_FRONTALPOLE_VOLUME', 'CTX_RH_FUSIFORM_SUVR', 'CTX_RH_FUSIFORM_VOLUME', 'CTX_RH_INFERIORPARIETAL_SUVR', 'CTX_RH_INFERIORPARIETAL_VOLUME', 'CTX_RH_INFERIORTEMPORAL_SUVR', 'CTX_RH_INFERIORTEMPORAL_VOLUME', 'CTX_RH_INSULA_SUVR', 'CTX_RH_INSULA_VOLUME', 'CTX_RH_ISTHMUSCINGULATE_SUVR', 'CTX_RH_ISTHMUSCINGULATE_VOLUME', 'CTX_RH_LATERALOCCIPITAL_SUVR', 'CTX_RH_LATERALOCCIPITAL_VOLUME', 'CTX_RH_LATERALORBITOFRONTAL_SUVR', 'CTX_RH_LATERALORBITOFRONTAL_VOLUME', 'CTX_RH_LINGUAL_SUVR', 'CTX_RH_LINGUAL_VOLUME', 'CTX_RH_MEDIALORBITOFRONTAL_SUVR', 'CTX_RH_MEDIALORBITOFRONTAL_VOLUME', 'CTX_RH_MIDDLETEMPORAL_SUVR', 'CTX_RH_MIDDLETEMPORAL_VOLUME', 'CTX_RH_PARACENTRAL_SUVR', 'CTX_RH_PARACENTRAL_VOLUME', 'CTX_RH_PARAHIPPOCAMPAL_SUVR', 'CTX_RH_PARAHIPPOCAMPAL_VOLUME', 'CTX_RH_PARSOPERCULARIS_SUVR', 'CTX_RH_PARSOPERCULARIS_VOLUME', 'CTX_RH_PARSORBITALIS_SUVR', 'CTX_RH_PARSORBITALIS_VOLUME', 'CTX_RH_PARSTRIANGULARIS_SUVR', 'CTX_RH_PARSTRIANGULARIS_VOLUME', 'CTX_RH_PERICALCARINE_SUVR', 'CTX_RH_PERICALCARINE_VOLUME', 'CTX_RH_POSTCENTRAL_SUVR', 'CTX_RH_POSTCENTRAL_VOLUME', 'CTX_RH_POSTERIORCINGULATE_SUVR', 'CTX_RH_POSTERIORCINGULATE_VOLUME', 'CTX_RH_PRECENTRAL_SUVR', 'CTX_RH_PRECENTRAL_VOLUME', 'CTX_RH_PRECUNEUS_SUVR', 'CTX_RH_PRECUNEUS_VOLUME', 'CTX_RH_ROSTRALANTERIORCINGULATE_SUVR', 'CTX_RH_ROSTRALANTERIORCINGULATE_VOLUME', 'CTX_RH_ROSTRALMIDDLEFRONTAL_SUVR', 'CTX_RH_ROSTRALMIDDLEFRONTAL_VOLUME', 'CTX_RH_SUPERIORFRONTAL_SUVR', 'CTX_RH_SUPERIORFRONTAL_VOLUME', 'CTX_RH_SUPERIORPARIETAL_SUVR', 'CTX_RH_SUPERIORPARIETAL_VOLUME', 'CTX_RH_SUPERIORTEMPORAL_SUVR', 'CTX_RH_SUPERIORTEMPORAL_VOLUME', 'CTX_RH_SUPRAMARGINAL_SUVR', 'CTX_RH_SUPRAMARGINAL_VOLUME', 'CTX_RH_TEMPORALPOLE_SUVR', 'CTX_RH_TEMPORALPOLE_VOLUME', 'CTX_RH_TRANSVERSETEMPORAL_SUVR', 'CTX_RH_TRANSVERSETEMPORAL_VOLUME', 'LEFT_ACCUMBENS_AREA_SUVR', 'LEFT_ACCUMBENS_AREA_VOLUME', 'LEFT_AMYGDALA_SUVR', 'LEFT_AMYGDALA_VOLUME', 'LEFT_CAUDATE_SUVR', 'LEFT_CAUDATE_VOLUME', 'LEFT_CEREBELLUM_CORTEX_SUVR', 'LEFT_CEREBELLUM_CORTEX_VOLUME', 'LEFT_CEREBELLUM_WHITE_MATTER_SUVR', 'LEFT_CEREBELLUM_WHITE_MATTER_VOLUME', 'LEFT_CEREBRAL_WHITE_MATTER_SUVR', 'LEFT_CEREBRAL_WHITE_MATTER_VOLUME', 'LEFT_CHOROID_PLEXUS_SUVR', 'LEFT_CHOROID_PLEXUS_VOLUME', 'LEFT_HIPPOCAMPUS_SUVR', 'LEFT_HIPPOCAMPUS_VOLUME', 'LEFT_INF_LAT_VENT_SUVR', 'LEFT_INF_LAT_VENT_VOLUME', 'LEFT_LATERAL_VENTRICLE_SUVR', 'LEFT_LATERAL_VENTRICLE_VOLUME', 'LEFT_PALLIDUM_SUVR', 'LEFT_PALLIDUM_VOLUME', 'LEFT_PUTAMEN_SUVR', 'LEFT_PUTAMEN_VOLUME', 'LEFT_THALAMUS_PROPER_SUVR', 'LEFT_THALAMUS_PROPER_VOLUME', 'LEFT_VENTRALDC_SUVR', 'LEFT_VENTRALDC_VOLUME', 'LEFT_VESSEL_SUVR', 'LEFT_VESSEL_VOLUME', 'RIGHT_ACCUMBENS_AREA_SUVR', 'RIGHT_ACCUMBENS_AREA_VOLUME', 'RIGHT_AMYGDALA_SUVR', 'RIGHT_AMYGDALA_VOLUME', 'RIGHT_CAUDATE_SUVR', 'RIGHT_CAUDATE_VOLUME', 'RIGHT_CEREBELLUM_CORTEX_SUVR', 'RIGHT_CEREBELLUM_CORTEX_VOLUME', 'RIGHT_CEREBELLUM_WHITE_MATTER_SUVR', 'RIGHT_CEREBELLUM_WHITE_MATTER_VOLUME', 'RIGHT_CEREBRAL_WHITE_MATTER_SUVR', 'RIGHT_CEREBRAL_WHITE_MATTER_VOLUME', 'RIGHT_CHOROID_PLEXUS_SUVR', 'RIGHT_CHOROID_PLEXUS_VOLUME', 'RIGHT_HIPPOCAMPUS_SUVR', 'RIGHT_HIPPOCAMPUS_VOLUME', 'RIGHT_INF_LAT_VENT_SUVR', 'RIGHT_INF_LAT_VENT_VOLUME', 'RIGHT_LATERAL_VENTRICLE_SUVR', 'RIGHT_LATERAL_VENTRICLE_VOLUME', 'RIGHT_PALLIDUM_SUVR', 'RIGHT_PALLIDUM_VOLUME', 'RIGHT_PUTAMEN_SUVR', 'RIGHT_PUTAMEN_VOLUME', 'RIGHT_THALAMUS_PROPER_SUVR', 'RIGHT_THALAMUS_PROPER_VOLUME', 'RIGHT_VENTRALDC_SUVR', 'RIGHT_VENTRALDC_VOLUME', 'RIGHT_VESSEL_SUVR', 'RIGHT_VESSEL_VOLUME']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -3828,7 +3828,7 @@ UCBERKELEY_TAU_6MM = DatasetConfig(
     source="UCBERKELEY_TAU_6MM_28Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['pet'])
     id_column="RID",                            # standard ADNI (alt: ['PTID']) VERIFICA
-    date_column="SCANDATE",          # preferenza ADNI (alt: ['PROCESSDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): SCANDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['PROCESSDATE', 'update_stamp']) VERIFICA
     # 329 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['IMAGE_RESOLUTION', 'TRACER', 'TRACER_SUVR_WARNING', 'META_TEMPORAL_SUVR', 'META_TEMPORAL_VOLUME', 'CTX_ENTORHINAL_SUVR', 'CTX_ENTORHINAL_VOLUME', 'INFERIORCEREBELLUM_SUVR', 'INFERIORCEREBELLUM_VOLUME', 'ERODED_SUBCORTICALWM_SUVR', 'ERODED_SUBCORTICALWM_VOLUME', 'BRAINSTEM_SUVR', 'BRAINSTEM_VOLUME', 'CC_ANTERIOR_SUVR', 'CC_ANTERIOR_VOLUME', 'CC_CENTRAL_SUVR', 'CC_CENTRAL_VOLUME', 'CC_MID_ANTERIOR_SUVR', 'CC_MID_ANTERIOR_VOLUME', 'CC_MID_POSTERIOR_SUVR', 'CC_MID_POSTERIOR_VOLUME', 'CC_POSTERIOR_SUVR', 'CC_POSTERIOR_VOLUME', 'CSF_SUVR', 'CSF_VOLUME', 'VENTRICLE_3RD_SUVR', 'VENTRICLE_3RD_VOLUME', 'VENTRICLE_4TH_SUVR', 'VENTRICLE_4TH_VOLUME', 'VENTRICLE_5TH_SUVR', 'VENTRICLE_5TH_VOLUME', 'WM_HYPOINTENSITIES_SUVR', 'WM_HYPOINTENSITIES_VOLUME', 'NON_WM_HYPOINTENSITIES_SUVR', 'NON_WM_HYPOINTENSITIES_VOLUME', 'CTX_BANKSSTS_SUVR', 'CTX_BANKSSTS_VOLUME', 'CTX_CAUDALANTERIORCINGULATE_SUVR', 'CTX_CAUDALANTERIORCINGULATE_VOLUME', 'CTX_CAUDALMIDDLEFRONTAL_SUVR', 'CTX_CAUDALMIDDLEFRONTAL_VOLUME', 'CTX_CUNEUS_SUVR', 'CTX_CUNEUS_VOLUME', 'CTX_FRONTALPOLE_SUVR', 'CTX_FRONTALPOLE_VOLUME', 'CTX_FUSIFORM_SUVR', 'CTX_FUSIFORM_VOLUME', 'CTX_INFERIORPARIETAL_SUVR', 'CTX_INFERIORPARIETAL_VOLUME', 'CTX_INFERIORTEMPORAL_SUVR', 'CTX_INFERIORTEMPORAL_VOLUME', 'CTX_INSULA_SUVR', 'CTX_INSULA_VOLUME', 'CTX_ISTHMUSCINGULATE_SUVR', 'CTX_ISTHMUSCINGULATE_VOLUME', 'CTX_LATERALOCCIPITAL_SUVR', 'CTX_LATERALOCCIPITAL_VOLUME', 'CTX_LATERALORBITOFRONTAL_SUVR', 'CTX_LATERALORBITOFRONTAL_VOLUME', 'CTX_LINGUAL_SUVR', 'CTX_LINGUAL_VOLUME', 'CTX_MEDIALORBITOFRONTAL_SUVR', 'CTX_MEDIALORBITOFRONTAL_VOLUME', 'CTX_MIDDLETEMPORAL_SUVR', 'CTX_MIDDLETEMPORAL_VOLUME', 'CTX_PARACENTRAL_SUVR', 'CTX_PARACENTRAL_VOLUME', 'CTX_PARAHIPPOCAMPAL_SUVR', 'CTX_PARAHIPPOCAMPAL_VOLUME', 'CTX_PARSOPERCULARIS_SUVR', 'CTX_PARSOPERCULARIS_VOLUME', 'CTX_PARSORBITALIS_SUVR', 'CTX_PARSORBITALIS_VOLUME', 'CTX_PARSTRIANGULARIS_SUVR', 'CTX_PARSTRIANGULARIS_VOLUME', 'CTX_PERICALCARINE_SUVR', 'CTX_PERICALCARINE_VOLUME', 'CTX_POSTCENTRAL_SUVR', 'CTX_POSTCENTRAL_VOLUME', 'CTX_POSTERIORCINGULATE_SUVR', 'CTX_POSTERIORCINGULATE_VOLUME', 'CTX_PRECENTRAL_SUVR', 'CTX_PRECENTRAL_VOLUME', 'CTX_PRECUNEUS_SUVR', 'CTX_PRECUNEUS_VOLUME', 'CTX_ROSTRALANTERIORCINGULATE_SUVR', 'CTX_ROSTRALANTERIORCINGULATE_VOLUME', 'CTX_ROSTRALMIDDLEFRONTAL_SUVR', 'CTX_ROSTRALMIDDLEFRONTAL_VOLUME', 'CTX_SUPERIORFRONTAL_SUVR', 'CTX_SUPERIORFRONTAL_VOLUME', 'CTX_SUPERIORPARIETAL_SUVR', 'CTX_SUPERIORPARIETAL_VOLUME', 'CTX_SUPERIORTEMPORAL_SUVR', 'CTX_SUPERIORTEMPORAL_VOLUME', 'CTX_SUPRAMARGINAL_SUVR', 'CTX_SUPRAMARGINAL_VOLUME', 'CTX_TEMPORALPOLE_SUVR', 'CTX_TEMPORALPOLE_VOLUME', 'CTX_TRANSVERSETEMPORAL_SUVR', 'CTX_TRANSVERSETEMPORAL_VOLUME', 'ACCUMBENS_AREA_SUVR', 'ACCUMBENS_AREA_VOLUME', 'AMYGDALA_SUVR', 'AMYGDALA_VOLUME', 'CAUDATE_SUVR', 'CAUDATE_VOLUME', 'CEREBELLUM_CORTEX_SUVR', 'CEREBELLUM_CORTEX_VOLUME', 'CEREBELLUM_WHITE_MATTER_SUVR', 'CEREBELLUM_WHITE_MATTER_VOLUME', 'CEREBRAL_WHITE_MATTER_SUVR', 'CEREBRAL_WHITE_MATTER_VOLUME', 'CHOROID_PLEXUS_SUVR', 'CHOROID_PLEXUS_VOLUME', 'HIPPOCAMPUS_SUVR', 'HIPPOCAMPUS_VOLUME', 'OPTIC_CHIASM_SUVR', 'OPTIC_CHIASM_VOLUME', 'INF_LAT_VENT_SUVR', 'INF_LAT_VENT_VOLUME', 'LATERAL_VENTRICLE_SUVR', 'LATERAL_VENTRICLE_VOLUME', 'PALLIDUM_SUVR', 'PALLIDUM_VOLUME', 'PUTAMEN_SUVR', 'PUTAMEN_VOLUME', 'THALAMUS_PROPER_SUVR', 'THALAMUS_PROPER_VOLUME', 'VENTRALDC_SUVR', 'VENTRALDC_VOLUME', 'VESSEL_SUVR', 'VESSEL_VOLUME', 'CTX_LH_BANKSSTS_SUVR', 'CTX_LH_BANKSSTS_VOLUME', 'CTX_LH_CAUDALANTERIORCINGULATE_SUVR', 'CTX_LH_CAUDALANTERIORCINGULATE_VOLUME', 'CTX_LH_CAUDALMIDDLEFRONTAL_SUVR', 'CTX_LH_CAUDALMIDDLEFRONTAL_VOLUME', 'CTX_LH_CUNEUS_SUVR', 'CTX_LH_CUNEUS_VOLUME', 'CTX_LH_ENTORHINAL_SUVR', 'CTX_LH_ENTORHINAL_VOLUME', 'CTX_LH_FRONTALPOLE_SUVR', 'CTX_LH_FRONTALPOLE_VOLUME', 'CTX_LH_FUSIFORM_SUVR', 'CTX_LH_FUSIFORM_VOLUME', 'CTX_LH_INFERIORPARIETAL_SUVR', 'CTX_LH_INFERIORPARIETAL_VOLUME', 'CTX_LH_INFERIORTEMPORAL_SUVR', 'CTX_LH_INFERIORTEMPORAL_VOLUME', 'CTX_LH_INSULA_SUVR', 'CTX_LH_INSULA_VOLUME', 'CTX_LH_ISTHMUSCINGULATE_SUVR', 'CTX_LH_ISTHMUSCINGULATE_VOLUME', 'CTX_LH_LATERALOCCIPITAL_SUVR', 'CTX_LH_LATERALOCCIPITAL_VOLUME', 'CTX_LH_LATERALORBITOFRONTAL_SUVR', 'CTX_LH_LATERALORBITOFRONTAL_VOLUME', 'CTX_LH_LINGUAL_SUVR', 'CTX_LH_LINGUAL_VOLUME', 'CTX_LH_MEDIALORBITOFRONTAL_SUVR', 'CTX_LH_MEDIALORBITOFRONTAL_VOLUME', 'CTX_LH_MIDDLETEMPORAL_SUVR', 'CTX_LH_MIDDLETEMPORAL_VOLUME', 'CTX_LH_PARACENTRAL_SUVR', 'CTX_LH_PARACENTRAL_VOLUME', 'CTX_LH_PARAHIPPOCAMPAL_SUVR', 'CTX_LH_PARAHIPPOCAMPAL_VOLUME', 'CTX_LH_PARSOPERCULARIS_SUVR', 'CTX_LH_PARSOPERCULARIS_VOLUME', 'CTX_LH_PARSORBITALIS_SUVR', 'CTX_LH_PARSORBITALIS_VOLUME', 'CTX_LH_PARSTRIANGULARIS_SUVR', 'CTX_LH_PARSTRIANGULARIS_VOLUME', 'CTX_LH_PERICALCARINE_SUVR', 'CTX_LH_PERICALCARINE_VOLUME', 'CTX_LH_POSTCENTRAL_SUVR', 'CTX_LH_POSTCENTRAL_VOLUME', 'CTX_LH_POSTERIORCINGULATE_SUVR', 'CTX_LH_POSTERIORCINGULATE_VOLUME', 'CTX_LH_PRECENTRAL_SUVR', 'CTX_LH_PRECENTRAL_VOLUME', 'CTX_LH_PRECUNEUS_SUVR', 'CTX_LH_PRECUNEUS_VOLUME', 'CTX_LH_ROSTRALANTERIORCINGULATE_SUVR', 'CTX_LH_ROSTRALANTERIORCINGULATE_VOLUME', 'CTX_LH_ROSTRALMIDDLEFRONTAL_SUVR', 'CTX_LH_ROSTRALMIDDLEFRONTAL_VOLUME', 'CTX_LH_SUPERIORFRONTAL_SUVR', 'CTX_LH_SUPERIORFRONTAL_VOLUME', 'CTX_LH_SUPERIORPARIETAL_SUVR', 'CTX_LH_SUPERIORPARIETAL_VOLUME', 'CTX_LH_SUPERIORTEMPORAL_SUVR', 'CTX_LH_SUPERIORTEMPORAL_VOLUME', 'CTX_LH_SUPRAMARGINAL_SUVR', 'CTX_LH_SUPRAMARGINAL_VOLUME', 'CTX_LH_TEMPORALPOLE_SUVR', 'CTX_LH_TEMPORALPOLE_VOLUME', 'CTX_LH_TRANSVERSETEMPORAL_SUVR', 'CTX_LH_TRANSVERSETEMPORAL_VOLUME', 'CTX_RH_BANKSSTS_SUVR', 'CTX_RH_BANKSSTS_VOLUME', 'CTX_RH_CAUDALANTERIORCINGULATE_SUVR', 'CTX_RH_CAUDALANTERIORCINGULATE_VOLUME', 'CTX_RH_CAUDALMIDDLEFRONTAL_SUVR', 'CTX_RH_CAUDALMIDDLEFRONTAL_VOLUME', 'CTX_RH_CUNEUS_SUVR', 'CTX_RH_CUNEUS_VOLUME', 'CTX_RH_ENTORHINAL_SUVR', 'CTX_RH_ENTORHINAL_VOLUME', 'CTX_RH_FRONTALPOLE_SUVR', 'CTX_RH_FRONTALPOLE_VOLUME', 'CTX_RH_FUSIFORM_SUVR', 'CTX_RH_FUSIFORM_VOLUME', 'CTX_RH_INFERIORPARIETAL_SUVR', 'CTX_RH_INFERIORPARIETAL_VOLUME', 'CTX_RH_INFERIORTEMPORAL_SUVR', 'CTX_RH_INFERIORTEMPORAL_VOLUME', 'CTX_RH_INSULA_SUVR', 'CTX_RH_INSULA_VOLUME', 'CTX_RH_ISTHMUSCINGULATE_SUVR', 'CTX_RH_ISTHMUSCINGULATE_VOLUME', 'CTX_RH_LATERALOCCIPITAL_SUVR', 'CTX_RH_LATERALOCCIPITAL_VOLUME', 'CTX_RH_LATERALORBITOFRONTAL_SUVR', 'CTX_RH_LATERALORBITOFRONTAL_VOLUME', 'CTX_RH_LINGUAL_SUVR', 'CTX_RH_LINGUAL_VOLUME', 'CTX_RH_MEDIALORBITOFRONTAL_SUVR', 'CTX_RH_MEDIALORBITOFRONTAL_VOLUME', 'CTX_RH_MIDDLETEMPORAL_SUVR', 'CTX_RH_MIDDLETEMPORAL_VOLUME', 'CTX_RH_PARACENTRAL_SUVR', 'CTX_RH_PARACENTRAL_VOLUME', 'CTX_RH_PARAHIPPOCAMPAL_SUVR', 'CTX_RH_PARAHIPPOCAMPAL_VOLUME', 'CTX_RH_PARSOPERCULARIS_SUVR', 'CTX_RH_PARSOPERCULARIS_VOLUME', 'CTX_RH_PARSORBITALIS_SUVR', 'CTX_RH_PARSORBITALIS_VOLUME', 'CTX_RH_PARSTRIANGULARIS_SUVR', 'CTX_RH_PARSTRIANGULARIS_VOLUME', 'CTX_RH_PERICALCARINE_SUVR', 'CTX_RH_PERICALCARINE_VOLUME', 'CTX_RH_POSTCENTRAL_SUVR', 'CTX_RH_POSTCENTRAL_VOLUME', 'CTX_RH_POSTERIORCINGULATE_SUVR', 'CTX_RH_POSTERIORCINGULATE_VOLUME', 'CTX_RH_PRECENTRAL_SUVR', 'CTX_RH_PRECENTRAL_VOLUME', 'CTX_RH_PRECUNEUS_SUVR', 'CTX_RH_PRECUNEUS_VOLUME', 'CTX_RH_ROSTRALANTERIORCINGULATE_SUVR', 'CTX_RH_ROSTRALANTERIORCINGULATE_VOLUME', 'CTX_RH_ROSTRALMIDDLEFRONTAL_SUVR', 'CTX_RH_ROSTRALMIDDLEFRONTAL_VOLUME', 'CTX_RH_SUPERIORFRONTAL_SUVR', 'CTX_RH_SUPERIORFRONTAL_VOLUME', 'CTX_RH_SUPERIORPARIETAL_SUVR', 'CTX_RH_SUPERIORPARIETAL_VOLUME', 'CTX_RH_SUPERIORTEMPORAL_SUVR', 'CTX_RH_SUPERIORTEMPORAL_VOLUME', 'CTX_RH_SUPRAMARGINAL_SUVR', 'CTX_RH_SUPRAMARGINAL_VOLUME', 'CTX_RH_TEMPORALPOLE_SUVR', 'CTX_RH_TEMPORALPOLE_VOLUME', 'CTX_RH_TRANSVERSETEMPORAL_SUVR', 'CTX_RH_TRANSVERSETEMPORAL_VOLUME', 'LEFT_ACCUMBENS_AREA_SUVR', 'LEFT_ACCUMBENS_AREA_VOLUME', 'LEFT_AMYGDALA_SUVR', 'LEFT_AMYGDALA_VOLUME', 'LEFT_CAUDATE_SUVR', 'LEFT_CAUDATE_VOLUME', 'LEFT_CEREBELLUM_CORTEX_SUVR', 'LEFT_CEREBELLUM_CORTEX_VOLUME', 'LEFT_CEREBELLUM_WHITE_MATTER_SUVR', 'LEFT_CEREBELLUM_WHITE_MATTER_VOLUME', 'LEFT_CEREBRAL_WHITE_MATTER_SUVR', 'LEFT_CEREBRAL_WHITE_MATTER_VOLUME', 'LEFT_CHOROID_PLEXUS_SUVR', 'LEFT_CHOROID_PLEXUS_VOLUME', 'LEFT_HIPPOCAMPUS_SUVR', 'LEFT_HIPPOCAMPUS_VOLUME', 'LEFT_INF_LAT_VENT_SUVR', 'LEFT_INF_LAT_VENT_VOLUME', 'LEFT_LATERAL_VENTRICLE_SUVR', 'LEFT_LATERAL_VENTRICLE_VOLUME', 'LEFT_PALLIDUM_SUVR', 'LEFT_PALLIDUM_VOLUME', 'LEFT_PUTAMEN_SUVR', 'LEFT_PUTAMEN_VOLUME', 'LEFT_THALAMUS_PROPER_SUVR', 'LEFT_THALAMUS_PROPER_VOLUME', 'LEFT_VENTRALDC_SUVR', 'LEFT_VENTRALDC_VOLUME', 'LEFT_VESSEL_SUVR', 'LEFT_VESSEL_VOLUME', 'RIGHT_ACCUMBENS_AREA_SUVR', 'RIGHT_ACCUMBENS_AREA_VOLUME', 'RIGHT_AMYGDALA_SUVR', 'RIGHT_AMYGDALA_VOLUME', 'RIGHT_CAUDATE_SUVR', 'RIGHT_CAUDATE_VOLUME', 'RIGHT_CEREBELLUM_CORTEX_SUVR', 'RIGHT_CEREBELLUM_CORTEX_VOLUME', 'RIGHT_CEREBELLUM_WHITE_MATTER_SUVR', 'RIGHT_CEREBELLUM_WHITE_MATTER_VOLUME', 'RIGHT_CEREBRAL_WHITE_MATTER_SUVR', 'RIGHT_CEREBRAL_WHITE_MATTER_VOLUME', 'RIGHT_CHOROID_PLEXUS_SUVR', 'RIGHT_CHOROID_PLEXUS_VOLUME', 'RIGHT_HIPPOCAMPUS_SUVR', 'RIGHT_HIPPOCAMPUS_VOLUME', 'RIGHT_INF_LAT_VENT_SUVR', 'RIGHT_INF_LAT_VENT_VOLUME', 'RIGHT_LATERAL_VENTRICLE_SUVR', 'RIGHT_LATERAL_VENTRICLE_VOLUME', 'RIGHT_PALLIDUM_SUVR', 'RIGHT_PALLIDUM_VOLUME', 'RIGHT_PUTAMEN_SUVR', 'RIGHT_PUTAMEN_VOLUME', 'RIGHT_THALAMUS_PROPER_SUVR', 'RIGHT_THALAMUS_PROPER_VOLUME', 'RIGHT_VENTRALDC_SUVR', 'RIGHT_VENTRALDC_VOLUME', 'RIGHT_VESSEL_SUVR', 'RIGHT_VESSEL_VOLUME']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -3855,7 +3855,7 @@ UCD_ADNI1_WMH = DatasetConfig(
     source="UCD_ADNI1_WMH_11Aug2025.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['update_stamp']) VERIFICA
     viscode_reference="VISCODE",
     # 6 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['WHITMATHYP', 'MANUFACTURER', 'MODEL', 'MAGSTRENGTH', 'SEGPROCIMG', 'SEGPROC']
@@ -3898,7 +3898,7 @@ UCD_WMH = DatasetConfig(
     source="UCD_WMH_11Aug2025.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: ['PTID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['RUNDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['RUNDATE', 'update_stamp']) VERIFICA
     # 17 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['MANUFACTURER', 'MANUFACTURERSMODELNAME', 'MAGNETICFIELDSTRENGTH', 'MRACQUISITIONTYPEFLAIR', 'CEREBRUM_TCV', 'CEREBRUM_TCB', 'CEREBRUM_TCC', 'CEREBRUM_GRAY', 'CEREBRUM_WHITE', 'LEFT_HIPPO', 'RIGHT_HIPPO', 'TOTAL_HIPPO', 'TOTAL_CSF', 'TOTAL_GRAY', 'TOTAL_WHITE', 'TOTAL_WMH', 'TOTAL_BRAIN']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -3939,7 +3939,7 @@ UCSDVOL = DatasetConfig(
     source="UCSDVOL_28Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['volumes'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['USERDATE', 'CDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['USERDATE', 'CDATE', 'update_stamp']) VERIFICA
     viscode_reference="VISCODE",
     # 16 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['LONISID', 'BRAIN', 'EICV', 'VENTRICLES', 'LHIPPOC', 'RHIPPOC', 'LINFLATVEN', 'RINFLATVEN', 'LMIDTEMP', 'RMIDTEMP', 'LINFTEMP', 'RINFTEMP', 'LFUSIFORM', 'RFUSIFORM', 'LENTORHIN', 'RENTORHIN']
@@ -3970,7 +3970,7 @@ UCSFFSL51ALL_08_01_16 = DatasetConfig(
     source="UCSFFSL51ALL_08_01_16_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['csf', 'volumes'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['VERSION', 'RUNDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['VERSION', 'RUNDATE', 'update_stamp']) VERIFICA
     # 2 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['COLPROT', 'LONISID']
     # + 341 colonne ST* FreeSurfer da mappare col dizionario ADNI
@@ -4001,7 +4001,7 @@ UCSFFSL51Y1_08_01_16 = DatasetConfig(
     source="UCSFFSL51Y1_08_01_16_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['csf', 'volumes'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['VERSION', 'RUNDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['VERSION', 'RUNDATE', 'update_stamp']) VERIFICA
     # 2 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['COLPROT', 'LONISID']
     # + 341 colonne ST* FreeSurfer da mappare col dizionario ADNI
@@ -4032,7 +4032,7 @@ UCSFFSL51_03_01_22 = DatasetConfig(
     source="UCSFFSL51_03_01_22_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['csf', 'volumes'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['VERSION', 'RUNDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['VERSION', 'RUNDATE', 'update_stamp']) VERIFICA
     # 2 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['COLPROT', 'LONISID']
     # + 341 colonne ST* FreeSurfer da mappare col dizionario ADNI
@@ -4071,7 +4071,7 @@ UCSFFSL_02_01_16 = DatasetConfig(
     source="UCSFFSL_02_01_16_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['csf', 'volumes'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['VERSION', 'RUNDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['VERSION', 'RUNDATE', 'update_stamp']) VERIFICA
     # 10 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['FLDSTRENG', 'LONISID', 'BASETP1', 'BASETP2', 'BASETP3', 'BASETP4', 'BASETP5', 'BASETP6', 'BASETP7', 'BASETP8']
     # + 346 colonne ST* FreeSurfer da mappare col dizionario ADNI
@@ -4103,7 +4103,7 @@ UCSFFSX51_11_08_19 = DatasetConfig(
     source="UCSFFSX51_11_08_19_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['csf', 'volumes'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['VERSION', 'RUNDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['VERSION', 'RUNDATE', 'update_stamp']) VERIFICA
     # 3 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['COLPROT', 'LONISID', 'IMAGETYPE']
     # + 341 colonne ST* FreeSurfer da mappare col dizionario ADNI
@@ -4132,7 +4132,7 @@ UCSFFSX51_ADNI1_3T_02_01_16 = DatasetConfig(
     source="UCSFFSX51_ADNI1_3T_02_01_16_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['csf', 'volumes'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['VERSION', 'RUNDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['VERSION', 'RUNDATE', 'update_stamp']) VERIFICA
     viscode_reference="VISCODE",
     # 1 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['LONISID']
@@ -4163,7 +4163,7 @@ UCSFFSX6 = DatasetConfig(
     source="UCSFFSX6_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['csf', 'volumes'])
     id_column="RID",                            # standard ADNI (alt: ['PTID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['RUNDATE', 'VERSION', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['RUNDATE', 'VERSION', 'update_stamp']) VERIFICA
     # + 325 colonne ST* FreeSurfer da mappare col dizionario ADNI
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
     # essential_columns=[...],  # keep_columns=[...]   # <-- scegli (nomi STANDARD)
@@ -4192,7 +4192,7 @@ UCSFFSX7 = DatasetConfig(
     source="UCSFFSX7_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['csf', 'volumes'])
     id_column="RID",                            # standard ADNI (alt: ['PTID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['RUNDATE', 'FSVER', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['RUNDATE', 'FSVER', 'update_stamp']) VERIFICA
     # 1 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['FIELD_STRENGTH']
     # + 325 colonne ST* FreeSurfer da mappare col dizionario ADNI
@@ -4222,7 +4222,7 @@ UCSFFSX_11_02_15 = DatasetConfig(
     source="UCSFFSX_11_02_15_11Aug2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['csf', 'volumes'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['VERSION', 'RUNDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['VERSION', 'RUNDATE', 'update_stamp']) VERIFICA
     viscode_reference="VISCODE",
     # 2 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['LONISID', 'FLDSTRENG']
@@ -4248,7 +4248,7 @@ UGOTPTAU181_06_18_20 = DatasetConfig(
     source="UGOTPTAU181_06_18_20_28Oct2025.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['update_stamp']) VERIFICA
     # 1 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['PLASMAPTAU181']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -4279,7 +4279,7 @@ UPENNBIOMKADNIDIAN2017 = DatasetConfig(
     source="UPENNBIOMKADNIDIAN2017_09Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['csf'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['RUNDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['RUNDATE', 'update_stamp']) VERIFICA
     # 7 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['STUDY', 'ABETA', 'AB40', 'TAU', 'PTAU', 'A4240', 'NOTE']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -4311,7 +4311,7 @@ UPENNBIOMK_MASTER = DatasetConfig(
     source="UPENNBIOMK_MASTER_23Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['csf'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    # date_column=?  candidati (dai valori): ['DRAWDTE', 'RUNDATE', 'update_stamp']  <-- DECIDI
+    # data di visita?  candidati (dai valori): ['DRAWDTE', 'RUNDATE', 'update_stamp']  <-- DECIDI
     viscode_reference="VISCODE",
     # 9 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['BATCH', 'KIT', 'STDS', 'ABETA', 'TAU', 'PTAU', 'ABETA_RAW', 'TAU_RAW', 'PTAU_RAW']
@@ -4342,7 +4342,7 @@ UPENNBIOMK_ROCHE_ELECSYS = DatasetConfig(
     source="UPENNBIOMK_ROCHE_ELECSYS_09Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['csf'])
     id_column="RID",                            # standard ADNI (alt: ['PTID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['RUNDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['RUNDATE', 'update_stamp']) VERIFICA
     viscode_reference="VISCODE2",
     # 5 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['BATCH', 'ABETA40', 'ABETA42', 'TAU', 'PTAU']
@@ -4371,7 +4371,7 @@ UPENNMSMSABETA2CRM = DatasetConfig(
     source="UPENNMSMSABETA2CRM_23Oct2025.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['RUNDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['RUNDATE', 'update_stamp']) VERIFICA
     # 4 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['ABETA42', 'ABETA40', 'ABETA38', 'ABETA42CRM']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -4398,7 +4398,7 @@ UPENNMSMSABETA2 = DatasetConfig(
     source="UPENNMSMSABETA2_23Oct2025.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['RUNDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['RUNDATE', 'update_stamp']) VERIFICA
     # 3 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['ABETA42', 'ABETA40', 'ABETA38']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -4423,7 +4423,7 @@ UPENNMSMSABETA = DatasetConfig(
     source="UPENNMSMSABETA_23Oct2025.csv",
     category=None,                              # <-- DECIDI
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="DRAWDATE",          # preferenza ADNI (alt: ['RUNDATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): DRAWDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['RUNDATE', 'update_stamp']) VERIFICA
     viscode_reference="VISCODE",
     # 3 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['ABETA42', 'ABETA40', 'ABETA38']
@@ -4447,7 +4447,7 @@ UPENNPLASMA = DatasetConfig(
     source="UPENNPLASMA_28Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['plasma'])
     id_column="RID",                            # standard ADNI (alt: nessuna) VERIFICA
-    date_column="update_stamp",                  # rilevato dai valori, VERIFICA
+    # data di visita (ex date_column, D046): update_stamp -> alias su EXAMDATE in catalog.json se diverso. rilevato dai valori, VERIFICA
     viscode_reference="VISCODE",
     # 2 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['AB40', 'AB42']
@@ -4735,7 +4735,7 @@ UPENNROI_MARS_06_01_16 = DatasetConfig(
     source="UPENNROI_MARS_06_01_16_09Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['volumes'])
     id_column="RID",                            # standard ADNI (alt: ['CBICA_ID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['VERSION', 'RUNDATE', 'DATE', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['VERSION', 'RUNDATE', 'DATE', 'update_stamp']) VERIFICA
     viscode_reference="VISCODE",
     # 260 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['IMAGE_UID', 'R702', 'R701', 'R601', 'R604', 'R606', 'R607', 'R613', 'R614', 'R501', 'R502', 'R503', 'R504', 'R505', 'R506', 'R507', 'R508', 'R509', 'R510', 'R511', 'R512', 'R513', 'R514', 'R515', 'R516', 'R517', 'R518', 'R519', 'R520', 'R521', 'R522', 'R523', 'R524', 'R525', 'R401', 'R402', 'R403', 'R404', 'R405', 'R406', 'R407', 'R408', 'R409', 'R410', 'R411', 'R412', 'R413', 'R414', 'R415', 'R416', 'R417', 'R418', 'R419', 'R420', 'R421', 'R422', 'R423', 'R424', 'R425', 'R426', 'R427', 'R428', 'R429', 'R430', 'R431', 'R432', 'R433', 'R434', 'R435', 'R436', 'R301', 'R302', 'R303', 'R304', 'R305', 'R306', 'R307', 'R308', 'R309', 'R310', 'R311', 'R312', 'R313', 'R314', 'R315', 'R316', 'R317', 'R318', 'R319', 'R320', 'R321', 'R322', 'R323', 'R324', 'R325', 'R326', 'R327', 'R328', 'R329', 'R330', 'R331', 'R332', 'R333', 'R334', 'R335', 'R336', 'R337', 'R338', 'R339', 'R340', 'R341', 'R342', 'R343', 'R344', 'R345', 'R4', 'R11', 'R23', 'R30', 'R31', 'R32', 'R35', 'R36', 'R37', 'R38', 'R39', 'R40', 'R41', 'R47', 'R48', 'R49', 'R50', 'R51', 'R52', 'R55', 'R56', 'R57', 'R58', 'R59', 'R60', 'R61', 'R62', 'R71', 'R72', 'R73', 'R75', 'R76', 'R81', 'R82', 'R83', 'R84', 'R85', 'R86', 'R87', 'R88', 'R89', 'R90', 'R91', 'R92', 'R93', 'R94', 'R95', 'R100', 'R101', 'R102', 'R103', 'R104', 'R105', 'R106', 'R107', 'R108', 'R109', 'R112', 'R113', 'R114', 'R115', 'R116', 'R117', 'R118', 'R119', 'R120', 'R121', 'R122', 'R123', 'R124', 'R125', 'R128', 'R129', 'R132', 'R133', 'R134', 'R135', 'R136', 'R137', 'R138', 'R139', 'R140', 'R141', 'R142', 'R143', 'R144', 'R145', 'R146', 'R147', 'R148', 'R149', 'R150', 'R151', 'R152', 'R153', 'R154', 'R155', 'R156', 'R157', 'R160', 'R161', 'R162', 'R163', 'R164', 'R165', 'R166', 'R167', 'R168', 'R169', 'R170', 'R171', 'R172', 'R173', 'R174', 'R175', 'R176', 'R177', 'R178', 'R179', 'R180', 'R181', 'R182', 'R183', 'R184', 'R185', 'R186', 'R187', 'R190', 'R191', 'R192', 'R193', 'R194', 'R195', 'R196', 'R197', 'R198', 'R199', 'R200', 'R201', 'R202', 'R203', 'R204', 'R205', 'R206', 'R207']
@@ -4768,7 +4768,7 @@ UPENN_PLASMA_FUJIREBIO_QUANTERIX = DatasetConfig(
     source="UPENN_PLASMA_FUJIREBIO_QUANTERIX_28Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['plasma', 'csf'])
     id_column="RID",                            # standard ADNI (alt: ['PTID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['update_stamp']) VERIFICA
     # 7 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['pT217_F', 'AB42_F', 'AB40_F', 'AB42_AB40_F', 'pT217_AB42_F', 'NfL_Q', 'GFAP_Q']
     # constant_columns={"METHOD_<CAT>": "<assay>"},   # se biomarcatore: METTI il metodo
@@ -4811,7 +4811,7 @@ YASSINE_CSF = DatasetConfig(
     source="YASSINE_CSF_28Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['csf'])
     id_column="RID",                            # standard ADNI (alt: ['Sample_ID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['Date', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['Date', 'update_stamp']) VERIFICA
     viscode_reference="VISCODE2",
     # 19 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['Number', 'Type', 'Box', 'Order_in_Box', 'MALDI', 'Phenotype', 'E2_level', 'E3_level', 'E4_level', 'E3_E2', 'E4_E3', 'E2_glyc', 'E3_glyc', 'E4_glyc', 'Total_glyc', 'E2_2nd_glyc', 'E3_2nd_glyc', 'E4_2nd_glyc', 'Total_2nd_glyc']
@@ -4852,7 +4852,7 @@ YASSINE_PLASMA = DatasetConfig(
     source="YASSINE_PLASMA_28Oct2025.csv",
     category=None,                              # <-- DECIDI  (indizio: ['plasma'])
     id_column="RID",                            # standard ADNI (alt: ['Sample_ID']) VERIFICA
-    date_column="EXAMDATE",          # preferenza ADNI (alt: ['Date', 'update_stamp']) VERIFICA
+    # data di visita (ex date_column, D046): EXAMDATE -> alias su EXAMDATE in catalog.json se diverso. preferenza ADNI (alt: ['Date', 'update_stamp']) VERIFICA
     viscode_reference="VISCODE2",
     # 16 colonne DA DECIDERE (rename/keep/scarta, o -> CATALOG.aliases):
     #   ['Number', 'Type', 'Box', 'Order_in_Box', 'MALDI', 'Phenotype', 'E2_level', 'E3_level', 'E4_level', 'E3_E2', 'E4_E2', 'E4_E3', 'E2_glyc', 'E3_glyc', 'E4_glyc', 'Total_glyc']
